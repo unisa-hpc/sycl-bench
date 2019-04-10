@@ -25,7 +25,7 @@ struct BenchmarkArgs
 {
   size_t problem_size;
   size_t local_size; 
-  cl::sycl::queue queue;
+  cl::sycl::queue *device_queue;
 
   //VerificationSettings vSettings;
   //BenchmarkArgs(std::size_t problemSize, std::size_t localSize, VerificationSettings vSettings);  
@@ -52,11 +52,11 @@ public:
     //auto b = new Benchmark(this)
 
     for(auto h : hooks) h->preSetup();    
-    b->setup();
+    b.setup();
     for(auto h: hooks)  h->postSetup();
     
     for(auto h: hooks)  h->preKernel();
-    b->run();
+    b.run();
     for(auto h: hooks)  h->postKernel();
 
     /*
@@ -79,6 +79,7 @@ private:
 class BenchmarkApp
 {
   BenchmarkArgs args;
+  cl::sycl::queue device_queue;
 
 public:  
   BenchmarkApp(int argc, char** argv)
@@ -99,10 +100,9 @@ public:
       }
     }
 
-    // default queue selection
-    cl::sycl::queue device_queue; 
+    // default queue selection   
 
-    args = {problem_size, local_size, device_queue /*, verification*/};    
+    args = {problem_size, local_size, &device_queue /*, verification*/};    
   }
 
     template<class Benchmark>

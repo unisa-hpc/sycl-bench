@@ -12,7 +12,6 @@ protected:
 
 public:
   VecAddBench(const BenchmarkArgs &_args) : args(_args) {}
-
   
   void setup() {      
       // host memory allocation
@@ -25,40 +24,41 @@ public:
           input2[i] = 2;
           output[i] = 0;
       }
-
   }
 
-  void run() {
-    
+  void run() {    
     buffer<int, 1> input1_buf(input1, range<1>(args.problem_size));
     buffer<int, 1> input2_buf(input2, range<1>(args.problem_size));
     buffer<int, 1> output_buf(output, range<1>(args.problem_size));
 
-    args.queue.submit([&](cl::sycl::handler& cgh) {
+    args.device_queue->submit(
+        [&](cl::sycl::handler& cgh) {
       auto in1 = input1_buf.get_access<access::mode::read>(cgh);
       auto in2 = input2_buf.get_access<access::mode::read>(cgh);
       auto out = output_buf.get_access<access::mode::write>(cgh);
+      cl::sycl::range<1> ndrange {args.problem_size};
 
-      cgh.parallel_for<class VecAddKernel>(args.problem_size,
-        [=] (cl::sycl::id<1> gid) {
+      cgh.parallel_for<class VecAddKernel>(ndrange,
+        [=](cl::sycl::id<1> gid) 
+        {
             out[gid] = in1[gid] + in2[gid];
-        }
-        );        
-    }
+        });
+    });
   }
-
 
   bool verify(cl::sycl::id<3> verificationBegin, cl::sycl::range<3> verificationRange) { 
-    std::cout << output[0] <<  output[10] << endl;
+    //std::cout << output[0] <<  output[10] << std::endl;
+    return true;
   }
-
   
 };
+
 
 int main(int argc, char** argv)
 {
   BenchmarkApp app(argc, argv);
   app.run<VecAddBench>();  
+  return 0;
 }
 
 
