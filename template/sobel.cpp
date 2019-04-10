@@ -1,17 +1,31 @@
-#include <CL/sycl.hpp>
-
+#include "common.h"
 #include <iostream>
 
-using namespace cl::sycl;
+using BenchmarkArguments = std::unordered_map<std::string, std::string>;
 
-/* We define the number of work items to enqueue. */
-const int nElems = 64u;
+class SobelBench
+{
+protected:
 
-class assign_elements;
 
-int main() {
-  /* We define and initialize data to be copied to the device. */
-  int data[nElems] = {0};
+public:
+  SobelBench(MandatoryBenchmarkArgs args, const BenchmarkArguments& additionalArgs)
+  {
+
+  }
+
+  virtual ~SobelBench(){}
+
+  void setup(std::size_t problemSize) {
+    /* We define and initialize data to be copied to the device. */
+    int data[nElems] = {0};
+
+  }
+
+  void run(std::size_t localSize) {
+    
+
+
 
   try {
     default_selector selector;
@@ -30,33 +44,12 @@ int main() {
     myQueue.submit([&](handler& cgh) {
       auto ptr = buf.get_access<access::mode::read_write>(cgh);
 
-      /* We create an nd_range to describe the work space that the kernel is
-       * to be executed across. Here we create a linear (one dimensional)
-       * nd_range, which creates a work item per element of the vector. The
-       * first parameter of the nd_range is the range of global work items
-       * and the second is the range of local work items (i.e. the work group
-       * range). */
       auto myRange = nd_range<1>(range<1>(nElems), range<1>(nElems / 4));
 
-      /* We construct the lambda outside of the parallel_for function call,
-       * though it can be inline inside the function call too. For this
-       * parallel_for API the lambda is required to take a single parameter;
-       * an item<N> of the same dimensionality as the nd_range - in this
-       * case one. Other kernel dispatches might have different parameters -
-       * for example, the single_task takes no arguments. */
       auto myKernel = ([=](nd_item<1> item) {
-        /* Items have various methods to extract ids and ranges. The
-         * specification has full details of these. Here we use the
-         * item::get_global() to retrieve the global id as an id<1>.
-         * This particular kernel will set the ith element to the value
-         * of i. */
         ptr[item.get_global_id()] = item.get_global_id()[0];
       });
 
-      /* We call the parallel_for() API with two parameters; the nd_range
-       * we constructed above and the lambda that we constructed. Because
-       * the kernel is a lambda we *must* specify a template parameter to
-       * use as a name. */
       cgh.parallel_for<assign_elements>(myRange, myKernel);
     });
 
@@ -64,6 +57,36 @@ int main() {
     std::cout << "Synchronous exception caught:\n" << e.what();
     return 2;
   }
+
+  }
+
+  bool verify(cl::sycl::id<3> verificationBegin, cl::sycl::range<3> verificationRange) { 
+    
+
+  }
+
+  
+};
+
+
+
+
+int main(int argc, char** argv){
+
+  BenchmarkApp benchmark(argc,argv);  
+  Sobel sobel_bench();  
+  benchmark.addHook(sobel_bench);   
+
+
+}
+
+
+/* We define the number of work items to enqueue. */
+const int nElems = 64u;
+
+class assign_elements;
+
+
 
   /* Check the result is correct. */
   int result = 0;
