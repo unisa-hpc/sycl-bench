@@ -1,7 +1,18 @@
 #include <CL/sycl.hpp>
 
 #include <string>
+#include <iostream>
 #include <sstream>
+
+#ifdef TIME_MEAS    
+  #include "time_meas.h"
+#endif
+
+#ifdef NV_ENERGY_MEAS    
+  #include "nv_energy_meas.h"
+#endif
+
+
 
 using namespace std;
 
@@ -15,10 +26,10 @@ public:
   virtual void postKernel() = 0;
 };
 
-struct VerificationSettings
+struct VerificationSetting
 {
-  cl::sycl::id<3> verificationBegin;
-  cl::sycl::range<3> verificationRange;
+  cl::sycl::id<3> begin;
+  cl::sycl::range<3> range;
 };
 
 struct BenchmarkArgs
@@ -26,11 +37,8 @@ struct BenchmarkArgs
   size_t problem_size;
   size_t local_size; 
   cl::sycl::queue *device_queue;
-
-  //VerificationSettings vSettings;
-  //BenchmarkArgs(std::size_t problemSize, std::size_t localSize, VerificationSettings vSettings);  
+  VerificationSetting verification;
 };
-
 
 
 template<class Benchmark>
@@ -48,8 +56,7 @@ public:
   {
     for(auto h : hooks) h->atInit();
 
-    Benchmark b(args);
-    //auto b = new Benchmark(this)
+    Benchmark b(args);    
 
     for(auto h : hooks) h->preSetup();    
     b.setup();
@@ -58,16 +65,19 @@ public:
     for(auto h: hooks)  h->preKernel();
     b.run();
     for(auto h: hooks)  h->postKernel();
-
-    /*
-    if(args.verificationSettings.verificationRange.size() > 0)
+    
+    if(args.verification.range.size() > 0)
     {
-      if(!h->verify(_args.verificationBegin, _args.verificationRange))
-        //Error
-      else
-        //Pass
+      if(!b.verify(args.verification)){
+        // error
+        std::cerr << "Verification error" << std::endl;
+      }
+      else {
+        // pass
+        std::cout << "Verification successful" << std::endl;
+      }        
     }
-    */
+    
   }
 
 private:
@@ -79,7 +89,8 @@ private:
 class BenchmarkApp
 {
   BenchmarkArgs args;
-  cl::sycl::queue device_queue;
+  
+  cl::sycl::queue device_queue; // default queue selection
 
 public:  
   BenchmarkApp(int argc, char** argv)
@@ -98,9 +109,9 @@ public:
         istringstream iss(argv[i++]);
         iss >> local_size;
       }
-    }
+    }       
 
-    // default queue selection   
+    // FIXME queue selection parameters 
 
     args = {problem_size, local_size, &device_queue /*, verification*/};    
   }
@@ -111,8 +122,14 @@ public:
     BenchmarkManager<Benchmark> mgr(args);
 
     // Add hooks to benchmark manager, perhaps depending on command line arguments?
-//    mgr.addHook(std::make_unique<EnergyMeasurement>());
-//    mgr.addHook(std::make_unique<TimeMeasurement>());
+
+    #ifdef TIME_MEAS    
+      mgr.addHook(std::make_unique<TimeMeasurement>());
+    #endif
+
+    #ifdef NV_ENERGY_MEAS
+      mgr.addHook(std::make_unique<NVEnergyMeasurement>());
+    #endif
 
     mgr.run();
   }

@@ -4,7 +4,7 @@ using namespace cl::sycl;
 
 class VecAddBench
 {
-protected:
+protected:    
     int* input1 = nullptr;
     int* input2 = nullptr;
     int* output = nullptr;        
@@ -15,7 +15,7 @@ public:
   
   void setup() {      
       // host memory allocation
-      input1 = new int[args.problem_size];
+      input1 = new int[args.problem_size]; // FIXME memory leak, replace with vector
       input2 = new int[args.problem_size];
       output = new int[args.problem_size];
       // input initialization
@@ -46,13 +46,12 @@ public:
     });
   }
 
-  bool verify(cl::sycl::id<3> verificationBegin, cl::sycl::range<3> verificationRange) { 
-    //std::cout << output[0] <<  output[10] << std::endl;
+  bool verify(VerificationSetting &ver) { 
+    // TODO FIXME
     return true;
   }
   
 };
-
 
 int main(int argc, char** argv)
 {
@@ -60,6 +59,4 @@ int main(int argc, char** argv)
   app.run<VecAddBench>();  
   return 0;
 }
-
-
 
