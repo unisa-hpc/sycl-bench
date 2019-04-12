@@ -1,17 +1,10 @@
+#pragma once 
 #include <CL/sycl.hpp>
 
 #include <string>
 #include <iostream>
 #include <sstream>
-
-#ifdef TIME_MEAS    
-  #include "time_meas.h"
-#endif
-
-#ifdef NV_ENERGY_MEAS    
-  #include "nv_energy_meas.h"
-#endif
-
+#include <algorithm> // for std::min
 
 
 using namespace std;
@@ -25,6 +18,16 @@ public:
   virtual void preKernel() = 0;
   virtual void postKernel() = 0;
 };
+
+#ifdef TIME_MEAS    
+  #include "time_meas.h"
+  //class TimeMeasurement;
+#endif
+#ifdef NV_ENERGY_MEAS    
+  #include "nv_energy_meas.h"
+#endif
+
+
 
 struct VerificationSetting
 {
@@ -70,7 +73,7 @@ public:
     {
       if(!b.verify(args.verification)){
         // error
-        std::cerr << "Verification error" << std::endl;
+        std::cerr << "Verification ERROR" << std::endl;
       }
       else {
         // pass
@@ -88,16 +91,21 @@ private:
 
 class BenchmarkApp
 {
-  BenchmarkArgs args;
-  
-  cl::sycl::queue device_queue; // default queue selection
+  BenchmarkArgs args;  
+  cl::sycl::queue device_queue;
 
 public:  
   BenchmarkApp(int argc, char** argv)
   {
+    // TODO so far the first CPU is selected
+    cl::sycl::cpu_selector selector;
+    device_queue = selector.select_device();
+
     // Parses command line arguments
     vector <std::string> sources;
-    size_t problem_size, local_size;     
+    size_t problem_size = 1024;
+    size_t local_size = 256;     
+    //bool verification = true;
 
     for (int i = 1; i < argc; ++i) {
       if (string(argv[i]) == "-size" && (i+1 < argc) ) {
@@ -109,26 +117,33 @@ public:
         istringstream iss(argv[i++]);
         iss >> local_size;
       }
-    }       
+    }           
 
-    // FIXME queue selection parameters 
-
-    args = {problem_size, local_size, &device_queue /*, verification*/};    
+    // TODO at the moment it cheks no more than 2048 elements    
+    size_t range_max = std::min<size_t>(2048, problem_size);
+    VerificationSetting defaultVerSetting = { {0,0,0}, {range_max,range_max,range_max} };
+    args = {problem_size, local_size, &device_queue, defaultVerSetting};    
   }
 
-    template<class Benchmark>
+  template<class Benchmark>
   void run()
   {
     BenchmarkManager<Benchmark> mgr(args);
+    
+    std::cout << "Running with problem size " << args.problem_size 
+      << " and local size " << args.local_size 
+      <<  std::endl;
 
     // Add hooks to benchmark manager, perhaps depending on command line arguments?
 
-    #ifdef TIME_MEAS    
-      mgr.addHook(std::make_unique<TimeMeasurement>());
+    #ifdef TIME_MEAS
+      TimeMeasurement tm;
+      mgr.addHook(tm);
     #endif
 
     #ifdef NV_ENERGY_MEAS
-      mgr.addHook(std::make_unique<NVEnergyMeasurement>());
+      NVEnergyMeasurement nvem;
+      mgr.addHook(nvem);
     #endif
 
     mgr.run();

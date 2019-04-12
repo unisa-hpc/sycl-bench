@@ -1,35 +1,33 @@
 #include "common.h"
 
+#include <iostream>
+
 using namespace cl::sycl;
+class VecAddKernel;
 
 class VecAddBench
 {
 protected:    
-    int* input1 = nullptr;
-    int* input2 = nullptr;
-    int* output = nullptr;        
+    std::vector<int> input1;
+    std::vector<int> input2;
+    std::vector<int> output;
     const BenchmarkArgs &args;
 
 public:
   VecAddBench(const BenchmarkArgs &_args) : args(_args) {}
   
   void setup() {      
+    //std::cout << args.problem_size << std::endl;
       // host memory allocation
-      input1 = new int[args.problem_size]; // FIXME memory leak, replace with vector
-      input2 = new int[args.problem_size];
-      output = new int[args.problem_size];
-      // input initialization
-      for(int i=0; i<args.problem_size; i++){
-          input1[i] = 1;
-          input2[i] = 2;
-          output[i] = 0;
-      }
+     input1.resize(args.problem_size, 1);
+     input2.resize(args.problem_size, 2);
+     output.resize(args.problem_size, 0);
   }
 
   void run() {    
-    buffer<int, 1> input1_buf(input1, range<1>(args.problem_size));
-    buffer<int, 1> input2_buf(input2, range<1>(args.problem_size));
-    buffer<int, 1> output_buf(output, range<1>(args.problem_size));
+    buffer<int, 1> input1_buf(&input1[0], range<1>(args.problem_size));
+    buffer<int, 1> input2_buf(&input2[0], range<1>(args.problem_size));
+    buffer<int, 1> output_buf(&output[0], range<1>(args.problem_size));
 
     args.device_queue->submit(
         [&](cl::sycl::handler& cgh) {
@@ -44,11 +42,20 @@ public:
             out[gid] = in1[gid] + in2[gid];
         });
     });
+
   }
 
   bool verify(VerificationSetting &ver) { 
-    // TODO FIXME
-    return true;
+    bool pass = true;
+    for(size_t i=ver.begin[0]; i<ver.begin[0]+ver.range[0]; i++){
+        int expected = input1[i] + input2[i];
+        //std::cout << i << ") " << output[i] << " : " << expected << std::endl;
+        if(expected != output[i]){
+            pass = false;
+            break;
+        }
+      }    
+    return pass;
   }
   
 };
@@ -59,4 +66,3 @@ int main(int argc, char** argv)
   app.run<VecAddBench>();  
   return 0;
 }
-
