@@ -5,9 +5,8 @@
 #include <iostream>
 #include <sstream>
 #include <algorithm> // for std::min
+#include "command_line.h"
 
-
-using namespace std;
 
 class BenchmarkHook
 {
@@ -27,21 +26,6 @@ public:
   #include "nv_energy_meas.h"
 #endif
 
-
-
-struct VerificationSetting
-{
-  cl::sycl::id<3> begin;
-  cl::sycl::range<3> range;
-};
-
-struct BenchmarkArgs
-{
-  size_t problem_size;
-  size_t local_size; 
-  cl::sycl::queue *device_queue;
-  VerificationSetting verification;
-};
 
 
 template<class Benchmark>
@@ -67,6 +51,10 @@ public:
     
     for(auto h: hooks)  h->preKernel();
     b.run();
+    // Make sure work has actually completed,
+    // otherwise we may end up measuring incorrect
+    // runtimes!
+    args.device_queue.wait_and_throw();
     for(auto h: hooks)  h->postKernel();
     
     if(args.verification.range.size() > 0)
@@ -97,32 +85,8 @@ class BenchmarkApp
 public:  
   BenchmarkApp(int argc, char** argv)
   {
-    // TODO so far the first CPU is selected
-    cl::sycl::cpu_selector selector;
-    device_queue = selector.select_device();
-
-    // Parses command line arguments
-    vector <std::string> sources;
-    size_t problem_size = 1024;
-    size_t local_size = 256;     
-    //bool verification = true;
-
-    for (int i = 1; i < argc; ++i) {
-      if (string(argv[i]) == "-size" && (i+1 < argc) ) {
-        istringstream iss(argv[i++]);
-        iss >> problem_size; 
-      } 
-      else 
-      if (string(argv[i]) == "-local" && (i+1 < argc) ) {
-        istringstream iss(argv[i++]);
-        iss >> local_size;
-      }
-    }           
-
-    // TODO at the moment it cheks no more than 2048 elements    
-    size_t range_max = std::min<size_t>(2048, problem_size);
-    VerificationSetting defaultVerSetting = { {0,0,0}, {range_max,range_max,range_max} };
-    args = {problem_size, local_size, &device_queue, defaultVerSetting};    
+    BenchmarkCommandLine cli{argc, argv};
+    args = cli.getBenchmarkArgs();
   }
 
   template<class Benchmark>

@@ -2,7 +2,11 @@
 
 #include <iostream>
 
-using namespace cl::sycl;
+// Opening cl::sycl namespace is unsupported on hipSYCL 
+// (mainly due to CUDA/HIP design issues), better 
+// avoid it
+//using namespace cl::sycl;
+namespace s = cl::sycl;
 class VecAddKernel;
 
 class VecAddBench
@@ -19,21 +23,24 @@ public:
   void setup() {      
     //std::cout << args.problem_size << std::endl;
       // host memory allocation
-     input1.resize(args.problem_size, 1);
-     input2.resize(args.problem_size, 2);
-     output.resize(args.problem_size, 0);
+    // TODO Fill data with values?
+    input1.resize(args.problem_size, 1);
+    input2.resize(args.problem_size, 2);
+    output.resize(args.problem_size, 0);
   }
 
   void run() {    
-    buffer<int, 1> input1_buf(&input1[0], range<1>(args.problem_size));
-    buffer<int, 1> input2_buf(&input2[0], range<1>(args.problem_size));
-    buffer<int, 1> output_buf(&output[0], range<1>(args.problem_size));
+    s::buffer<int, 1> input1_buf(input1.data(), s::range<1>(args.problem_size));
+    s::buffer<int, 1> input2_buf(input2.data(), s::range<1>(args.problem_size));
+    s::buffer<int, 1> output_buf(output.data(), s::range<1>(args.problem_size));
 
     args.device_queue->submit(
         [&](cl::sycl::handler& cgh) {
-      auto in1 = input1_buf.get_access<access::mode::read>(cgh);
-      auto in2 = input2_buf.get_access<access::mode::read>(cgh);
-      auto out = output_buf.get_access<access::mode::write>(cgh);
+      auto in1 = input1_buf.get_access<s::access::mode::read>(cgh);
+      auto in2 = input2_buf.get_access<s::access::mode::read>(cgh);
+      // Use discard_write here, otherwise the content of the host
+      // buffer must first be copied to device
+      auto out = output_buf.get_access<s::access::mode::discard_write>(cgh);
       cl::sycl::range<1> ndrange {args.problem_size};
 
       cgh.parallel_for<class VecAddKernel>(ndrange,
