@@ -3,10 +3,12 @@
 
 #include <string>
 #include <iostream>
+#include <cassert>
 #include <sstream>
+#include <memory>
 #include <algorithm> // for std::min
 #include "command_line.h"
-
+#include "result_consumer.h"
 
 class BenchmarkHook
 {
@@ -16,12 +18,12 @@ public:
   virtual void postSetup()= 0;
   virtual void preKernel() = 0;
   virtual void postKernel() = 0;
+  virtual void emitResults(ResultConsumer&) {}
 };
+  
+#include "time_meas.h"
 
-#ifdef TIME_MEAS    
-  #include "time_meas.h"
-  //class TimeMeasurement;
-#endif
+
 #ifdef NV_ENERGY_MEAS    
   #include "nv_energy_meas.h"
 #endif
@@ -41,6 +43,14 @@ public:
 
   void run()
   {
+    args.result_consumer->proceedToBenchmark(
+      Benchmark::getBenchmarkName());
+
+    args.result_consumer->consumeResult(
+      "problem-size", std::to_string(args.problem_size));
+    args.result_consumer->consumeResult(
+      "local-size", std::to_string(args.local_size));
+
     for(auto h : hooks) h->atInit();
 
     Benchmark b(args);    
@@ -55,19 +65,24 @@ public:
     // otherwise we may end up measuring incorrect
     // runtimes!
     args.device_queue.wait_and_throw();
-    for(auto h: hooks)  h->postKernel();
-    
+    for (auto h : hooks) {
+      h->postKernel();
+      // Extract results from the hooks
+      h->emitResults(*args.result_consumer);
+    }
+
     if(args.verification.range.size() > 0)
     {
       if(!b.verify(args.verification)){
         // error
-        std::cerr << "Verification ERROR" << std::endl;
+        args.result_consumer->consumeResult("Verification", "FAIL");
       }
       else {
         // pass
-        std::cout << "Verification successful" << std::endl;
+        args.result_consumer->consumeResult("Verification", "PASS");
       }        
     }
+    args.result_consumer->flush();
     
   }
 
@@ -81,35 +96,43 @@ class BenchmarkApp
 {
   BenchmarkArgs args;  
   cl::sycl::queue device_queue;
-
+  
 public:  
   BenchmarkApp(int argc, char** argv)
   {
-    BenchmarkCommandLine cli{argc, argv};
-    args = cli.getBenchmarkArgs();
+    try{
+      args = BenchmarkCommandLine{argc, argv}.getBenchmarkArgs();
+    }
+    catch(std::exception& e){
+      std::cerr << "Error while parsing command lines: " << e.what() << std::endl;
+    }
   }
 
   template<class Benchmark>
   void run()
   {
-    BenchmarkManager<Benchmark> mgr(args);
-    
-    std::cout << "Running with problem size " << args.problem_size 
-      << " and local size " << args.local_size 
-      <<  std::endl;
+    try {
+      BenchmarkManager<Benchmark> mgr(args);
 
-    // Add hooks to benchmark manager, perhaps depending on command line arguments?
+      // Add hooks to benchmark manager, perhaps depending on command line
+      // arguments?
 
-    #ifdef TIME_MEAS
       TimeMeasurement tm;
-      mgr.addHook(tm);
-    #endif
+      if (!args.cli.isFlagSet("--no-runtime-measurement"))
+        mgr.addHook(tm);
 
-    #ifdef NV_ENERGY_MEAS
+#ifdef NV_ENERGY_MEAS
       NVEnergyMeasurement nvem;
       mgr.addHook(nvem);
-    #endif
+#endif
 
-    mgr.run();
+      mgr.run();
+    }
+    catch(cl::sycl::exception& e){
+      std::cerr << "SYCL error: " << e.what() << std::endl;
+    }
+    catch(std::exception& e){
+      std::cerr << "Error: " << e.what() << std::endl;
+    }
   }
 };

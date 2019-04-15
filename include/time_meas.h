@@ -14,22 +14,28 @@ private:
     std::chrono::time_point<std::chrono::high_resolution_clock>  t1;
     std::chrono::time_point<std::chrono::high_resolution_clock>  t2;
 
+    std::size_t nanoseconds;
 public:
     TimeMeasurement() : BenchmarkHook() {}
     
-    virtual void atInit() {}    
-    virtual void preSetup() {} 
-    virtual void postSetup() {}
+    virtual void atInit() override {}    
+    virtual void preSetup() override {} 
+    virtual void postSetup() override {}
 
-    virtual void preKernel() {
+    virtual void preKernel() override {
+        nanoseconds = 0;
         t1 = Clock::now();
     }
 
-    virtual void postKernel() {
+    virtual void postKernel() override {
         t2 = Clock::now();
-        std::cout << "time " 
-            << std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count()
-            << " nanoseconds" 
-            << std::endl;        
+        nanoseconds = 
+            std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count();     
+    }
+
+    virtual void emitResults(ResultConsumer& consumer) override {
+        consumer.consumeResult("kernel-run-time", 
+            std::to_string(this->nanoseconds), 
+            " [ns]");
     }
 };

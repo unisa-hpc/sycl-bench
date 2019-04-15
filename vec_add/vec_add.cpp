@@ -15,7 +15,7 @@ protected:
     std::vector<int> input1;
     std::vector<int> input2;
     std::vector<int> output;
-    const BenchmarkArgs &args;
+    BenchmarkArgs args;
 
 public:
   VecAddBench(const BenchmarkArgs &_args) : args(_args) {}
@@ -34,7 +34,7 @@ public:
     s::buffer<int, 1> input2_buf(input2.data(), s::range<1>(args.problem_size));
     s::buffer<int, 1> output_buf(output.data(), s::range<1>(args.problem_size));
 
-    args.device_queue->submit(
+    args.device_queue.submit(
         [&](cl::sycl::handler& cgh) {
       auto in1 = input1_buf.get_access<s::access::mode::read>(cgh);
       auto in2 = input2_buf.get_access<s::access::mode::read>(cgh);
@@ -65,6 +65,9 @@ public:
     return pass;
   }
   
+  static std::string getBenchmarkName() {
+    return "VectorAddition";
+  }
 };
 
 int main(int argc, char** argv)
