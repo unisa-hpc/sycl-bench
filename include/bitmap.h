@@ -1,42 +1,81 @@
 #ifndef BITMAP_H
 #define BITMAP_H
 
-/*
-  This bitmap code is a sligthly modified version of Buffardi's bitmap loader
-  https://github.com/kbuffardi/Bitmap
- */
-
+#include <CL/sycl.hpp> // float4 definition
 #include <string>
 #include <vector>
 
-// ----------------------------------------------------------------------------
+using std::string;
+using cl::sycl::float4;
+
+void load_bitmap_mirrored(string filename, int size, std::vector<float4> &pixels);
+void save_bitmap(string filename, int size, const std::vector<float4> &buffer);
+
+/*
+void load_bitmap_mirrored(string filename, int size, std::vector<float4> &pixels){
+  Bitmap input_image;
+  input_image.open(filename);
+  std::cout << "input image " << filename << "loaded" << std::endl;
+  PixelMatrix pixels = input_image.toPixelMatrix();
+  w = pixels.size();
+  if(w>0)
+    h = pixels[0].size();
+  else
+    h = 0;
+  // prepare the input buffer (similar to a GL_MIRRORED_REPEAT of the input picture)
+  input.resize(size * size);
+  for(size_t i=0; i<size; i++)
+    for(size_t j=0; j<size; j++){
+      Pixel pixel = pixels[i%w][j%h]; // mirror repeat
+      float4 color = float4(pixel.r / 255.0f, pixel.g / 255.0f, pixel.b / 255.0f, 1.0f); // cast to float  
+      input[j + i * size] = color; // write to input buffer
+    }
+    std::cout << "image resized to match the input size:";
+    std::cout << "[" << w << "x" << h << "] => [" << size << "x" << size << "]" << std::endl;
+}
+
+void save_bitmap(string filename, int size, const std::vector<float4> &buffer){
+    // write the output picture
+    std::cout << "saving the the output picture in " << filename << std::endl;
+    Bitmap output_image;
+    PixelMatrix pixels;
+    pixels.resize(size);
+    for(size_t i=0; i<size; i++){
+        pixels[i].resize(size);
+        for(size_t j=0; j<size; j++){
+          float4 color = output[i * size + j] * 255.f;
+          pixels[i][j].r = (int) color.x();
+          pixels[i][j].g = (int) color.y();
+          pixels[i][j].b = (int) color.z();
+        }
+    }
+    output_image.fromPixelMatrix(pixels);
+    output_image.save();
+}
+*/
+
 /**
- * Represents a single Pixel in the image. A Pixel has red, green, and blue
- * components that are mixed to form a color. Each of these values can range
- * from 0 to 255
+  A single Pixel in the image. A Pixel has red, green, and blue
+  integer components in the range from 0 to 255.
 **/
 class Pixel
 {
 public:
-	// Stores the individual color components.
-	int red, green, blue;
+  int r, g, b;
 
-	// Initializes a Pixel with a default black color.
-	Pixel() : red(0), green(0), blue(0) { }
+  // Initializes a Pixel with a default black color.
+  Pixel() : r(0), g(0), b(0) { }
 
-	// Initializes a color Pixel with the specified RGB values.
-	Pixel(int r, int g, int b) : red(r), green(g), blue(b) { }
+  // Initializes a color Pixel with the specified RGB values.
+  Pixel(int _r, int _g, int _b) : r(_r), g(_g), b(_b) { }
 };
 
-// ----------------------------------------------------------------------------
 //To abbreviate a pixel matrix built as a vector of vectors
 typedef std::vector < std::vector <Pixel> > PixelMatrix;
 
-// ----------------------------------------------------------------------------
 /**
- * Represents a bitmap where a grid of pixels (in row-major order)
- * describes the color of each pixel within the image. Limited to Windows BMP
- * formatted images with no compression and 24 bit color depth.
+ * Represents a bitmap with pixels in row-major order.
+ * Limitations: Windows BMP, no compression, 24 bit color depth.
 **/
 class Bitmap
 {
@@ -94,7 +133,7 @@ class Bitmap
 //////////////////////////////////////////////////////////////////////////////////
 #include <iostream>
 #include <fstream>
-#include "bitmap.h"
+//#include "bitmap.h"
 #include <cstdlib>
 
 typedef unsigned char uchar_t;
@@ -299,9 +338,9 @@ void Bitmap::save(std::string filename)
 			{
 				const Pixel& pix = row_data[col];
 
-				file.put((uchar_t)(pix.blue));
-				file.put((uchar_t)(pix.green));
-				file.put((uchar_t)(pix.red));
+				file.put((uchar_t)(pix.b));
+				file.put((uchar_t)(pix.g));
+				file.put((uchar_t)(pix.r));
 			}
 
 			// Rows are padded so that they're always a multiple of 4
@@ -345,9 +384,9 @@ bool Bitmap::isImage()
 		for(int column=0; column < width; column++)
 		{
 			Pixel current = pixels[row][column];
-			if( current.red > MAX_RGB || current.red < MIN_RGB ||
-				  current.green > MAX_RGB || current.green < MIN_RGB ||
-				  current.blue > MAX_RGB || current.blue < MIN_RGB )
+			if( current.r > MAX_RGB || current.r < MIN_RGB ||
+			    current.g > MAX_RGB || current.g < MIN_RGB ||
+			    current.b > MAX_RGB || current.b < MIN_RGB )
 				return false;
 		}
 	}
@@ -386,5 +425,51 @@ void Bitmap::fromPixelMatrix(const PixelMatrix & values)
 }
 
 
-
 #endif
+
+
+void load_bitmap_mirrored(string filename, int size, std::vector<float4> &input){
+  Bitmap input_image;
+  input_image.open(filename);
+  std::cout << "input image " << filename << "loaded" << std::endl;
+  PixelMatrix pixels = input_image.toPixelMatrix();
+  int w = pixels.size();
+  int h;
+  if(w>0)
+    h = pixels[0].size();
+  else
+    h = 0;
+  // prepare the input buffer (similar to a GL_MIRRORED_REPEAT of the input picture)
+  input.resize(size * size);
+  for(size_t i=0; i<size; i++)
+    for(size_t j=0; j<size; j++){
+      Pixel pixel = pixels[i%w][j%h]; // mirror repeat
+      float4 color = float4(pixel.r / 255.0f, pixel.g / 255.0f, pixel.b / 255.0f, 1.0f); // cast to float  
+      input[j + i * size] = color; // write to input buffer
+    }
+    std::cout << "image resized to match the input size: ";
+    std::cout << "[" << w << "x" << h << "] => [" << size << "x" << size << "]" << std::endl;
+}
+
+
+void save_bitmap(string filename, int size, const std::vector<float4> &output){
+    // write the output picture
+    std::cout << "saving the the output picture in " << filename << std::endl;
+    Bitmap output_image;
+    PixelMatrix pixels;
+    pixels.resize(size);
+    for(size_t i=0; i<size; i++){
+        pixels[i].resize(size);
+        for(size_t j=0; j<size; j++){
+          float4 color = output[i * size + j] * 255.f;
+          pixels[i][j].r = (int) color.x();
+          pixels[i][j].g = (int) color.y();
+          pixels[i][j].b = (int) color.z();
+        }
+    }
+    output_image.fromPixelMatrix(pixels);
+    output_image.save(filename);
+}
+
+
+
