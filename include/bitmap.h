@@ -11,49 +11,6 @@ using cl::sycl::float4;
 void load_bitmap_mirrored(string filename, int size, std::vector<float4> &pixels);
 void save_bitmap(string filename, int size, const std::vector<float4> &buffer);
 
-/*
-void load_bitmap_mirrored(string filename, int size, std::vector<float4> &pixels){
-  Bitmap input_image;
-  input_image.open(filename);
-  std::cout << "input image " << filename << "loaded" << std::endl;
-  PixelMatrix pixels = input_image.toPixelMatrix();
-  w = pixels.size();
-  if(w>0)
-    h = pixels[0].size();
-  else
-    h = 0;
-  // prepare the input buffer (similar to a GL_MIRRORED_REPEAT of the input picture)
-  input.resize(size * size);
-  for(size_t i=0; i<size; i++)
-    for(size_t j=0; j<size; j++){
-      Pixel pixel = pixels[i%w][j%h]; // mirror repeat
-      float4 color = float4(pixel.r / 255.0f, pixel.g / 255.0f, pixel.b / 255.0f, 1.0f); // cast to float  
-      input[j + i * size] = color; // write to input buffer
-    }
-    std::cout << "image resized to match the input size:";
-    std::cout << "[" << w << "x" << h << "] => [" << size << "x" << size << "]" << std::endl;
-}
-
-void save_bitmap(string filename, int size, const std::vector<float4> &buffer){
-    // write the output picture
-    std::cout << "saving the the output picture in " << filename << std::endl;
-    Bitmap output_image;
-    PixelMatrix pixels;
-    pixels.resize(size);
-    for(size_t i=0; i<size; i++){
-        pixels[i].resize(size);
-        for(size_t j=0; j<size; j++){
-          float4 color = output[i * size + j] * 255.f;
-          pixels[i][j].r = (int) color.x();
-          pixels[i][j].g = (int) color.y();
-          pixels[i][j].b = (int) color.z();
-        }
-    }
-    output_image.fromPixelMatrix(pixels);
-    output_image.save();
-}
-*/
-
 /**
   A single Pixel in the image. A Pixel has red, green, and blue
   integer components in the range from 0 to 255.
