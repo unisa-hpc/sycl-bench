@@ -388,7 +388,7 @@ void Bitmap::fromPixelMatrix(const PixelMatrix & values)
 void load_bitmap_mirrored(string filename, int size, std::vector<float4> &input){
   Bitmap input_image;
   input_image.open(filename);
-  std::cout << "input image " << filename << "loaded" << std::endl;
+  std::cout << "input image " << filename << " loaded" << std::endl;
   PixelMatrix pixels = input_image.toPixelMatrix();
   int w = pixels.size();
   int h;
@@ -415,10 +415,12 @@ void save_bitmap(string filename, int size, const std::vector<float4> &output){
     Bitmap output_image;
     PixelMatrix pixels;
     pixels.resize(size);
+//std::cout << "debug " << size << " - " << output.size() << std::endl;
     for(size_t i=0; i<size; i++){
         pixels[i].resize(size);
         for(size_t j=0; j<size; j++){
           float4 color = output[i * size + j] * 255.f;
+//std::cout << color.x() << "," << color.z() << "/";
           pixels[i][j].r = (int) color.x();
           pixels[i][j].g = (int) color.y();
           pixels[i][j].b = (int) color.z();

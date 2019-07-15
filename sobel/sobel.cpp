@@ -27,9 +27,9 @@ protected:
 public:
   SobelBench(const BenchmarkArgs &_args) : args(_args) {}
 
-
   void setup() {
     size = args.problem_size; // input size defined by the user
+    input.resize(size * size); 
     load_bitmap_mirrored("../Brommy.bmp", size, input);
     output.resize(size * size);
   }
@@ -54,45 +54,49 @@ public:
       cgh.parallel_for<class SobelBenchKernel>(ndrange,
         [=](cl::sycl::id<2> gid) 
         {
-            int x = gid[0];
-            int y = gid[1];
-            float4 Gx = float4(0.0f, 0.0f, 0.0f, 0.0f);
-       	    float4 Gy = float4(0.0f, 0.0f, 0.0f, 0.0f);
-            const int radius = 3;
+          int x = gid[0];
+          int y = gid[1];
+          float4 Gx = float4(0);
+       	  float4 Gy = float4(0);
+          const int radius = 3;
 
-            // constant-size loops in [-1,0,+1]
-            for(uint x_shift = -1; x_shift<=1; x_shift++)
-                for(uint y_shift = -1; y_shift<=1; y_shift++)
-		{
-                  // sample position
-		  uint xs = x + x_shift;
-		  uint ys = y + y_shift;
-                  // for the same pixel, convolution is always 0  
-                  if(x==xs && y==ys)  continue; 
-                  // boundary check
-                  if(xs < 0 || xs > size || ys < 0 || ys > size) continue;
+          // constant-size loops in [0,1,2]
+          for(int x_shift = 0; x_shift<3; x_shift++) 
+          {
+            for(int y_shift = 0; y_shift<3; y_shift++)
+	    {
+              // sample position
+	      uint xs = x + x_shift - 1; // [x-1,x,x+1]
+	      uint ys = y + y_shift - 1; // [y-1,y,y+1]
+              // for the same pixel, convolution is always 0  
+              if(x==xs && y==ys) continue; 
+              // boundary check
+              if(xs < 0 || xs >= size || ys < 0 || ys >= size) continue;
                     
-	          // sample color
-                  float4 sample = in[ {xs,ys} ];
+	      // sample color
+              float4 sample = in[ {xs,ys} ];
 
-                  // convolution calculation
-                  int offset_x = x_shift + y_shift * radius;
-                  int offset_y = y_shift + x_shift * radius;
+              // convolution calculation
+              int offset_x = x_shift + y_shift * radius;
+              int offset_y = y_shift + x_shift * radius;
           
-                  float conv_x = kernel[offset_x];
-                  float4 conv4_x = (float4)(conv_x);
-                  Gx += conv4_x * sample;
+              float conv_x   = kernel[offset_x];
+              float4 conv4_x = float4(conv_x);
+              Gx += conv4_x * sample;
 
-                  float conv_y = kernel[offset_y];
-                  float4 conv4_y = (float4)(conv_y);
-                  Gy += conv4_y * sample;	
-               }
-
+              float conv_y   = kernel[offset_y];
+              float4 conv4_y = float4(conv_y);
+              Gy += conv4_y * sample;	
+            }
+          }
 	  // taking root of sums of squares of Gx and Gy 	
 	  float4 color = hypot(Gx, Gy);
 	  out[gid] = clamp(color, float4(0.0), float4(1.0));
-        });
+       }
+       );
      });
+     
+     args.device_queue.wait_and_throw();
    }
 
 
@@ -102,47 +106,43 @@ public:
     const float kernel[] = { 1, 0, -1, 2, 0, -2, 1, 0, -1 };
     bool pass = true;
     int radius = 3;
-/*
     for(size_t i=ver.begin[0]; i<ver.begin[0]+ver.range[0]; i++){
       int x = i % size;
       int y = i / size;
       float4 Gx, Gy;	
-        for(uint x_shift = -1; x_shift<2; x_shift++)
-             for(uint y_shift = -1; y_shift<2; y_shift++)
-             {
-                  uint xs = x + x_shift;
-                  uint ys = y + y_shift;
+        for(uint x_shift = 0; x_shift<3; x_shift++)
+             for(uint y_shift = 0; y_shift<3; y_shift++) {
+                  uint xs = x + x_shift - 1;
+                  uint ys = y + y_shift - 1;
                   if(x==xs && y==ys)  continue;                   
-                  if(xs < 0 || xs > size || ys < 0 || ys > size) continue;
+                  if(xs < 0 || xs >= size || ys < 0 || ys >= size) continue;
                   float4 sample = input[xs + ys * size];
-                  int offset_x = x_shift + y_shift * radius;
-                  int offset_y = y_shift + x_shift * radius;
-                  float conv_x = kernel[offset_x];
-                  float4 conv4_x = (float4)(conv_x);
+                  int offset_x  = x_shift + y_shift * radius;
+                  int offset_y  = y_shift + x_shift * radius;
+                  float conv_x   = kernel[offset_x];
+                  float4 conv4_x = float4(conv_x);
                   Gx += conv4_x * sample;
-                  float conv_y = kernel[offset_y];
-                  float4 conv4_y = (float4)(conv_y);
+                  float conv_y   = kernel[offset_y];
+                  float4 conv4_y = float4(conv_y);
                   Gy += conv4_y * sample;
                }
         float4 color = hypot(Gx, Gy);
         float4 expected = clamp(color, float4(0.0), float4(1.0));
-        if(expected.x() - output[i].x() > 0.0f || 
-           expected.y() - output[i].y() > 0.0f || 
-           expected.z() - output[i].z() > 0.0f)
+	float4 dif = fdim(output[i], expected);
+        float length = cl::sycl::length(dif);
+        if(length > 0.01f)
         {
             pass = false;
             break;
         }
     }    
-*/
     return pass;
 }
 
 
 static std::string getBenchmarkName() {
-    return "Sobel";
+    return "Sobel3";
   }
-
 
 }; // SobelBench class
 
