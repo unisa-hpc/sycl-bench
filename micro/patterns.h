@@ -1,8 +1,8 @@
 
 // Integer, single precision, double precision
 template <typename DATA_TYPE, int N>
-void pattern_a(cl::sycl::handler& cgh){
-    cgh.parallel_for<class MicroBench1>(ndrange,
+void pattern_a(cl::sycl::handler& cgh, std::vector<DATA_TYPE>& A, std::vector<DATA_TYPE>& B){
+    cgh.parallel_for<class MicroBenchA>(ndrange,
         [=](cl::sycl::id<1> gid) 
     {
         DATA_TYPE r0, r1, r2, r3; 
@@ -15,14 +15,13 @@ void pattern_a(cl::sycl::handler& cgh){
             r3 = r3 * r3 + r0;
         }
         B[threadId]=r0;        
-        //out[gid] = in1[gid] + in2[gid];
     });
 }
  
 // Special functions
 template <typename DATA_TYPE, int N>
 void pattern_b(cl::sycl::handler& cgh){
-    cgh.parallel_for<class MicroBench1>(ndrange,
+    cgh.parallel_for<class MicroBenchB>(ndrange,
         [=](cl::sycl::id<1> gid) 
     {
         DATA_TYPE r0, r1, r2, r3; 
@@ -35,7 +34,6 @@ void pattern_b(cl::sycl::handler& cgh){
             r3 = sin(r0);
         }
         B[threadId]=r0;        
-        //out[gid] = in1[gid] + in2[gid];
     });
 }
 
@@ -43,7 +41,7 @@ void pattern_b(cl::sycl::handler& cgh){
 // Shared memory
 template <typename DATA_TYPE, int N>
 void pattern_c(cl::sycl::handler& cgh){
-  cgh.parallel_for<class MicroBench1>(ndrange,
+  cgh.parallel_for<class MicroBenchC>(ndrange,
     [=](cl::sycl::id<1> gid) 
     {
     _shared__ DATA_TYPE shared[THREADS]; // FIXME
@@ -58,7 +56,7 @@ void pattern_c(cl::sycl::handler& cgh){
 // L2 cache memory
 template <typename DATA_TYPE, int N>
 void pattern_d(cl::sycl::handler& cgh){
-  cgh.parallel_for<class MicroBench1>(ndrange,
+  cgh.parallel_for<class MicroBenchD>(ndrange,
     [=](cl::sycl::id<1> gid) 
     {
 
@@ -74,7 +72,7 @@ void pattern_d(cl::sycl::handler& cgh){
 // DRAM
 template <typename DATA_TYPE, int N>
 void pattern_e(cl::sycl::handler& cgh){
-    cgh.parallel_for<class MicroBench1>(ndrange,
+    cgh.parallel_for<class MicroBenchE>(ndrange,
         [=](cl::sycl::id<1> gid) 
     {
     DATA_TYPE r0, r1;
@@ -91,7 +89,7 @@ void pattern_e(cl::sycl::handler& cgh){
 // MIX FIXME TODO
 template <typename DATA_TYPE, int N>
 void pattern_mix(cl::sycl::handler& cgh){
-    cgh.parallel_for<class MicroBench1>(ndrange,
+    cgh.parallel_for<class MicroBenchF>(ndrange,
         [=](cl::sycl::id<1> gid) 
     {
     DATA_TYPE r0, r1;
@@ -104,3 +102,4 @@ void pattern_mix(cl::sycl::handler& cgh){
     B[threadId]=r0;
     });
 }
+
