@@ -4,21 +4,21 @@
 
 namespace s = cl::sycl;
 
-template <typename DATA_TYPE, int N> class MicroBenchArithmetic;
+template <typename DATA_TYPE, int N> class MicroBench;
 
 /* Microbenchmark stressing the main arithmetic units. */
 template <typename DATA_TYPE, int N>
-class MicroBenchArithmetic
+class MicroBenchDRAM
 {
-protected:    
+protected:
     std::vector<DATA_TYPE> input;
     std::vector<DATA_TYPE> output;
     BenchmarkArgs args;
 
 public:
-  MicroBenchArithmetic(const BenchmarkArgs &_args) : args(_args) {}
-  
-  void setup() {     
+  MicroBenchDRAM(const BenchmarkArgs &_args) : args(_args) {}
+
+  void setup() {
     // buffers initialized to a default value 
     input. resize(args.problem_size, 10);
     output.resize(args.problem_size, 42);
@@ -33,31 +33,29 @@ public:
       auto in  =  input_buf.template get_access<s::access::mode::read>(cgh);
       auto out = output_buf.template get_access<s::access::mode::discard_write>(cgh);
       cl::sycl::range<1> ndrange {args.problem_size};
-      
-      cgh.parallel_for<class ArithKernel>(ndrange,
+
+      cgh.parallel_for<class DRAMKernel>(ndrange,
         [=](cl::sycl::id<1> gid)
       {
-        DATA_TYPE r0, r1, r2, r3;
+        DATA_TYPE r0, r1;
         r0 = in[gid];
-        r1 = r2 = r3 = r0;
+        r1 = r0;
         for (int i=0;i<N;i++) {
             r0 = r0 * r0 + r1;
-            r1 = r1 * r1 + r2;
-            r2 = r2 * r2 + r3;
-            r3 = r3 * r3 + r0;
+            r1 = r1 * r1 + r0;
         }
         out[gid] = r0;
-      });  
+      });
     }); // submit
     args.device_queue.wait_and_throw();
   }
 
-  bool verify(VerificationSetting &ver) { 
+  bool verify(VerificationSetting &ver) {
     bool pass = true;
     std::cout << "No verification available" << std::endl;
     return pass;
   }
-  
+
   static std::string getBenchmarkName() {
     std::stringstream name;
     name << "MicroBench_";
@@ -72,25 +70,25 @@ int main(int argc, char** argv)
   BenchmarkApp app(argc, argv);
 
   // int
-  app.run< MicroBenchArithmetic<int,1> >();  
-  app.run< MicroBenchArithmetic<int,2> >();  
-  app.run< MicroBenchArithmetic<int,4> >();
-  app.run< MicroBenchArithmetic<int,8> >();  
-  app.run< MicroBenchArithmetic<int,16> >();  
+  app.run< MicroBenchDRAM<int,1> >();
+  app.run< MicroBenchDRAM<int,2> >();
+  app.run< MicroBenchDRAM<int,4> >();
+  app.run< MicroBenchDRAM<int,8> >();
+  app.run< MicroBenchDRAM<int,16> >();
 
   // single precision  
-  app.run< MicroBenchArithmetic<float,1> >();
-  app.run< MicroBenchArithmetic<float,2> >();  
-  app.run< MicroBenchArithmetic<float,4> >();  
-  app.run< MicroBenchArithmetic<float,8> >();  
-  app.run< MicroBenchArithmetic<float,16> >();  
+  app.run< MicroBenchDRAM<float,1> >();
+  app.run< MicroBenchDRAM<float,2> >();
+  app.run< MicroBenchDRAM<float,4> >();
+  app.run< MicroBenchDRAM<float,8> >();
+  app.run< MicroBenchDRAM<float,16> >();
 
   // double precision
-  app.run< MicroBenchArithmetic<double,1> >();
-  app.run< MicroBenchArithmetic<double,2> >();  
-  app.run< MicroBenchArithmetic<double,4> >();  
-  app.run< MicroBenchArithmetic<double,8> >();  
-  app.run< MicroBenchArithmetic<double,16> >();  
+  app.run< MicroBenchDRAM<double,1> >();
+  app.run< MicroBenchDRAM<double,2> >();
+  app.run< MicroBenchDRAM<double,4> >();
+  app.run< MicroBenchDRAM<double,8> >();
+  app.run< MicroBenchDRAM<double,16> >();
 
   return 0;
 }
