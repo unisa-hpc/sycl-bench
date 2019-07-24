@@ -15,7 +15,7 @@
 using CommandLineArguments = std::unordered_map<std::string, std::string>;
 using FlagList = std::unordered_set<std::string>;
 
-namespace detail {
+namespace cl_detail {
 
 template<class T>
 inline T simple_cast(const std::string& s)
@@ -60,21 +60,21 @@ inline SyclArraylike parseSyclArray(const std::string& s, std::size_t defaultVal
 template<class T>
 inline T cast(const std::string& s)
 {
-  return detail::simple_cast<T>(s);
+  return cl_detail::simple_cast<T>(s);
 }
 
 template<>
 inline cl::sycl::range<3>
 cast(const std::string& s)
 {
-  return detail::parseSyclArray<cl::sycl::range<3>>(s, 1);
+  return cl_detail::parseSyclArray<cl::sycl::range<3>>(s, 1);
 }
 
 template<>
 inline cl::sycl::id<3>
 cast(const std::string& s)
 {
-  return detail::parseSyclArray<cl::sycl::id<3>>(s, 0);
+  return cl_detail::parseSyclArray<cl::sycl::id<3>>(s, 0);
 }
 
 class CommandLine
@@ -159,7 +159,7 @@ struct BenchmarkArgs
 {
   size_t problem_size;
   size_t local_size; 
-  cl::sycl::queue device_queue;
+  celerity::distr_queue *device_queue;
   VerificationSetting verification;
   // can be used to query additional benchmark specific
   // information from the command line
@@ -175,12 +175,15 @@ public:
 
   BenchmarkArgs getBenchmarkArgs() const
   {
-    std::size_t size = cli_parser.getOrDefault<std::size_t>("--size", 1024);
-    std::size_t local_size = cli_parser.getOrDefault<std::size_t>("--local", 256);
+    BenchmarkArgs args;
+
+    args.problem_size = cli_parser.getOrDefault<std::size_t>("--size", 1024);
+    args.local_size = cli_parser.getOrDefault<std::size_t>("--local", 256);
 
     std::string device_selector = 
         cli_parser.getOrDefault<std::string>("--device", "default");
-    cl::sycl::queue q = getQueue(device_selector);
+    //cl::sycl::queue q = getQueue(device_selector);
+    args.device_queue = new celerity::distr_queue;
 
     auto verification_begin = cli_parser.getOrDefault<cl::sycl::id<3>>(
       "--verification-begin", cl::sycl::id<3>{0,0,0});
@@ -188,15 +191,13 @@ public:
     auto verification_range = cli_parser.getOrDefault<cl::sycl::range<3>>(
       "--verification-range", cl::sycl::range<3>{0,0,0});
 
-    auto result_consumer = getResultConsumer(
+    args.verification = VerificationSetting{verification_begin, verification_range};
+
+    args.cli = cli_parser;
+    args.result_consumer = getResultConsumer(
       cli_parser.getOrDefault<std::string>("--output","stdio"));
 
-    return BenchmarkArgs{
-      size, local_size, q, 
-      VerificationSetting{verification_begin, verification_range}, 
-      cli_parser,
-      result_consumer
-    };
+    return args;
   }
 
 private:

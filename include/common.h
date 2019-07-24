@@ -1,5 +1,8 @@
 #pragma once 
-#include <CL/sycl.hpp>
+#include <celerity/celerity.h>
+//#include <CL/sycl.hpp>
+
+
 
 #include <string>
 #include <iostream>
@@ -64,7 +67,12 @@ public:
     // Make sure work has actually completed,
     // otherwise we may end up measuring incorrect
     // runtimes!
-    args.device_queue.wait_and_throw();
+    //args.device_queue.wait_and_throw();
+
+    // HACK alert!
+    // we need to do this by deleting the queue in Celerity currently
+    delete args.device_queue;
+
     for (auto h : hooks) {
       h->postKernel();
       // Extract results from the hooks
@@ -80,7 +88,7 @@ public:
       else {
         // pass
         args.result_consumer->consumeResult("Verification", "PASS");
-      }        
+      }
     }
     args.result_consumer->flush();
     
@@ -94,8 +102,7 @@ private:
 
 class BenchmarkApp
 {
-  BenchmarkArgs args;  
-  cl::sycl::queue device_queue;
+  BenchmarkArgs args;
   
 public:  
   BenchmarkApp(int argc, char** argv)
