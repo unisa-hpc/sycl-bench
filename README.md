@@ -1,3 +1,3 @@
-# sycl-bench
-SYCL Benchmark Suite
+# SYCL-Bench
+SYCL Benchmark Suite, work in progress
  
