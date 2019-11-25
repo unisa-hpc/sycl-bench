@@ -8,8 +8,8 @@
 using std::string;
 using cl::sycl::float4;
 
-void load_bitmap_mirrored(string filename, int size, std::vector<float4> &pixels);
-void save_bitmap(string filename, int size, const std::vector<float4> &buffer);
+void load_bitmap_mirrored(string filename, int size, std::vector<cl::sycl::float4> &pixels);
+void save_bitmap(string filename, int size, const std::vector<cl::sycl::float4> &buffer);
 
 /**
   A single Pixel in the image. A Pixel has red, green, and blue
@@ -385,7 +385,7 @@ void Bitmap::fromPixelMatrix(const PixelMatrix & values)
 #endif
 
 
-void load_bitmap_mirrored(string filename, int size, std::vector<float4> &input){
+void load_bitmap_mirrored(string filename, int size, std::vector<cl::sycl::float4> &input){
   Bitmap input_image;
   input_image.open(filename);
   std::cout << "input image " << filename << " loaded" << std::endl;
@@ -401,7 +401,7 @@ void load_bitmap_mirrored(string filename, int size, std::vector<float4> &input)
   for(size_t i=0; i<size; i++)
     for(size_t j=0; j<size; j++){
       Pixel pixel = pixels[i%w][j%h]; // mirror repeat
-      float4 color = float4(pixel.r / 255.0f, pixel.g / 255.0f, pixel.b / 255.0f, 1.0f); // cast to float  
+      cl::sycl::float4 color = cl::sycl::float4(pixel.r / 255.0f, pixel.g / 255.0f, pixel.b / 255.0f, 1.0f); // cast to float  
       input[j + i * size] = color; // write to input buffer
     }
     std::cout << "image resized to match the input size: ";
@@ -409,7 +409,7 @@ void load_bitmap_mirrored(string filename, int size, std::vector<float4> &input)
 }
 
 
-void save_bitmap(string filename, int size, const std::vector<float4> &output){
+void save_bitmap(string filename, int size, const std::vector<cl::sycl::float4> &output){
     // write the output picture
     std::cout << "saving the the output picture in " << filename << std::endl;
     Bitmap output_image;
@@ -419,7 +419,7 @@ void save_bitmap(string filename, int size, const std::vector<float4> &output){
     for(size_t i=0; i<size; i++){
         pixels[i].resize(size);
         for(size_t j=0; j<size; j++){
-          float4 color = output[i * size + j] * 255.f;
+          cl::sycl::float4 color = output[i * size + j] * 255.f;
 //std::cout << color.x() << "," << color.z() << "/";
           pixels[i][j].r = (int) color.x();
           pixels[i][j].g = (int) color.y();

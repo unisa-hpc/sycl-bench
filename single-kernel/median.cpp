@@ -17,8 +17,8 @@ using cl::sycl::float4;
 class MedianFilterBench
 {
 protected:
-    std::vector<float4> input;
-    std::vector<float4> output;
+    std::vector<cl::sycl::float4> input;
+    std::vector<cl::sycl::float4> output;
 
     size_t w, h; // size of the input picture
     size_t size; // user-defined size (input and output will be size x size)
@@ -34,7 +34,7 @@ public:
     output.resize(size * size);
   }
 
-  inline void swap(float4 A[], int i, int j){    
+  inline void swap(cl::sycl::float4 A[], int i, int j){    
     /*if(A[i] > A[j]) {
       float temp = A[i];
       A[i] = A[j];
@@ -45,8 +45,8 @@ public:
   }
 
   void run() {    
-    s::buffer<float4, 2>  input_buf( input.data(), s::range<2>(size, size));    
-    s::buffer<float4, 2> output_buf(output.data(), s::range<2>(size, size));
+    s::buffer<cl::sycl::float4, 2>  input_buf( input.data(), s::range<2>(size, size));    
+    s::buffer<cl::sycl::float4, 2> output_buf(output.data(), s::range<2>(size, size));
 
     args.device_queue.submit(
         [&](cl::sycl::handler& cgh) {
@@ -61,7 +61,7 @@ public:
           int y = gid[1];
 
           // Optimization note: this array can be prefetched in local memory, TODO
-	  float4 window[9];
+	  cl::sycl::float4 window[9];
           int k = 0;
           for(int i = -1; i<2; i++)
             for(int j = -1; j<2; j++) {
@@ -129,7 +129,7 @@ public:
     for(size_t i=ver.begin[0]; i<ver.begin[0]+ver.range[0]; i++){
       int x = i % size;
       int y = i / size;
-      float4 window[9];
+      cl::sycl::float4 window[9];
       int k = 0;
       for(int i = -1; i<2; i++)
         for(int j = -1; j<2; j++) {
@@ -165,8 +165,8 @@ public:
       swap(window, 3, 6);
       swap(window, 3, 5);
       swap(window, 3, 4);
-      float4 expected = window[4];
-      float4 dif = fdim(output[i], expected);
+      cl::sycl::float4 expected = window[4];
+      cl::sycl::float4 dif = fdim(output[i], expected);
       float length = cl::sycl::length(dif);
       if(length > 0.01f)
       {
