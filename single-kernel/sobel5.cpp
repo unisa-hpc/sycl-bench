@@ -8,7 +8,6 @@
 namespace s = cl::sycl;
 class SobelBenchKernel; // kernel forward declaration
 
-using cl::sycl::float4;
 
 /*
   A Sobel filter with a convolution matrix 5x5.
@@ -19,8 +18,8 @@ using cl::sycl::float4;
 class Sobel5Bench
 {
 protected:
-    std::vector<float4> input;
-    std::vector<float4> output;
+    std::vector<cl::sycl::float4> input;
+    std::vector<cl::sycl::float4> output;
 
     size_t w, h; // size of the input picture
     size_t size; // user-defined size (input and output will be size x size)
@@ -37,8 +36,8 @@ public:
   }
 
   void run() {
-    s::buffer<float4, 2>  input_buf( input.data(), s::range<2>(size, size));
-    s::buffer<float4, 2> output_buf(output.data(), s::range<2>(size, size));
+    s::buffer<cl::sycl::float4, 2>  input_buf( input.data(), s::range<2>(size, size));
+    s::buffer<cl::sycl::float4, 2> output_buf(output.data(), s::range<2>(size, size));
 
     args.device_queue.submit(
         [&](cl::sycl::handler& cgh) {
@@ -61,8 +60,8 @@ public:
         {
           int x = gid[0];
           int y = gid[1];
-          float4 Gx = float4(0);
-          float4 Gy = float4(0);
+          cl::sycl::float4 Gx = cl::sycl::float4(0,0,0,0);
+          cl::sycl::float4 Gy = cl::sycl::float4(0,0,0,0);
           const int radius = 5;
 
           // constant-size loops in [0,1,2,3,4]
@@ -79,24 +78,26 @@ public:
               if(xs < 0 || xs >= size || ys < 0 || ys >= size) continue;
 
               // sample color
-              float4 sample = in[ {xs,ys} ];
+              cl::sycl::float4 sample = in[ {xs,ys} ];
 
               // convolution calculation
               int offset_x = x_shift + y_shift * radius;
               int offset_y = y_shift + x_shift * radius;
 
               float conv_x   = kernel[offset_x];
-              float4 conv4_x = float4(conv_x);
+              cl::sycl::float4 conv4_x = cl::sycl::float4(conv_x);
               Gx += conv4_x * sample;
 
               float conv_y   = kernel[offset_y];
-              float4 conv4_y = float4(conv_y);
+              cl::sycl::float4 conv4_y = cl::sycl::float4(conv_y);
               Gy += conv4_y * sample;
             }
           }
           // taking root of sums of squares of Gx and Gy        
-          float4 color = hypot(Gx, Gy);
-          out[gid] = clamp(color, float4(0.0), float4(1.0));
+          cl::sycl::float4 color = hypot(Gx, Gy);
+          cl::sycl::float4 minval = cl::sycl::float4(0.0, 0.0, 0.0, 0.0);
+          cl::sycl::float4 maxval = cl::sycl::float4(1.0, 1.0, 1.0, 1.0);
+          out[gid] = clamp(color, minval, maxval);
       }
        );
      });
@@ -114,26 +115,28 @@ public:
     for(size_t i=ver.begin[0]; i<ver.begin[0]+ver.range[0]; i++){
       int x = i % size;
       int y = i / size;
-      float4 Gx, Gy;
+      cl::sycl::float4 Gx, Gy;
         for(uint x_shift = 0; x_shift<5; x_shift++)
              for(uint y_shift = 0; y_shift<5; y_shift++) {
                   uint xs = x + x_shift - 2;
                   uint ys = y + y_shift - 2;
                   if(x==xs && y==ys)  continue;
                   if(xs < 0 || xs >= size || ys < 0 || ys >= size) continue;
-                  float4 sample = input[xs + ys * size];
+                  cl::sycl::float4 sample = input[xs + ys * size];
                   int offset_x  = x_shift + y_shift * radius;
                   int offset_y  = y_shift + x_shift * radius;
                   float conv_x   = kernel[offset_x];
-                  float4 conv4_x = float4(conv_x);
+                  cl::sycl::float4 conv4_x = cl::sycl::float4(conv_x);
                   Gx += conv4_x * sample;
                   float conv_y   = kernel[offset_y];
-                  float4 conv4_y = float4(conv_y);
+                  cl::sycl::float4 conv4_y = cl::sycl::float4(conv_y);
                   Gy += conv4_y * sample;
                }
-        float4 color = hypot(Gx, Gy);
-        float4 expected = clamp(color, float4(0.0), float4(1.0));
-        float4 dif = fdim(output[i], expected);
+        cl::sycl::float4 color = hypot(Gx, Gy);
+        cl::sycl::float4 minval = cl::sycl::float4(0.0, 0.0, 0.0, 0.0);
+        cl::sycl::float4 maxval = cl::sycl::float4(1.0, 1.0, 1.0, 1.0);
+        cl::sycl::float4 expected = clamp(color, minval, maxval);
+        cl::sycl::float4 dif = fdim(output[i], expected);
         float length = cl::sycl::length(dif);
         if(length > 0.01f)
         {
