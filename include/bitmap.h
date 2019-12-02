@@ -411,7 +411,7 @@ void load_bitmap_mirrored(string filename, int size, std::vector<cl::sycl::float
 
 void save_bitmap(string filename, int size, const std::vector<cl::sycl::float4> &output){
     // write the output picture
-    std::cout << "saving the the output picture in " << filename << std::endl;
+    std::cout << "saving the output picture in " << filename << std::endl;
     Bitmap output_image;
     PixelMatrix pixels;
     pixels.resize(size);
