@@ -36,7 +36,7 @@ public:
   }
 
   void run() {
-    s::buffer<cl::sycl::float4, 2>  input_buf( input.data(), s::range<2>(size, size));
+    s::buffer<cl::sycl::float4, 2> input_buf( input.data(), s::range<2>(size, size));
     s::buffer<cl::sycl::float4, 2> output_buf(output.data(), s::range<2>(size, size));
 
     args.device_queue.submit(
@@ -47,12 +47,11 @@ public:
 
       // Sobel kernel 5x5
       const float kernel[] =
-      { 
-	  1,  2, 0,  -2, -1,
-          4,  8, 0,  -8, -4,
-	  6, 12, 0, -12, -6,
-	  4,  8, 0,  -8, -4,
-	  1,  2, 0,  -2, -1
+      { 1,  2, 0,  -2, -1,
+        4,  8, 0,  -8, -4,
+	      6, 12, 0, -12, -6,
+	      4,  8, 0,  -8, -4,
+	      1,  2, 0,  -2, -1
       };
 
       cgh.parallel_for<class Sobel5BenchKernel>(ndrange,

@@ -186,7 +186,7 @@ public:
       "--verification-begin", cl::sycl::id<3>{0,0,0});
     
     auto verification_range = cli_parser.getOrDefault<cl::sycl::range<3>>(
-      "--verification-range", cl::sycl::range<3>{0,0,0});
+      "--verification-range", cl::sycl::range<3>{1,1,1});
 
     auto result_consumer = getResultConsumer(
       cli_parser.getOrDefault<std::string>("--output","stdio"));

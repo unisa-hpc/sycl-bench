@@ -62,16 +62,16 @@ public:
           for(int x_shift = 0; x_shift<3; x_shift++) 
           {
             for(int y_shift = 0; y_shift<3; y_shift++)
-	    {
+	          {
               // sample position
-	      uint xs = x + x_shift - 1; // [x-1,x,x+1]
-	      uint ys = y + y_shift - 1; // [y-1,y,y+1]
+	            uint xs = x + x_shift - 1; // [x-1,x,x+1]
+	            uint ys = y + y_shift - 1; // [y-1,y,y+1]
               // for the same pixel, convolution is always 0  
               if(x==xs && y==ys) continue; 
               // boundary check
               if(xs < 0 || xs >= size || ys < 0 || ys >= size) continue;
                     
-	      // sample color
+	            // sample color
               cl::sycl::float4 sample = in[ {xs,ys} ];
 
               // convolution calculation
