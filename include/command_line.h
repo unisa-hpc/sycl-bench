@@ -161,8 +161,7 @@ struct BenchmarkArgs
   size_t local_size; 
   cl::sycl::queue device_queue;
   VerificationSetting verification;
-  // can be used to query additional benchmark specific
-  // information from the command line
+  // can be used to query additional benchmark specific information from the command line
   CommandLine cli;
   std::shared_ptr<ResultConsumer> result_consumer;
 };
@@ -175,7 +174,7 @@ public:
 
   BenchmarkArgs getBenchmarkArgs() const
   {
-    std::size_t size = cli_parser.getOrDefault<std::size_t>("--size", 1024);
+    std::size_t size = cli_parser.getOrDefault<std::size_t>("--size", 3024);
     std::size_t local_size = cli_parser.getOrDefault<std::size_t>("--local", 256);
 
     std::string device_selector = 
