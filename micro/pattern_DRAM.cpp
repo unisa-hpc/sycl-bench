@@ -4,7 +4,7 @@
 
 namespace s = cl::sycl;
 
-template <typename DATA_TYPE, int N> class MicroBench;
+template <typename DATA_TYPE, int N> class MicroBenchDRAMKernel;
 
 /* Microbenchmark stressing the main arithmetic units. */
 template <typename DATA_TYPE, int N>
@@ -34,7 +34,7 @@ public:
       auto out = output_buf.template get_access<s::access::mode::discard_write>(cgh);
       cl::sycl::range<1> ndrange {args.problem_size};
 
-      cgh.parallel_for<class DRAMKernel>(ndrange,
+      cgh.parallel_for<MicroBenchDRAMKernel<DATA_TYPE,N>>(ndrange,
         [=](cl::sycl::id<1> gid)
       {
         DATA_TYPE r0, r1;

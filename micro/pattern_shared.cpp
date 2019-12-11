@@ -4,7 +4,7 @@
 
 namespace s = cl::sycl;
 
-template <typename DATA_TYPE, int COMP_ITERS, int TILE_DIM> class MicroBenchLocalMemory;
+template <typename DATA_TYPE, int COMP_ITERS, int TILE_DIM> class MicroBenchLocalMemoryKernel;
 
 /* Microbenchmark stressing the local memory. */
 template <typename DATA_TYPE, int COMP_ITERS, int TILE_DIM>
@@ -38,7 +38,7 @@ public:
 
       s::range<1> ndrange {args.problem_size};
 
-      cgh.parallel_for<class LocMemKernel>(ndrange,
+      cgh.parallel_for<MicroBenchLocalMemoryKernel<DATA_TYPE,COMP_ITERS,TILE_DIM>>(ndrange,
         [=](cl::sycl::id<1> gid)
       {
         DATA_TYPE r0;

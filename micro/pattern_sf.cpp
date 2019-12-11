@@ -4,7 +4,7 @@
 
 namespace s = cl::sycl;
 
-template <typename DATA_TYPE, int N> class MicroBenchSpecialFunc;
+template <typename DATA_TYPE, int N> class MicroBenchSpecialFuncKernel;
 
 /* Microbenchmark stressing the special function units. */
 template <typename DATA_TYPE, int N>
@@ -34,17 +34,17 @@ public:
       auto out = output_buf.template get_access<s::access::mode::discard_write>(cgh);
       cl::sycl::range<1> ndrange {args.problem_size};
 
-      cgh.parallel_for<class SFKernel>(ndrange,
+      cgh.parallel_for<MicroBenchSpecialFuncKernel<DATA_TYPE,N>>(ndrange,
         [=](cl::sycl::id<1> gid)
       {
         DATA_TYPE r0, r1, r2, r3;
         r0 = in[gid];
         r1 = r2 = r3 = r0;
         for (int i=0;i<N;i++) {
-            r0 = log(r1);
-            r1 = cos(r2);
-            r2 = log(r3);
-            r3 = sin(r0);
+            r0 = s::log(r1);
+            r1 = s::cos(r2);
+            r2 = s::log(r3);
+            r3 = s::sin(r0);
         }
         out[gid] = r0;
       });
@@ -72,11 +72,15 @@ int main(int argc, char** argv)
   BenchmarkApp app(argc, argv);
 
   // int
+  // TODO Special functions are only defined for floats, using them with ints
+  // without explicitly casting to float/double will cause ambiguous overloaded function call
+  /* 
   app.run< MicroBenchSpecialFunc<int,1> >();
   app.run< MicroBenchSpecialFunc<int,2> >();
   app.run< MicroBenchSpecialFunc<int,4> >();
   app.run< MicroBenchSpecialFunc<int,8> >();
   app.run< MicroBenchSpecialFunc<int,16> >();
+  */
 
   // single precision  
   app.run< MicroBenchSpecialFunc<float,1> >();

@@ -4,7 +4,7 @@
 
 namespace s = cl::sycl;
 
-template <typename DATA_TYPE, int COMP_ITERS> class MicroBenchL2;
+template <typename DATA_TYPE, int COMP_ITERS> class MicroBenchL2Kernel;
 
 /* Microbenchmark stressing the main arithmetic units. */
 template <typename DATA_TYPE, int COMP_ITERS>
@@ -34,7 +34,7 @@ public:
       auto out = output_buf.template get_access<s::access::mode::discard_write>(cgh);
       cl::sycl::range<1> ndrange {args.problem_size};
 
-      cgh.parallel_for<class L2Kernel>(ndrange,
+      cgh.parallel_for<MicroBenchL2Kernel<DATA_TYPE,COMP_ITERS>>(ndrange,
         [=](cl::sycl::id<1> gid)
       {
         DATA_TYPE r0;
