@@ -6,7 +6,7 @@
 #include <vector>
 
 using std::string;
-using cl::sycl::float4;
+
 
 void load_bitmap_mirrored(string filename, int size, std::vector<cl::sycl::float4> &pixels);
 void save_bitmap(string filename, int size, const std::vector<cl::sycl::float4> &buffer);

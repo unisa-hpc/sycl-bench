@@ -8,7 +8,6 @@
 namespace s = cl::sycl;
 class MedianFilterBenchKernel; // kernel forward declaration
 
-using cl::sycl::float4;
 
 /*
   A median filter with a windows of 3 pixels (3x3).
