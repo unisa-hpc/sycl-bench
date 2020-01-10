@@ -19,8 +19,9 @@ add_executable(sobel          single-kernel/sobel.cpp)
 add_executable(sobel5         single-kernel/sobel5.cpp)
 add_executable(sobel7         single-kernel/sobel7.cpp)
 add_executable(vec_add        single-kernel/vec_add.cpp)
+add_executable(segmented_reduction pattern/segmentedreduction.cpp)
 
 install(TARGETS 
   pattern_arith pattern_DRAM pattern_L2 pattern_sf pattern_shared 
-  median scalar_prod sobel sobel5 sobel7 vec_add
+  median scalar_prod sobel sobel5 sobel7 vec_add segmented_reduction
   RUNTIME DESTINATION bin/)
