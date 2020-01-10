@@ -10,19 +10,9 @@
 #include "command_line.h"
 #include "result_consumer.h"
 
-class BenchmarkHook
-{
-public:
-  virtual void atInit() = 0;
-  virtual void preSetup() = 0;
-  virtual void postSetup()= 0;
-  virtual void preKernel() = 0;
-  virtual void postKernel() = 0;
-  virtual void emitResults(ResultConsumer&) {}
-};
   
+#include "benchmark_hook.h"
 #include "time_meas.h"
-
 
 #ifdef NV_ENERGY_MEAS    
   #include "nv_energy_meas.h"
@@ -51,29 +41,41 @@ public:
     args.result_consumer->consumeResult(
       "local-size", std::to_string(args.local_size));
 
+
     for(auto h : hooks) h->atInit();
 
-    Benchmark b(args);    
+    bool all_runs_pass = true;
+    // Run until we have as many runs as requested or until
+    // verification fails
+    for(std::size_t run = 0; run < args.num_runs && all_runs_pass; ++run) {
+      Benchmark b(args);
 
-    for(auto h : hooks) h->preSetup();    
-    b.setup();
-    for(auto h: hooks)  h->postSetup();
-    
-    for(auto h: hooks)  h->preKernel();
-    b.run();
-    // Make sure work has actually completed,
-    // otherwise we may end up measuring incorrect
-    // runtimes!
-    args.device_queue.wait_and_throw();
+      for(auto h : hooks) h->preSetup();    
+      b.setup();
+      for(auto h: hooks)  h->postSetup();
+      
+      for(auto h: hooks)  h->preKernel();
+      b.run();
+      // Make sure work has actually completed,
+      // otherwise we may end up measuring incorrect
+      // runtimes!
+      args.device_queue.wait_and_throw();
+      for (auto h : hooks) h->postKernel();
+
+      if(args.verification.range.size() > 0)
+        if(!b.verify(args.verification)) {
+          all_runs_pass = false;
+        }
+    }
+
     for (auto h : hooks) {
-      h->postKernel();
       // Extract results from the hooks
       h->emitResults(*args.result_consumer);
     }
 
     if(args.verification.range.size() > 0)
     {
-      if(!b.verify(args.verification)){
+      if(!all_runs_pass){
         // error
         args.result_consumer->consumeResult("Verification", "FAIL");
       }
