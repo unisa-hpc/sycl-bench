@@ -37,12 +37,21 @@ public:
 
     virtual void emitResults(ResultConsumer& consumer) override {
 
-        double total_sec = std::accumulate(seconds.begin(), seconds.end(), 0.);
+        double mean_sec = std::accumulate(seconds.begin(), seconds.end(), 0.)
+                        / static_cast<double>(seconds.size());
+
+        double stddev = 0.0;
+        for(double x : seconds)
+        {
+            double dev = mean_sec - x;
+            stddev += dev*dev;
+        }
+        stddev /= static_cast<double>(seconds.size());
 
         consumer.consumeResult("kernel-run-time", 
-            std::to_string(total_sec / 
-                static_cast<double>(seconds.size())), 
+            std::to_string(mean_sec), 
             " [s]");
+        consumer.consumeResult("kernel-run-time-stddev", std::to_string(stddev), " [s]");
         // TODO: We could / should also calculate stddev here
     }
 };
