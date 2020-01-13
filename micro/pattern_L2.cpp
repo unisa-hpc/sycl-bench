@@ -57,7 +57,7 @@ public:
   static std::string getBenchmarkName() {
     std::stringstream name;
     name << "MicroBench_";
-    name << std::string(typeid (DATA_TYPE).name());
+    name << ReadableTypename<DATA_TYPE>::name << "_";
     name << COMP_ITERS;
     return name.str();
   }

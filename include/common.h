@@ -9,6 +9,7 @@
 #include <algorithm> // for std::min
 #include "command_line.h"
 #include "result_consumer.h"
+#include "type_traits.h"
 
   
 #include "benchmark_hook.h"

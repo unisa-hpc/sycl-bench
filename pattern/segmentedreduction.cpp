@@ -167,8 +167,8 @@ public:
 
   static std::string getBenchmarkName() {
     std::stringstream name;
-    name << "Pattern_SegmentedReductionNDRange";
-    name << std::string(typeid (T).name());
+    name << "Pattern_SegmentedReduction_NDRange_";
+    name << ReadableTypename<T>::name;
     return name.str();
   }
 };
@@ -189,8 +189,8 @@ public:
 
   static std::string getBenchmarkName() {
     std::stringstream name;
-    name << "Pattern_SegmentedReductionHierarchical";
-    name << std::string(typeid (T).name());
+    name << "Pattern_SegmentedReduction_Hierarchical_";
+    name << ReadableTypename<T>::name;
     return name.str();
   }
 };
