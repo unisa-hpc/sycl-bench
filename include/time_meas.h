@@ -48,10 +48,9 @@ public:
         }
         stddev /= static_cast<double>(seconds.size());
 
-        consumer.consumeResult("kernel-run-time", 
+        consumer.consumeResult("run-time", 
             std::to_string(mean_sec), 
             " [s]");
-        consumer.consumeResult("kernel-run-time-stddev", std::to_string(stddev), " [s]");
-        // TODO: We could / should also calculate stddev here
+        consumer.consumeResult("run-time-stddev", std::to_string(stddev), " [s]");
     }
 };

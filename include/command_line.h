@@ -207,9 +207,9 @@ private:
     if(result_consumer_name == "stdio")
       return std::shared_ptr<ResultConsumer>{new OstreamResultConsumer{std::cout}};
     else
-      throw std::invalid_argument{
-        "unknown output result consumer: "+result_consumer_name
-      };
+      // create result consumer that appends to a csv file, interpreting the output name
+      // as the target file name
+      return std::shared_ptr<ResultConsumer>{new AppendingCsvResultConsumer{result_consumer_name}};
   }
 
   cl::sycl::queue getQueue(const std::string& device_selector) const
