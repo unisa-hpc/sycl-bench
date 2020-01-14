@@ -80,8 +80,6 @@ public:
     _args.device_queue.submit(
         [&](sycl::handler& cgh) {
 
-      sycl::nd_range<1> ndrange {_args.problem_size, _args.local_size};
-
       using namespace sycl::access;
 
       auto acc = _buff.template get_access<mode::read_write>(cgh);

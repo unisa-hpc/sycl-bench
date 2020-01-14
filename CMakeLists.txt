@@ -20,6 +20,7 @@ add_executable(sobel5         single-kernel/sobel5.cpp)
 add_executable(sobel7         single-kernel/sobel7.cpp)
 add_executable(vec_add        single-kernel/vec_add.cpp)
 add_executable(segmented_reduction pattern/segmentedreduction.cpp)
+add_executable(reduction           pattern/reduction.cpp)
 add_executable(dag_task_throughput runtime/dag_task_throughput.cpp)
 
 install(TARGETS 
