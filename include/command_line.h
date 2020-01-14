@@ -175,7 +175,7 @@ public:
 
   BenchmarkArgs getBenchmarkArgs() const
   {
-    std::size_t size = cli_parser.getOrDefault<std::size_t>("--size", 3024);
+    std::size_t size = cli_parser.getOrDefault<std::size_t>("--size", 3072);
     std::size_t local_size = cli_parser.getOrDefault<std::size_t>("--local", 256);
     std::size_t num_runs = cli_parser.getOrDefault<std::size_t>("--num-runs", 5);
 
