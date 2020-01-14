@@ -45,16 +45,17 @@ public:
 
   void submit_ndrange(){
     this->submit([this](sycl::buffer<T, 1> *input, sycl::buffer<T, 1> *output,
-                        const size_t reduction_size) {
-                          this->local_reduce_ndrange(input, output, reduction_size);
-                        });
+                        const size_t reduction_size, const size_t num_groups) {
+      this->local_reduce_ndrange(input, output, reduction_size, num_groups);
+    });
   }
 
   void submit_hierarchical(){
     this->submit([this](sycl::buffer<T, 1> *input, sycl::buffer<T, 1> *output,
-                        const size_t reduction_size) {
-                          this->local_reduce_hierarchical(input, output, reduction_size);
-                        });
+                        const size_t reduction_size, const size_t num_groups) {
+      this->local_reduce_hierarchical(input, output, reduction_size,
+                                      num_groups);
+    });
   }
 
   bool verify(VerificationSetting &ver) {
@@ -72,7 +73,8 @@ private:
 
     do {
       // invoke local reduction
-      kernel(input_buff, output_buff, current_reduction_size);
+      kernel(input_buff, output_buff, current_reduction_size,
+             current_num_groups);
 
       current_reduction_size = current_num_groups;
       if(current_num_groups > 1)
@@ -83,7 +85,7 @@ private:
         current_num_groups = 0;
 
       // Only swap if it's not the final iteration
-      if(current_num_groups > 1)
+      if(current_num_groups > 0)
         std::swap(input_buff, output_buff);
 
     } while(current_num_groups > 0);
@@ -96,12 +98,12 @@ private:
 
   void local_reduce_ndrange(
     sycl::buffer<T,1>* input, sycl::buffer<T,1>* output,
-    const size_t reduction_size)
+    const size_t reduction_size, const std::size_t num_groups)
   {
-    _args.device_queue.submit(
-        [&](sycl::handler& cgh) {
+    _args.device_queue.submit([&](sycl::handler &cgh) {
 
-      sycl::nd_range<1> ndrange {_args.problem_size, _args.local_size};
+      sycl::nd_range<1> ndrange{num_groups * _args.local_size,
+                                _args.local_size};
 
       using namespace cl::sycl::access;
 
@@ -119,11 +121,8 @@ private:
           const int lid = item.get_local_id(0);
           const auto gid = item.get_global_id();
 
-          if(gid[0] < reduction_size)
-            scratch[lid] = acc[gid];
-          else
-            scratch[lid] = 0;
-
+          scratch[lid] = (gid[0] < reduction_size) ? acc[gid] : 0;
+          
           for(int i = group_size/2; i > 0; i /= 2) {
 
             item.barrier();
@@ -131,7 +130,7 @@ private:
               scratch[lid] += scratch[lid + i];
 
           }
-          if(lid == 0) 
+          if(lid == 0)
             acc_out[item.get_group(0)] = scratch[0];
         });
     }); // submit
@@ -139,7 +138,7 @@ private:
 
   void local_reduce_hierarchical(
     sycl::buffer<T,1>* input, sycl::buffer<T,1>* output, 
-    const size_t reduction_size)
+    const size_t reduction_size, const std::size_t num_groups)
   {
     _args.device_queue.submit(
         [&](sycl::handler& cgh) {
@@ -155,7 +154,7 @@ private:
       const int group_size = _args.local_size;
 
       cgh.parallel_for_work_group<ReductionKernelHierarchical<T>>(
-        sycl::range<1>{_args.problem_size / _args.local_size},
+        sycl::range<1>{num_groups},
         sycl::range<1>{_args.local_size},
         [=](sycl::group<1> grp) {
 
@@ -163,10 +162,7 @@ private:
             const int lid = idx.get_local_id(0);
             const auto gid = idx.get_global_id();
 
-            if(gid[0] < reduction_size)
-              scratch[lid] = acc[gid];
-            else
-              scratch[lid] = 0;
+            scratch[lid] = (gid[0] < reduction_size) ? acc[gid] : 0;
           });
         
           for(int i = group_size/2; i > 0; i /= 2) {
@@ -185,6 +181,7 @@ private:
             if(idx.get_local_id(0) == 0)
               acc_out[grp.get_id(0)] = scratch[0];
           });
+
         });
     }); // submit
   }
@@ -237,13 +234,15 @@ int main(int argc, char** argv)
 {
   BenchmarkApp app(argc, argv);
 
-  app.run< ReductionNDRange<short>>();
+  // Using short will lead to overflow even for
+  // small problem sizes
+  //app.run< ReductionNDRange<short>>();
   app.run< ReductionNDRange<int>>();
   app.run< ReductionNDRange<long long>>();
   app.run< ReductionNDRange<float>>();
   app.run< ReductionNDRange<double>>();
 
-  app.run< ReductionHierarchical<short>>();
+  //app.run< ReductionHierarchical<short>>();
   app.run< ReductionHierarchical<int>>();
   app.run< ReductionHierarchical<long long>>();
   app.run< ReductionHierarchical<float>>();
