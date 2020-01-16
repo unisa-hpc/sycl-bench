@@ -51,9 +51,9 @@ public:
       cl::sycl::range<1> ndrange (args.problem_size);
 
       cgh.parallel_for<class LinearRegressionKernel>(ndrange,
-        [=](cl::sycl::nd_item<1> item) 
+        [=](cl::sycl::id<1> idx) 
         {
-          size_t gid= item.get_global_linear_id();
+          size_t gid= idx[0];
 
           auto error = 0;
           if (gid < args.problem_size) {
