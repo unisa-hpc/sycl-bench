@@ -21,4 +21,6 @@ set(exes
 foreach(exe IN LISTS exes)
   add_executable(${exe} ${exe}.cpp)
   add_sycl_to_target(TARGET ${exe} SOURCES ${exe}.cpp)
+
+  install(TARGETS ${exe} RUNTIME DESTINATION bin/)
 endforeach(exe)
