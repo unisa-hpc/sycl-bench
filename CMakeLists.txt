@@ -6,6 +6,10 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release" CACHE STRING "CMake Build Type" FORCE)
 endif()
 
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 add_executable(pattern_arith  micro/pattern_arith.cpp)
