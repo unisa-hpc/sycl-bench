@@ -43,3 +43,5 @@ foreach(benchmark IN LISTS benchmarks)
 
   install(TARGETS ${target} RUNTIME DESTINATION bin/)
 endforeach(benchmark)
+
+add_subdirectory(polybench)
