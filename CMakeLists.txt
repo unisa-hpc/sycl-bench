@@ -12,24 +12,34 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
-add_executable(pattern_arith  micro/pattern_arith.cpp)
-add_executable(pattern_DRAM   micro/pattern_DRAM.cpp)
-add_executable(pattern_L2     micro/pattern_L2.cpp)
-add_executable(pattern_sf     micro/pattern_sf.cpp)
-add_executable(pattern_shared micro/pattern_shared.cpp)
-add_executable(median         single-kernel/median.cpp)
-add_executable(scalar_prod    single-kernel/scalar_prod.cpp)
-add_executable(sobel          single-kernel/sobel.cpp)
-add_executable(sobel5         single-kernel/sobel5.cpp)
-add_executable(sobel7         single-kernel/sobel7.cpp)
-add_executable(vec_add        single-kernel/vec_add.cpp)
-add_executable(lin_reg        single-kernel/lin_reg.cpp)
-add_executable(segmented_reduction pattern/segmentedreduction.cpp)
-add_executable(reduction           pattern/reduction.cpp)
-add_executable(dag_task_throughput runtime/dag_task_throughput.cpp)
+find_package(hipSYCL CONFIG)
+if(NOT hipSYCL_FOUND)
+  find_package(ComputeCpp REQUIRED)
+endif()
 
-install(TARGETS 
-  pattern_arith pattern_DRAM pattern_L2 pattern_sf pattern_shared 
-  median scalar_prod sobel sobel5 sobel7 vec_add segmented_reduction
-  dag_task_throughput
-  RUNTIME DESTINATION bin/)
+set(benchmarks
+  micro/pattern_arith.cpp
+  micro/pattern_DRAM.cpp
+  micro/pattern_L2.cpp
+  micro/pattern_sf.cpp
+  micro/pattern_shared.cpp
+  single-kernel/median.cpp
+  single-kernel/scalar_prod.cpp
+  single-kernel/sobel.cpp
+  single-kernel/sobel5.cpp
+  single-kernel/sobel7.cpp
+  single-kernel/vec_add.cpp
+  single-kernel/lin_reg.cpp
+  pattern/segmentedreduction.cpp
+  pattern/reduction.cpp
+  runtime/dag_task_throughput.cpp
+)
+
+foreach(benchmark IN LISTS benchmarks)
+  get_filename_component(target ${benchmark} NAME_WE)
+
+  add_executable(${target} ${benchmark})
+  add_sycl_to_target(TARGET ${target} SOURCES ${benchmark})
+
+  install(TARGETS ${target} RUNTIME DESTINATION bin/)
+endforeach(benchmark)
