@@ -41,6 +41,11 @@ public:
       "problem-size", std::to_string(args.problem_size));
     args.result_consumer->consumeResult(
       "local-size", std::to_string(args.local_size));
+    args.result_consumer->consumeResult(
+      "device-name", args.device_queue.get_device()
+                           .template get_info<cl::sycl::info::device::name>());
+    args.result_consumer->consumeResult(
+      "sycl-implementation", this->getSyclImplementation());
 
 
     for(auto h : hooks) h->atInit();
@@ -92,6 +97,18 @@ public:
 private:
   BenchmarkArgs args;  
   std::vector<BenchmarkHook*> hooks;
+
+  std::string getSyclImplementation() const
+  {
+#if defined(__HIPSYCL__)
+    return "hipSYCL";
+#elif defined(__COMPUTECPP__)
+    return "ComputeCpp";
+#else
+    // ToDo: Find out how they can be distinguished
+    return "triSYCL or Intel SYCL";
+#endif
+  }
 };
 
 
