@@ -1,54 +1,41 @@
+#include <string>
 #include <vector>
 
 #include <cstdlib>
 
 #include <CL/sycl.hpp>
 
+#include "common.h"
 #include "polybenchUtilFuncts.h"
-#include "syclUtilFuncts.h"
-
-// define the error threshold for the results "not matching"
-#define PERCENT_DIFF_ERROR_THRESHOLD 1.05
 
 using DATA_TYPE = float;
 
-// Problem size
-int NI = 256;
-int NJ = 256;
-int NK = 256;
+void init(DATA_TYPE* A, size_t size) {
+	const auto NI = size;
+	const auto NJ = size;
+	const auto NK = size;
 
-constexpr auto DIM_X = 32;
-constexpr auto DIM_Y = 8;
-
-void compareResults(const DATA_TYPE* B, const DATA_TYPE* B_outputFromGpu) {
-	int i, j, k, fail;
-	fail = 0;
-
-	// Compare result from cpu and gpu...
-	for(i = 1; i < NI - 1; ++i) {
-		for(j = 1; j < NJ - 1; ++j) {
-			for(k = 1; k < NK - 1; ++k) {
-				if(percentDiff(B[i * (NK * NJ) + j * NK + k], B_outputFromGpu[i * (NK * NJ) + j * NK + k]) > PERCENT_DIFF_ERROR_THRESHOLD) fail++;
+	for(size_t i = 0; i < NI; ++i) {
+		for(size_t j = 0; j < NJ; ++j) {
+			for(size_t k = 0; k < NK; ++k) {
+				A[i * (NK * NJ) + j * NK + k] = i % 12 + 2 * (j % 7) + 3 * (k % 13);
 			}
 		}
 	}
-
-	printf("Non-Matching CPU-GPU Outputs Beyond Error Threshold of %4.2f Percent: %d\n", PERCENT_DIFF_ERROR_THRESHOLD, fail);
 }
 
-void conv3D(DATA_TYPE* A, DATA_TYPE* B) {
-	int i, j, k;
-	DATA_TYPE c11, c12, c13, c21, c22, c23, c31, c32, c33;
+void conv3D(DATA_TYPE* A, DATA_TYPE* B, size_t size) {
+	const auto NI = size;
+	const auto NJ = size;
+	const auto NK = size;
 
-	// clang-format off
-	c11 = +2;  c21 = +5;  c31 = -8;
-	c12 = -3;  c22 = +6;  c32 = -9;
-	c13 = +4;  c23 = +7;  c33 = +10;
-	// clang-format on
+	const DATA_TYPE c11 = +2, c21 = +5, c31 = -8;
+	const DATA_TYPE c12 = -3, c22 = +6, c32 = -9;
+	const DATA_TYPE c13 = +4, c23 = +7, c33 = +10;
 
-	for(i = 1; i < NI - 1; ++i) {
-		for(j = 1; j < NJ - 1; ++j) {
-			for(k = 1; k < NK - 1; ++k) {
+	for(size_t i = 1; i < NI - 1; ++i) {
+		for(size_t j = 1; j < NJ - 1; ++j) {
+			for(size_t k = 1; k < NK - 1; ++k) {
 				B[i * (NK * NJ) + j * NK + k] = c11 * A[(i - 1) * (NK * NJ) + (j - 1) * NK + (k - 1)] + c13 * A[(i + 1) * (NK * NJ) + (j - 1) * NK + (k - 1)]
 				                                + c21 * A[(i - 1) * (NK * NJ) + (j - 1) * NK + (k - 1)] + c23 * A[(i + 1) * (NK * NJ) + (j - 1) * NK + (k - 1)]
 				                                + c31 * A[(i - 1) * (NK * NJ) + (j - 1) * NK + (k - 1)] + c33 * A[(i + 1) * (NK * NJ) + (j - 1) * NK + (k - 1)]
@@ -62,72 +49,80 @@ void conv3D(DATA_TYPE* A, DATA_TYPE* B) {
 	}
 }
 
-int main(int argc, char* argv[]) {
-	if(argc >= 2) {
-		const auto problem_size = std::atoi(argv[1]);
-		NI = problem_size;
-		NJ = problem_size;
-		NK = problem_size;
-	}
-	std::cout << "Problem size: " << NI << "\n";
+class Polybench_3DConvolution {
+  public:
+	Polybench_3DConvolution(const BenchmarkArgs& args) : args(args), size(args.problem_size) {}
 
-	std::vector<DATA_TYPE> A(NI * NJ * NK);
-	std::vector<DATA_TYPE> B(NI * NJ * NK);
+	void setup() {
+		A.resize(size * size * size);
+		B.resize(size * size * size);
 
-	if(shouldDoCpu()) {
-		auto t_start = rtclock();
-		conv3D(A.data(), B.data());
-		auto t_end = rtclock();
-		fprintf(stdout, "CPU Runtime: %0.6lfs\n", t_end - t_start);
+		init(A.data(), size);
 	}
 
-	{
+	void run() {
 		using namespace cl::sycl;
 
-		cl::sycl::queue queue;
+		buffer<DATA_TYPE, 3> A_buffer(A.data(), range<3>(size, size, size));
+		buffer<DATA_TYPE, 3> B_buffer(B.data(), range<3>(size, size, size));
 
-		buffer<DATA_TYPE, 3> A_buffer(range<3>(NI, NJ, NK));
-		initDeviceBuffer(queue, A_buffer, A.data());
+		args.device_queue.submit([&](handler& cgh) {
+			auto A = A_buffer.get_access<access::mode::read>(cgh);
+			auto B = B_buffer.get_access<access::mode::discard_write>(cgh);
 
-		buffer<DATA_TYPE, 3> B_buffer(range<3>(NI, NJ, NK));
-		initDeviceBuffer(queue, B_buffer, B.data());
+			cgh.parallel_for<class conv3D>(B_buffer.get_range(), [=, size_ = size](item<3> item) {
+				const auto i = item[0];
+				const auto j = item[1];
+				const auto k = item[2];
 
-		auto t_start = rtclock();
+				const DATA_TYPE c11 = +2, c21 = +5, c31 = -8;
+				const DATA_TYPE c12 = -3, c22 = +6, c32 = -9;
+				const DATA_TYPE c13 = +4, c23 = +7, c33 = +10;
 
-		for(size_t i = 1; i < NI - 1; i++) {
-			queue.submit([&](handler& cgh) {
-				auto A = A_buffer.get_access<access::mode::read>(cgh);
-				auto B = B_buffer.get_access<access::mode::discard_write>(cgh);
-
-				const auto pfor_range = nd_range<3>(range<3>(1, NJ, NK), {1, DIM_Y, DIM_X});
-
-				cgh.parallel_for<class conv3D>(pfor_range, [=, NI_ = NI, NJ_ = NJ, NK_ = NK](nd_item<3> nd_item) {
-					const DATA_TYPE c11 = +2, c21 = +5, c31 = -8;
-					const DATA_TYPE c12 = -3, c22 = +6, c32 = -9;
-					const DATA_TYPE c13 = +4, c23 = +7, c33 = +10;
-
-					const auto item = nd_item.get_global_id();
-					const auto j = item[1];
-					const auto k = item[2];
-
-					if((i < (NI_ - 1)) && (j < (NJ_ - 1)) && (k < (NK_ - 1)) && (i > 0) && (j > 0) && (k > 0)) {
-						B[item] = c11 * A[{(i - 1), (j - 1), (k - 1)}] + c13 * A[{(i + 1), (j - 1), (k - 1)}] + c21 * A[{(i - 1), (j - 1), (k - 1)}]
-						          + c23 * A[{(i + 1), (j - 1), (k - 1)}] + c31 * A[{(i - 1), (j - 1), (k - 1)}] + c33 * A[{(i + 1), (j - 1), (k - 1)}]
-						          + c12 * A[{(i + 0), (j - 1), (k + 0)}] + c22 * A[{(i + 0), (j + 0), (k + 0)}] + c32 * A[{(i + 0), (j + 1), (k + 0)}]
-						          + c11 * A[{(i - 1), (j - 1), (k + 1)}] + c13 * A[{(i + 1), (j - 1), (k + 1)}] + c21 * A[{(i - 1), (j + 0), (k + 1)}]
-						          + c23 * A[{(i + 1), (j + 0), (k + 1)}] + c31 * A[{(i - 1), (j + 1), (k + 1)}] + c33 * A[{(i + 1), (j + 1), (k + 1)}];
-					} else {
-						B[item] = 0;
-					}
-				});
+				if((i > 0) && (j > 0) && (k > 0) && (i < (size_ - 1)) && (j < (size_ - 1)) && (k < (size_ - 1))) {
+					B[item] = c11 * A[{(i - 1), (j - 1), (k - 1)}] + c13 * A[{(i + 1), (j - 1), (k - 1)}] + c21 * A[{(i - 1), (j - 1), (k - 1)}]
+					          + c23 * A[{(i + 1), (j - 1), (k - 1)}] + c31 * A[{(i - 1), (j - 1), (k - 1)}] + c33 * A[{(i + 1), (j - 1), (k - 1)}]
+					          + c12 * A[{(i + 0), (j - 1), (k + 0)}] + c22 * A[{(i + 0), (j + 0), (k + 0)}] + c32 * A[{(i + 0), (j + 1), (k + 0)}]
+					          + c11 * A[{(i - 1), (j - 1), (k + 1)}] + c13 * A[{(i + 1), (j - 1), (k + 1)}] + c21 * A[{(i - 1), (j + 0), (k + 1)}]
+					          + c23 * A[{(i + 1), (j + 0), (k + 1)}] + c31 * A[{(i - 1), (j + 1), (k + 1)}] + c33 * A[{(i + 1), (j + 1), (k + 1)}];
+				}
 			});
+		});
+	}
+
+
+	bool verify(VerificationSetting&) {
+		constexpr auto ERROR_THRESHOLD = 0.05;
+
+		std::vector<DATA_TYPE> B_cpu(size * size * size);
+		conv3D(A.data(), B_cpu.data(), size);
+
+		for(size_t i = 0; i < size; i++) {
+			for(size_t j = 0; j < size; j++) {
+				for(size_t k = 0; k < size; k++) {
+					if((i > 0) && (j > 0) && (k > 0) && (i < (size - 1)) && (j < (size - 1)) && (k < (size - 1))) {
+						const auto diff = percentDiff(B_cpu[i * (size * size) + j * size + k], B[i * (size * size) + j * size + k]);
+						if(diff > ERROR_THRESHOLD) return false;
+					}
+				}
+			}
 		}
 
-		queue.wait();
-		double t_end = rtclock();
-
-		auto out = B_buffer.get_access<access::mode::read>(B_buffer.get_range());
-		fprintf(stdout, "GPU Runtime: %0.6lfs\n", t_end - t_start);
-		if(shouldDoCpu()) compareResults(B.data(), out.get_pointer());
+		return true;
 	}
+
+	static std::string getBenchmarkName() { return "Polybench_3DConvolution"; }
+
+  private:
+	BenchmarkArgs args;
+
+	const size_t size;
+	std::vector<DATA_TYPE> A;
+	std::vector<DATA_TYPE> B;
+};
+
+int main(int argc, char** argv) {
+	BenchmarkApp app(argc, argv);
+	app.run<Polybench_3DConvolution>();
+	return 0;
 }
