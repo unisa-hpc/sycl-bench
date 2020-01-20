@@ -1,126 +1,83 @@
-#include <iostream>
+#include <string>
 #include <vector>
 
 #include <cstdlib>
 
 #include <CL/sycl.hpp>
 
+#include "common.h"
 #include "polybenchUtilFuncts.h"
-#include "syclUtilFuncts.h"
-
-// define the error threshold for the results "not matching"
-#define PERCENT_DIFF_ERROR_THRESHOLD 0.05
-
-// Problem size
-auto NI = 512;
-auto NJ = 512;
-auto NK = 512;
 
 #define ALPHA 32412
 #define BETA 2123
 
-constexpr auto DIM_X = 32;
-constexpr auto DIM_Y = 8;
-
 using DATA_TYPE = float;
 
-void compareResults(const DATA_TYPE* C, const DATA_TYPE* C_outputFromGpu) {
-	int i, j, fail;
-	fail = 0;
+void init(DATA_TYPE* A, DATA_TYPE* B, DATA_TYPE* C, size_t size) {
+	const auto NI = size;
+	const auto NJ = size;
+	const auto NK = size;
 
-	for(i = 0; i < NI; i++) {
-		for(j = 0; j < NJ; j++) {
-			if(percentDiff(C[i * NJ + j], C_outputFromGpu[i * NJ + j]) > PERCENT_DIFF_ERROR_THRESHOLD) fail++;
-		}
-	}
-
-	printf("Non-Matching CPU-GPU Outputs Beyond Error Threshold of %4.2f Percent: %d\n", PERCENT_DIFF_ERROR_THRESHOLD, fail);
-}
-
-void init(DATA_TYPE* A, DATA_TYPE* B, DATA_TYPE* C) {
-	int i, j;
-
-	for(i = 0; i < NI; i++) {
-		for(j = 0; j < NK; j++) {
+	for(size_t i = 0; i < NI; i++) {
+		for(size_t j = 0; j < NK; j++) {
 			A[i * NK + j] = ((DATA_TYPE)i * j) / NI;
 		}
 	}
 
-	for(i = 0; i < NK; i++) {
-		for(j = 0; j < NJ; j++) {
+	for(size_t i = 0; i < NK; i++) {
+		for(size_t j = 0; j < NJ; j++) {
 			B[i * NJ + j] = ((DATA_TYPE)i * j + 1) / NJ;
 		}
 	}
 
-	for(i = 0; i < NI; i++) {
-		for(j = 0; j < NJ; j++) {
+	for(size_t i = 0; i < NI; i++) {
+		for(size_t j = 0; j < NJ; j++) {
 			C[i * NJ + j] = ((DATA_TYPE)i * j + 2) / NJ;
 		}
 	}
 }
 
-void gemm(DATA_TYPE* A, DATA_TYPE* B, DATA_TYPE* C) {
-	int i, j, k;
+void gemm(DATA_TYPE* A, DATA_TYPE* B, DATA_TYPE* C, size_t size) {
+	const auto NI = size;
+	const auto NJ = size;
+	const auto NK = size;
 
-	for(i = 0; i < NI; i++) {
-		for(j = 0; j < NJ; j++) {
+	for(size_t i = 0; i < NI; i++) {
+		for(size_t j = 0; j < NJ; j++) {
 			C[i * NJ + j] *= BETA;
 
-			for(k = 0; k < NK; ++k) {
+			for(size_t k = 0; k < NK; ++k) {
 				C[i * NJ + j] += ALPHA * A[i * NK + k] * B[k * NJ + j];
 			}
 		}
 	}
 }
 
-int main(int argc, char* argv[]) {
-	if(argc >= 2) {
-		const auto problem_size = std::atoi(argv[1]);
-		NI = problem_size;
-		NJ = problem_size;
-		NK = problem_size;
-	}
-	std::cout << "Problem size: " << NI << "\n";
+class Polybench_Gemm {
+  public:
+	Polybench_Gemm(const BenchmarkArgs& args) : args(args), size(args.problem_size) {}
 
-	std::vector<DATA_TYPE> A(NI * NK);
-	std::vector<DATA_TYPE> B(NK * NJ);
-	std::vector<DATA_TYPE> C(NI * NJ);
+	void setup() {
+		A.resize(size * size);
+		B.resize(size * size);
+		C.resize(size * size);
 
-	init(A.data(), B.data(), C.data());
-
-	if(shouldDoCpu()) {
-		double t_start = rtclock();
-		gemm(A.data(), B.data(), C.data());
-		double t_end = rtclock();
-		fprintf(stdout, "CPU Runtime: %0.6lfs\n", t_end - t_start);
+		init(A.data(), B.data(), C.data(), size);
 	}
 
-	{
+	void run() {
 		using namespace cl::sycl;
 
-		std::vector<DATA_TYPE> C_gpu(NI * NJ);
-		init(A.data(), B.data(), C_gpu.data());
+		buffer<DATA_TYPE, 2> A_buffer{A.data(), range<2>(size, size)};
+		buffer<DATA_TYPE, 2> B_buffer{B.data(), range<2>(size, size)};
+		buffer<DATA_TYPE, 2> C_buffer{C.data(), range<2>(size, size)};
 
-		cl::sycl::queue queue;
-
-		buffer<DATA_TYPE, 2> A_buffer{range<2>(NI, NK)};
-		initDeviceBuffer(queue, A_buffer, A.data());
-		buffer<DATA_TYPE, 2> B_buffer{range<2>(NK, NJ)};
-		initDeviceBuffer(queue, B_buffer, B.data());
-		buffer<DATA_TYPE, 2> C_buffer{range<2>(NI, NJ)};
-		initDeviceBuffer(queue, C_buffer, C_gpu.data());
-
-		double t_start = rtclock();
-
-		queue.submit([&](handler& cgh) {
+		args.device_queue.submit([&](handler& cgh) {
 			auto A = A_buffer.get_access<access::mode::read>(cgh);
 			auto B = B_buffer.get_access<access::mode::read>(cgh);
 			auto C = C_buffer.get_access<access::mode::read_write>(cgh);
 
-			const auto pfor_range = nd_range<2>(C_buffer.get_range(), {DIM_Y, DIM_X});
-
-			cgh.parallel_for<class Gemm>(pfor_range, [=, NK_ = NK](nd_item<2> nd_item) {
-				const auto item = nd_item.get_global_id();
+			cgh.parallel_for<class Gemm>(C_buffer.get_range(), [=, NK_ = size](item<2> item) {
 				const auto i = item[0];
 				const auto j = item[1];
 
@@ -131,12 +88,40 @@ int main(int argc, char* argv[]) {
 				}
 			});
 		});
-
-		queue.wait();
-		double t_end = rtclock();
-
-		auto out = C_buffer.get_access<access::mode::read>(C_buffer.get_range());
-		fprintf(stdout, "GPU Runtime: %0.6lfs\n", t_end - t_start);
-		if(shouldDoCpu()) compareResults(C.data(), out.get_pointer());
 	}
+
+	bool verify(VerificationSetting&) {
+		constexpr auto ERROR_THRESHOLD = 0.05;
+
+		std::vector<DATA_TYPE> C_cpu(size * size);
+
+		init(A.data(), B.data(), C_cpu.data(), size);
+
+		gemm(A.data(), B.data(), C_cpu.data(), size);
+
+		for(size_t i = 0; i < size; i++) {
+			for(size_t j = 0; j < size; j++) {
+				const auto diff = percentDiff(C_cpu[i * size + j], C[i * size + j]);
+				if(diff > ERROR_THRESHOLD) return false;
+			}
+		}
+
+		return true;
+	}
+
+	static std::string getBenchmarkName() { return "Polybench_Gemm"; }
+
+  private:
+	BenchmarkArgs args;
+
+	const size_t size;
+	std::vector<DATA_TYPE> A;
+	std::vector<DATA_TYPE> B;
+	std::vector<DATA_TYPE> C;
+};
+
+int main(int argc, char** argv) {
+	BenchmarkApp app(argc, argv);
+	app.run<Polybench_Gemm>();
+	return 0;
 }
