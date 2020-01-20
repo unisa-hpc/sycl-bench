@@ -1,154 +1,134 @@
+#include <string>
 #include <vector>
 
 #include <cstdlib>
 
 #include <CL/sycl.hpp>
 
+#include "common.h"
 #include "polybenchUtilFuncts.h"
-#include "syclUtilFuncts.h"
-
-// define the error threshold for the results "not matching"
-#define PERCENT_DIFF_ERROR_THRESHOLD 0.05
-
-// Problem size
-auto N = 4096;
-
-constexpr auto DIM_X = 256;
-constexpr auto DIM_Y = 1;
 
 using DATA_TYPE = float;
 
-void compareResults(const DATA_TYPE* x1, const DATA_TYPE* x1_outputFromGpu, const DATA_TYPE* x2, const DATA_TYPE* x2_outputFromGpu) {
-	int i, fail;
-	fail = 0;
+void init_arrays(DATA_TYPE* a, DATA_TYPE* x1, DATA_TYPE* x2, DATA_TYPE* y_1, DATA_TYPE* y_2, size_t size) {
+	const auto N = size;
 
-	for(i = 0; i < N; i++) {
-		if(percentDiff(x1[i], x1_outputFromGpu[i]) > PERCENT_DIFF_ERROR_THRESHOLD) fail++;
-
-		if(percentDiff(x2[i], x2_outputFromGpu[i]) > PERCENT_DIFF_ERROR_THRESHOLD) fail++;
-	}
-
-	printf("Non-Matching CPU-GPU Outputs Beyond Error Threshold of %4.2f Percent: %d\n", PERCENT_DIFF_ERROR_THRESHOLD, fail);
-}
-
-void init_arrays(DATA_TYPE* a, DATA_TYPE* x1, DATA_TYPE* x2, DATA_TYPE* y_1, DATA_TYPE* y_2) {
-	int i, j;
-
-	for(i = 0; i < N; i++) {
+	for(size_t i = 0; i < N; i++) {
 		x1[i] = 0.0;
 		x2[i] = 0.0;
 		y_1[i] = 0.0;
 		y_2[i] = 0.0;
 
-		for(j = 0; j < N; j++) {
+		for(size_t j = 0; j < N; j++) {
 			a[i * N + j] = (DATA_TYPE)(i + j + 1.0) / N;
 		}
 	}
 }
 
-void runMvt(DATA_TYPE* a, DATA_TYPE* x1, DATA_TYPE* x2, DATA_TYPE* y1, DATA_TYPE* y2) {
-	int i, j, k, l;
+void runMvt(DATA_TYPE* a, DATA_TYPE* x1, DATA_TYPE* x2, DATA_TYPE* y1, DATA_TYPE* y2, size_t size) {
+	const auto N = size;
 
-	for(i = 0; i < N; i++) {
-		for(j = 0; j < N; j++) {
+	for(size_t i = 0; i < N; i++) {
+		for(size_t j = 0; j < N; j++) {
 			x1[i] = x1[i] + a[i * N + j] * y1[j];
 		}
 	}
 
-	for(k = 0; k < N; k++) {
-		for(l = 0; l < N; l++) {
+	for(size_t k = 0; k < N; k++) {
+		for(size_t l = 0; l < N; l++) {
 			x2[k] = x2[k] + a[k * N + l] * y2[l];
 		}
 	}
 }
 
-int main(int argc, char* argv[]) {
-	if(argc >= 2) N = std::atoi(argv[1]);
-	std::cout << "Problem size: " << N << "\n";
+class Polybench_Mvt {
+  public:
+	Polybench_Mvt(const BenchmarkArgs& args) : args(args), size(args.problem_size) {}
 
-	std::vector<DATA_TYPE> a(N * N);
-	std::vector<DATA_TYPE> x1(N);
-	std::vector<DATA_TYPE> x2(N);
-	std::vector<DATA_TYPE> y1(N);
-	std::vector<DATA_TYPE> y2(N);
+	void setup() {
+		a.resize(size * size);
+		x1.resize(size);
+		x2.resize(size);
+		y1.resize(size);
+		y2.resize(size);
 
-	init_arrays(a.data(), x1.data(), x2.data(), y1.data(), y2.data());
-
-	if(shouldDoCpu()) {
-		double t_start = rtclock();
-		runMvt(a.data(), x1.data(), x2.data(), y1.data(), y2.data());
-		double t_end = rtclock();
-		fprintf(stdout, "CPU Runtime: %0.6lfs\n", t_end - t_start);
+		init_arrays(a.data(), x1.data(), x2.data(), y1.data(), y2.data(), size);
 	}
 
-	{
+	void run() {
 		using namespace cl::sycl;
 
-		std::vector<DATA_TYPE> x1_gpu(N);
-		std::vector<DATA_TYPE> x2_gpu(N);
+		buffer<DATA_TYPE, 2> a_buffer(a.data(), range<2>(size, size));
+		buffer<DATA_TYPE, 1> x1_buffer(x1.data(), range<1>(size));
+		buffer<DATA_TYPE, 1> x2_buffer(x2.data(), range<1>(size));
+		buffer<DATA_TYPE, 1> y1_buffer(y1.data(), range<1>(size));
+		buffer<DATA_TYPE, 1> y2_buffer(y2.data(), range<1>(size));
 
-		init_arrays(a.data(), x1_gpu.data(), x2_gpu.data(), y1.data(), y2.data());
-
-		cl::sycl::queue queue;
-
-		buffer<DATA_TYPE, 2> a_buffer(range<2>(N, N));
-		initDeviceBuffer(queue, a_buffer, a.data());
-
-		buffer<DATA_TYPE, 2> x1_buffer(range<2>(N, 1));
-		initDeviceBuffer(queue, x1_buffer, x1_gpu.data());
-
-		buffer<DATA_TYPE, 2> x2_buffer(range<2>(N, 1));
-		initDeviceBuffer(queue, x2_buffer, x2_gpu.data());
-
-		buffer<DATA_TYPE, 2> y1_buffer(range<2>(N, 1));
-		initDeviceBuffer(queue, y1_buffer, y1.data());
-
-		buffer<DATA_TYPE, 2> y2_buffer(range<2>(N, 1));
-		initDeviceBuffer(queue, y2_buffer, y2.data());
-
-		double t_start = rtclock();
-
-		queue.submit([&](handler& cgh) {
+		args.device_queue.submit([&](handler& cgh) {
 			auto a = a_buffer.get_access<access::mode::read>(cgh);
 			auto y1 = y1_buffer.get_access<access::mode::read>(cgh);
 			auto x1 = x1_buffer.get_access<access::mode::read_write>(cgh);
 
-			const auto pfor_range = nd_range<2>(x1_buffer.get_range(), {DIM_X, DIM_Y});
-
-			cgh.parallel_for<class Mvt1>(pfor_range, [=, N_ = N](nd_item<2> nd_item) {
-				const auto item = nd_item.get_global_id();
+			cgh.parallel_for<class Mvt1>(x1_buffer.get_range(), [=, N_ = size](item<1> item) {
 				const auto i = item[0];
 
 				for(size_t j = 0; j < N_; j++) {
-					x1[{i, 0}] += a[{i, j}] * y1[{j, 0}];
+					x1[i] += a[{i, j}] * y1[j];
 				}
 			});
 		});
 
-		queue.submit([&](handler& cgh) {
+		args.device_queue.submit([&](handler& cgh) {
 			auto a = a_buffer.get_access<access::mode::read>(cgh);
 			auto y2 = y2_buffer.get_access<access::mode::read>(cgh);
 			auto x2 = x2_buffer.get_access<access::mode::read_write>(cgh);
 
-			const auto pfor_range = nd_range<2>(x1_buffer.get_range(), {DIM_X, DIM_Y});
-
-			cgh.parallel_for<class Mvt2>(pfor_range, [=, N_ = N](nd_item<2> nd_item) {
-				const auto item = nd_item.get_global_id();
+			cgh.parallel_for<class Mvt2>(x1_buffer.get_range(), [=, N_ = size](item<1> item) {
 				const auto k = item[0];
 
 				for(size_t l = 0; l < N_; l++) {
-					x2[{k, 0}] += a[{k, l}] * y2[{l, 0}];
+					x2[k] += a[{k, l}] * y2[l];
 				}
 			});
 		});
-
-
-		queue.wait();
-		double t_end = rtclock();
-
-		auto x1_gpu_result = x1_buffer.get_access<access::mode::read>(x1_buffer.get_range());
-		auto x2_gpu_result = x2_buffer.get_access<access::mode::read>(x2_buffer.get_range());
-		fprintf(stdout, "GPU Runtime: %0.6lfs\n", t_end - t_start);
-		if(shouldDoCpu()) compareResults(x1.data(), x1_gpu_result.get_pointer(), x2.data(), x2_gpu_result.get_pointer());
 	}
+
+	bool verify(VerificationSetting&) {
+		constexpr auto ERROR_THRESHOLD = 0.05;
+
+		std::vector<DATA_TYPE> x1_cpu(size);
+		std::vector<DATA_TYPE> x2_cpu(size);
+
+		init_arrays(a.data(), x1_cpu.data(), x2_cpu.data(), y1.data(), y2.data(), size);
+
+		runMvt(a.data(), x1_cpu.data(), x2_cpu.data(), y1.data(), y2.data(), size);
+
+		for(size_t i = 0; i < size; i++) {
+			auto diff = percentDiff(x1_cpu[i], x1[i]);
+			if(diff > ERROR_THRESHOLD) return false;
+
+			diff = percentDiff(x2_cpu[i], x2[i]);
+			if(diff > ERROR_THRESHOLD) return false;
+		}
+
+		return true;
+	}
+
+	static std::string getBenchmarkName() { return "Polybench_Mvt"; }
+
+  private:
+	BenchmarkArgs args;
+
+	const size_t size;
+	std::vector<DATA_TYPE> a;
+	std::vector<DATA_TYPE> x1;
+	std::vector<DATA_TYPE> x2;
+	std::vector<DATA_TYPE> y1;
+	std::vector<DATA_TYPE> y2;
+};
+
+int main(int argc, char** argv) {
+	BenchmarkApp app(argc, argv);
+	app.run<Polybench_Mvt>();
+	return 0;
 }
