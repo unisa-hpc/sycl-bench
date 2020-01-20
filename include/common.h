@@ -32,15 +32,21 @@ public:
     hooks.push_back(&h);
   }
 
-  void run()
+  template<typename... Args>
+  void run(Args&&... additionalArgs)
   {
     args.result_consumer->proceedToBenchmark(
-      Benchmark::getBenchmarkName());
+      Benchmark{args, additionalArgs...}.getBenchmarkName());
 
     args.result_consumer->consumeResult(
       "problem-size", std::to_string(args.problem_size));
     args.result_consumer->consumeResult(
       "local-size", std::to_string(args.local_size));
+    args.result_consumer->consumeResult(
+      "device-name", args.device_queue.get_device()
+                           .template get_info<cl::sycl::info::device::name>());
+    args.result_consumer->consumeResult(
+      "sycl-implementation", this->getSyclImplementation());
 
 
     for(auto h : hooks) h->atInit();
@@ -49,7 +55,7 @@ public:
     // Run until we have as many runs as requested or until
     // verification fails
     for(std::size_t run = 0; run < args.num_runs && all_runs_pass; ++run) {
-      Benchmark b(args);
+      Benchmark b(args, additionalArgs...);
 
       for(auto h : hooks) h->preSetup();    
       b.setup();
@@ -92,6 +98,18 @@ public:
 private:
   BenchmarkArgs args;  
   std::vector<BenchmarkHook*> hooks;
+
+  std::string getSyclImplementation() const
+  {
+#if defined(__HIPSYCL__)
+    return "hipSYCL";
+#elif defined(__COMPUTECPP__)
+    return "ComputeCpp";
+#else
+    // ToDo: Find out how they can be distinguished
+    return "triSYCL or Intel SYCL";
+#endif
+  }
 };
 
 
@@ -111,8 +129,11 @@ public:
     }
   }
 
-  template<class Benchmark>
-  void run()
+  const BenchmarkArgs& getArgs() const
+  { return args; }
+
+  template<class Benchmark, typename... AdditionalArgs>
+  void run(AdditionalArgs&&... additional_args)
   {
     try {
       BenchmarkManager<Benchmark> mgr(args);
@@ -129,7 +150,7 @@ public:
       mgr.addHook(nvem);
 #endif
 
-      mgr.run();
+      mgr.run(additional_args...);
     }
     catch(cl::sycl::exception& e){
       std::cerr << "SYCL error: " << e.what() << std::endl;
