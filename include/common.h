@@ -135,6 +135,11 @@ public:
   const BenchmarkArgs& getArgs() const
   { return args; }
 
+  bool shouldRunNDRangeKernels() const
+  {
+    return !args.cli.isFlagSet("--no-ndrange-kernels");
+  }
+
   template<class Benchmark, typename... AdditionalArgs>
   void run(AdditionalArgs&&... additional_args)
   {

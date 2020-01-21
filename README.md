@@ -10,3 +10,4 @@ Benchmarks support the following command line arguments:
 * `--verification-begin=<x,y,z>` - Specify the start of the 3D range that should be used for verifying results. Note: Most benchmarks do not implement this feature. Default: `0,0,0`
 * `--verification-range=<x,y,z>` - Specify the size of the 3D range that should be used for verifying results. Note: Most benchmarks do not implement this feature. Default: `1,1,1`
 * `--no-verification` - disable verification entirely
+* `--no-ndrange-kernels` - do not run kernels based on ndrange parallel for

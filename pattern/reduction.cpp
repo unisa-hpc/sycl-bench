@@ -237,11 +237,12 @@ int main(int argc, char** argv)
   // Using short will lead to overflow even for
   // small problem sizes
   //app.run< ReductionNDRange<short>>();
-  app.run< ReductionNDRange<int>>();
-  app.run< ReductionNDRange<long long>>();
-  app.run< ReductionNDRange<float>>();
-  app.run< ReductionNDRange<double>>();
-
+  if(app.shouldRunNDRangeKernels()){
+    app.run< ReductionNDRange<int>>();
+    app.run< ReductionNDRange<long long>>();
+    app.run< ReductionNDRange<float>>();
+    app.run< ReductionNDRange<double>>();
+  }
   //app.run< ReductionHierarchical<short>>();
   app.run< ReductionHierarchical<int>>();
   app.run< ReductionHierarchical<long long>>();
