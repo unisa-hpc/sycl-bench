@@ -197,11 +197,13 @@ int main(int argc, char** argv)
 {
   BenchmarkApp app(argc, argv);
 
-  app.run< SegmentedReductionNDRange<short>>();
-  app.run< SegmentedReductionNDRange<int>>();
-  app.run< SegmentedReductionNDRange<long long>>();
-  app.run< SegmentedReductionNDRange<float>>();
-  app.run< SegmentedReductionNDRange<double>>();
+  if(app.shouldRunNDRangeKernels()) {
+    app.run< SegmentedReductionNDRange<short>>();
+    app.run< SegmentedReductionNDRange<int>>();
+    app.run< SegmentedReductionNDRange<long long>>();
+    app.run< SegmentedReductionNDRange<float>>();
+    app.run< SegmentedReductionNDRange<double>>();
+  }
 
   app.run< SegmentedReductionHierarchical<short>>();
   app.run< SegmentedReductionHierarchical<int>>();
