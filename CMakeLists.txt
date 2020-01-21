@@ -23,6 +23,7 @@ add_executable(lin_reg        single-kernel/lin_reg.cpp)
 add_executable(segmented_reduction pattern/segmentedreduction.cpp)
 add_executable(reduction           pattern/reduction.cpp)
 add_executable(dag_task_throughput runtime/dag_task_throughput.cpp)
+add_executable(blocked_transform   runtime/blocked_transform.cpp)
 
 install(TARGETS 
   pattern_arith pattern_DRAM pattern_L2 pattern_sf pattern_shared 
