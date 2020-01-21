@@ -32,10 +32,11 @@ public:
     hooks.push_back(&h);
   }
 
-  void run()
+  template<typename... Args>
+  void run(Args&&... additionalArgs)
   {
     args.result_consumer->proceedToBenchmark(
-      Benchmark::getBenchmarkName());
+      Benchmark{args, additionalArgs...}.getBenchmarkName());
 
     args.result_consumer->consumeResult(
       "problem-size", std::to_string(args.problem_size));
@@ -54,7 +55,7 @@ public:
     // Run until we have as many runs as requested or until
     // verification fails
     for(std::size_t run = 0; run < args.num_runs && all_runs_pass; ++run) {
-      Benchmark b(args);
+      Benchmark b(args, additionalArgs...);
 
       for(auto h : hooks) h->preSetup();    
       b.setup();
@@ -128,8 +129,11 @@ public:
     }
   }
 
-  template<class Benchmark>
-  void run()
+  const BenchmarkArgs& getArgs() const
+  { return args; }
+
+  template<class Benchmark, typename... AdditionalArgs>
+  void run(AdditionalArgs&&... additional_args)
   {
     try {
       BenchmarkManager<Benchmark> mgr(args);
@@ -146,7 +150,7 @@ public:
       mgr.addHook(nvem);
 #endif
 
-      mgr.run();
+      mgr.run(additional_args...);
     }
     catch(cl::sycl::exception& e){
       std::cerr << "SYCL error: " << e.what() << std::endl;

@@ -33,6 +33,7 @@ set(benchmarks
   pattern/segmentedreduction.cpp
   pattern/reduction.cpp
   runtime/dag_task_throughput.cpp
+  runtime/blocked_transform.cpp
 )
 
 foreach(benchmark IN LISTS benchmarks)
@@ -45,3 +46,4 @@ foreach(benchmark IN LISTS benchmarks)
 endforeach(benchmark)
 
 add_subdirectory(polybench)
+
