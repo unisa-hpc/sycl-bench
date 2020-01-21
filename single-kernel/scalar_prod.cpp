@@ -194,7 +194,9 @@ public:
 int main(int argc, char** argv)
 {
   BenchmarkApp app(argc, argv);
-  app.run<ScalarProdBench<true>>();
+  if(app.shouldRunNDRangeKernels())
+    app.run<ScalarProdBench<true>>();
+  
   app.run<ScalarProdBench<false>>();
   return 0;
 }

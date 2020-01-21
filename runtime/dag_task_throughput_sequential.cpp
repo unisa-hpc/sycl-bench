@@ -184,7 +184,8 @@ int main(int argc, char** argv)
   app.run<DagTaskThroughputHierarchicalPF>();
   // With pure CPU library implementations such as hipSYCL CPU backend
   // or triSYCL, this will be prohibitively slow
-  app.run<DagTaskThroughputNDRangePF>();
-  
+  if(app.shouldRunNDRangeKernels())
+    app.run<DagTaskThroughputNDRangePF>();
+
   return 0;
 }
