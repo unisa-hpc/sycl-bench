@@ -30,6 +30,8 @@ set(benchmarks
   single-kernel/sobel7.cpp
   single-kernel/vec_add.cpp
   single-kernel/lin_reg.cpp
+  single-kernel/kmeans.cpp
+  single-kernel/mol_dyn.cpp
   pattern/segmentedreduction.cpp
   pattern/reduction.cpp
   runtime/dag_task_throughput.cpp
