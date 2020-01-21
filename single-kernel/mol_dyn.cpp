@@ -14,7 +14,7 @@ protected:
 	int neighCount;
 	int cutsq;
 	int lj1;
-	int lj2;
+	float lj2;
 	int inum;
     BenchmarkArgs args;
 
