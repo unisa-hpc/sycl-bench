@@ -70,8 +70,10 @@ public:
       for (auto h : hooks) h->postKernel();
 
       if(args.verification.range.size() > 0)
-        if(!b.verify(args.verification)) {
-          all_runs_pass = false;
+        if(args.verification.enabled){
+          if(!b.verify(args.verification)) {
+            all_runs_pass = false;
+          }
         }
     }
 
@@ -80,17 +82,18 @@ public:
       h->emitResults(*args.result_consumer);
     }
 
-    if(args.verification.range.size() > 0)
-    {
-      if(!all_runs_pass){
-        // error
-        args.result_consumer->consumeResult("Verification", "FAIL");
-      }
-      else {
-        // pass
-        args.result_consumer->consumeResult("Verification", "PASS");
-      }        
+    if(args.verification.range.size() == 0 || !args.verification.enabled){
+      args.result_consumer->consumeResult("Verification", "--/--");
     }
+    else if(!all_runs_pass){
+      // error
+      args.result_consumer->consumeResult("Verification", "FAIL");
+    }
+    else {
+      // pass
+      args.result_consumer->consumeResult("Verification", "PASS");
+    }        
+    
     args.result_consumer->flush();
     
   }
