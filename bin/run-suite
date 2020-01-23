@@ -156,13 +156,16 @@ if __name__ == '__main__':
             flags.add(f)
         
         max_runtime = 0.0
+        run_has_failed = False
         for size in options['--size']:
           print(max_runtime, max_allowed_runtime)
           if max_runtime < max_allowed_runtime:
             for localsize in options['--local']:
               # some benchmarks may not work if problem size is not multiple of
-              # local size
-              if size % localsize == 0:
+              # local size.
+              # Additionally, skip this benchmark if a run has failed - this may
+              # indicate out of memory or some setup issue
+              if size % localsize == 0 and not run_has_failed:
                 
                 args = []
                 
@@ -177,5 +180,10 @@ if __name__ == '__main__':
                 retcode, elapsed_time = invoke_benchmark(benchmark_executable, args)
                 if retcode == 0:
                   max_runtime = max(max_runtime, elapsed_time)
+                else:
+                  run_has_failed = True
+                  print("Benchmark failed, aborting run")
+
+
               
               
