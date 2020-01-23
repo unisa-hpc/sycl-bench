@@ -135,6 +135,8 @@ if __name__ == '__main__':
     print("Error: output file {} already exists!".format(output_file))
     sys.exit(-1)
   
+  failed_benchmarks = []
+
   for root, dirs, files in os.walk(install_dir):
     for filename in files:
       benchmark_name = filename
@@ -182,8 +184,14 @@ if __name__ == '__main__':
                   max_runtime = max(max_runtime, elapsed_time)
                 else:
                   run_has_failed = True
+                  failed_benchmarks.append(benchmark_name)
                   print("Benchmark failed, aborting run")
 
+  if len(failed_benchmarks)==0:
+    print("All benchmarks were executed successfully")
+  else:
+    print("The following benchmarks were aborted because they "
+          "returned a non-zero returncode:"," ".join(failed_benchmarks))
 
               
               
