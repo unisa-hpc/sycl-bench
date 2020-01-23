@@ -1,0 +1,181 @@
+#!/usr/bin/env python3
+
+import os
+import os.path
+import subprocess
+import sys
+import copy
+import timeit
+
+def create_linear_range(begin, end, numsteps):
+  stepsize = (end-begin) // numsteps
+  if stepsize == 0:
+    stepsize = 1
+    
+  return [begin+i*stepsize for i in range(0,numsteps)]
+
+def create_log_range(begin, end):
+  result = [begin]
+  current = begin
+  while current < end:
+    current *= 2
+    result += [current]
+    
+  return result
+
+
+''' supported options of benchmarks:
+    --size=<problem-size> - total problem size. For most benchmarks, global range of work items. Default: 3072
+    --local=<local-size> - local size/work group size, if applicable. Not all benchmarks use this. Default: 256
+    --num-runs=<N> - the number of times that the problem should be run, e.g. for averaging runtimes. Default: 5
+    --device=<d> - changes the SYCL device selector that is used. Supported values: cpu, gpu, default. Default: default
+    --output=<output> - Specify where to store the output and how to format. If <output>=stdio, results are printed to standard output. For any other value, <output> is interpreted as a file where the output will be saved in csv format.
+    --verification-begin=<x,y,z> - Specify the start of the 3D range that should be used for verifying results. Note: Most benchmarks do not implement this feature. Default: 0,0,0
+    --verification-range=<x,y,z> - Specify the size of the 3D range that should be used for verifying results. Note: Most benchmarks do not implement this feature. Default: 1,1,1
+    --no-verification - disable verification entirely
+    --no-ndrange-kernels - do not run kernels based on ndrange parallel for
+'''
+output_file = "./sycl-bench.csv"
+
+default_profile = {
+  # Problem size will not be increased if this runtime is exceeded
+  'max-allowed-runtime' : 60.0, #seconds.
+  'default-options' : {
+    '--size' : create_log_range(64, 2**32),
+    '--local' : create_log_range(64,1024),
+    '--num-runs' : 10,
+    '--output' : output_file
+  },
+  'default-flags' : set([]),
+  'individual-benchmark-options' : {},
+  'individual-benchmark-flags' : set([])
+}
+
+def construct_profile(overridden_options_dict,
+                      additional_flags=[],
+                      max_allowed_runtime=default_profile['max-allowed-runtime']):
+
+  new_profile = copy.deepcopy(default_profile)
+  new_profile['max-allowed-runtime'] = max_allowed_runtime
+  for opt in overridden_options_dict:
+    new_profile['default-options'][opt] = overridden_options_dict[opt]
+  
+  for f in additional_flags:
+    new_profile['default-flags'].add(f)
+  
+  return new_profile
+
+profiles = {
+  'default': default_profile,
+  'quicktest' : construct_profile({}, max_allowed_runtime=1.0),
+  'cpu' : construct_profile({'--device':'cpu'}),
+  'gpu' : construct_profile({'--device':'gpu'}),
+  'cpu-noverify' : construct_profile({'--device':'cpu'},['--no-verification']),
+  'cpu-nondrange' : construct_profile({'--device':'cpu'},['--no-ndrange-kernels']),
+  'cpu-noverify-nondrange' : construct_profile({'--device':'cpu'},['--no-verification','--no-ndrange-kernels']),
+  'gpu-noverify' : construct_profile({'--device':'gpu'},['--no-verification'])
+}
+
+
+def invoke_benchmark(benchmark_executable, args):
+  print("Invoking {} with arguments {}".format(benchmark_executable, args))
+  
+  start = timeit.default_timer()
+  retcode = subprocess.call([benchmark_executable]+args)
+  stop  = timeit.default_timer()
+  
+  if(retcode != 0):
+    print("Benchmark failed: {} with args {}".format(benchmark_executable,args))
+  
+  elapsed_time = stop - start
+  
+  print("Benchmark run finished in {} s".format(elapsed_time))
+  return retcode, elapsed_time
+
+def is_benchmark(filepath):
+  # Don't execute this script again
+  if filepath == os.path.realpath(__file__):
+    return False
+  
+  filename, extension = os.path.splitext(filepath)
+
+  # Yeah, so this is a bit of a hack.. the better solution would be
+  # to have cmake generate a list of the actual benchmarks instead
+  # of just trying to execute everything in this directory that looks
+  # like a program
+  if extension != '' and extension != '.exe' and extension != '.out':
+    return False
+  
+  return True
+
+if __name__ == '__main__':
+  install_dir = os.path.dirname(os.path.realpath(__file__))
+
+  profilename = 'default'
+  
+  if len(sys.argv) > 1:
+    if not sys.argv[1] in profiles:
+      print("Invalid benchmarking profile:",sys.argv[1])
+      print("Valid entries are:"," ".join(x for x in profiles))
+      sys.exit(-1)
+    else:
+      profilename = sys.argv[1]
+  
+  print("Using test profile:",profilename)
+  profile = profiles[profilename]
+  
+  max_allowed_runtime = profile['max-allowed-runtime']
+  default_options     = profile['default-options']
+  default_flags       = profile['default-flags']
+  # these are used to override arguments for invidual benchmarks
+  individual_benchmark_options = profile['individual-benchmark-options']
+  individual_benchmark_flags   = profile['individual-benchmark-flags']
+  
+  if os.path.exists(output_file):
+    print("Error: output file {} already exists!".format(output_file))
+    sys.exit(-1)
+  
+  for root, dirs, files in os.walk(install_dir):
+    for filename in files:
+      benchmark_name = filename
+      benchmark_executable = os.path.realpath(filename)
+      if is_benchmark(benchmark_executable):
+        
+        print("Processing",benchmark_name)
+        
+        flags = copy.deepcopy(default_flags)
+        options = copy.deepcopy(default_options)
+        
+        # Overwrite default options with values that may be specified
+        # for individual benchmarks
+        if benchmark_name in individual_benchmark_options:
+          for param in individual_benchmark_options[benchmark_name]:
+            options[param] = individual_benchmark_options[benchmark_name][param]
+        if benchmark_name in individual_benchmark_flags:
+          for f in individual_benchmark_flags:
+            flags.add(f)
+        
+        max_runtime = 0.0
+        for size in options['--size']:
+          print(max_runtime, max_allowed_runtime)
+          if max_runtime < max_allowed_runtime:
+            for localsize in options['--local']:
+              # some benchmarks may not work if problem size is not multiple of
+              # local size
+              if size % localsize == 0:
+                
+                args = []
+                
+                for f in flags:
+                  args.append(str(f))
+                for arg in options:
+                  if not isinstance(options[arg], list):
+                    args.append(str(arg)+'='+str(options[arg]))
+                args.append('--size='+str(size))
+                args.append('--local='+str(localsize))
+                
+                retcode, elapsed_time = invoke_benchmark(benchmark_executable, args)
+                if retcode == 0:
+                  max_runtime = max(max_runtime, elapsed_time)
+              
+              

@@ -48,5 +48,8 @@ foreach(benchmark IN LISTS benchmarks)
   install(TARGETS ${target} RUNTIME DESTINATION bin/)
 endforeach(benchmark)
 
+
+install(PROGRAMS bin/run-suite DESTINATION bin/)
+
 add_subdirectory(polybench)
 
