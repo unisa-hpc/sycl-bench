@@ -50,6 +50,7 @@ endforeach(benchmark)
 
 
 install(PROGRAMS bin/run-suite DESTINATION bin/)
+install(FILES ${PROJECT_SOURCE_DIR}/Brommy.bmp DESTINATION share/)
 
 add_subdirectory(polybench)
 

@@ -29,7 +29,7 @@ public:
   void setup() {
     size = args.problem_size; // input size defined by the user
     input.resize(size * size); 
-    load_bitmap_mirrored("../Brommy.bmp", size, input);
+    load_bitmap_mirrored("../share/Brommy.bmp", size, input);
     output.resize(size * size);
   }
 
@@ -64,8 +64,8 @@ public:
           int k = 0;
           for(int i = -1; i<2; i++)
             for(int j = -1; j<2; j++) {
-              uint xs = fmin(fmax(x+j, 0), size-1); // borders are handled here with extended values
-              uint ys = fmin(fmax(y+i, 0), size-1);
+              uint xs = s::min(s::max(x+j, 0), static_cast<int>(size-1)); // borders are handled here with extended values
+              uint ys = s::min(s::max(y+i, 0), static_cast<int>(size-1));
               window[k] =in[ {xs,ys} ];
               k++;
             }
