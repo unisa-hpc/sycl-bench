@@ -78,18 +78,20 @@ profiles = {
 
 
 def invoke_benchmark(benchmark_executable, args):
-  print("Invoking {} with arguments {}".format(benchmark_executable, args))
+  print("__________________________________________________\n")
+  print("{} {}".format(os.path.basename(benchmark_executable), " ".join(args)))
   
   start = timeit.default_timer()
   retcode = subprocess.call([benchmark_executable]+args)
   stop  = timeit.default_timer()
   
-  if(retcode != 0):
-    print("Benchmark failed: {} with args {}".format(benchmark_executable,args))
-  
   elapsed_time = stop - start
   
-  print("Benchmark run finished in {} s".format(elapsed_time))
+  if(retcode != 0):
+    print("==> Benchmark FAILED: {} with args {}".format(benchmark_executable,args))
+  else:
+    print("==> Benchmark run finished in {} s".format(elapsed_time))
+
   return retcode, elapsed_time
 
 def is_benchmark(filepath):
@@ -143,7 +145,9 @@ if __name__ == '__main__':
       benchmark_executable = os.path.realpath(filename)
       if is_benchmark(benchmark_executable):
         
-        print("Processing",benchmark_name)
+        print("\n\n##################################################")
+        print("Processing", benchmark_name)
+        print("##################################################")
         
         flags = copy.deepcopy(default_flags)
         options = copy.deepcopy(default_options)
