@@ -29,7 +29,8 @@ set(benchmarks
   single-kernel/sobel5.cpp
   single-kernel/sobel7.cpp
   single-kernel/vec_add.cpp
-  single-kernel/lin_reg.cpp
+  single-kernel/lin_reg_error.cpp
+  single-kernel/lin_reg_coeff.cpp
   single-kernel/kmeans.cpp
   single-kernel/mol_dyn.cpp
   pattern/segmentedreduction.cpp
