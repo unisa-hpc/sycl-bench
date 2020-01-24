@@ -151,6 +151,7 @@ private:
 
 struct VerificationSetting
 {
+  bool enabled;
   cl::sycl::id<3> begin;
   cl::sycl::range<3> range;
 };
@@ -183,6 +184,10 @@ public:
         cli_parser.getOrDefault<std::string>("--device", "default");
     cl::sycl::queue q = getQueue(device_selector);
 
+    bool verification_enabled = true;
+    if(cli_parser.isFlagSet("--no-verification"))
+      verification_enabled = false;
+
     auto verification_begin = cli_parser.getOrDefault<cl::sycl::id<3>>(
       "--verification-begin", cl::sycl::id<3>{0,0,0});
     
@@ -192,12 +197,15 @@ public:
     auto result_consumer = getResultConsumer(
       cli_parser.getOrDefault<std::string>("--output","stdio"));
 
-    return BenchmarkArgs{
-      size, local_size, num_runs, q, 
-      VerificationSetting{verification_begin, verification_range}, 
-      cli_parser,
-      result_consumer
-    };
+    return BenchmarkArgs{size,
+                         local_size,
+                         num_runs,
+                         q,
+                         VerificationSetting{verification_enabled,
+                                             verification_begin,
+                                             verification_range},
+                         cli_parser,
+                         result_consumer};
   }
 
 private:

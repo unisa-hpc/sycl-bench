@@ -34,7 +34,8 @@ set(benchmarks
   single-kernel/mol_dyn.cpp
   pattern/segmentedreduction.cpp
   pattern/reduction.cpp
-  runtime/dag_task_throughput.cpp
+  runtime/dag_task_throughput_sequential.cpp
+  runtime/dag_task_throughput_independent.cpp
   runtime/blocked_transform.cpp
 )
 

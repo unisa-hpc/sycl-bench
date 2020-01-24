@@ -60,7 +60,7 @@ public:
 
   static std::string getBenchmarkName() {
     std::stringstream name;
-    name << "MicroBench_";
+    name << "MicroBench_sf_";
     name << ReadableTypename<DATA_TYPE>::name << "_";
     name << N;
     return name.str();
