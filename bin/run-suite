@@ -193,9 +193,9 @@ if __name__ == '__main__':
 
   if len(failed_benchmarks)==0:
     print("All benchmarks were executed successfully")
+    sys.exit(0)
   else:
     print("The following benchmarks were aborted because they "
           "returned a non-zero returncode:"," ".join(failed_benchmarks))
-
-              
+    sys.exit(-1)
               
