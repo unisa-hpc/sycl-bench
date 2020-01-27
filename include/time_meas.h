@@ -7,6 +7,7 @@
 #include <chrono>
 #include <vector>
 #include <numeric>
+#include <cmath>
 
 typedef std::chrono::high_resolution_clock Clock;
 
@@ -46,7 +47,8 @@ public:
             double dev = mean_sec - x;
             stddev += dev*dev;
         }
-        stddev /= static_cast<double>(seconds.size());
+        stddev /= static_cast<double>(seconds.size()-1);
+        stddev = std::sqrt(stddev);
 
         consumer.consumeResult("run-time", 
             std::to_string(mean_sec), 
