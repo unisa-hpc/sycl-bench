@@ -47,8 +47,12 @@ public:
             double dev = mean_sec - x;
             stddev += dev*dev;
         }
-        stddev /= static_cast<double>(seconds.size()-1);
-        stddev = std::sqrt(stddev);
+        if(seconds.size() <= 1)
+            stddev = 0.0;
+        else {
+            stddev /= static_cast<double>(seconds.size()-1);
+            stddev = std::sqrt(stddev);
+        }
 
         consumer.consumeResult("run-time", 
             std::to_string(mean_sec), 
