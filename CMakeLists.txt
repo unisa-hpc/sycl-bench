@@ -87,8 +87,10 @@ foreach(benchmark IN LISTS benchmarks)
   endif()
 
   install(TARGETS ${target} RUNTIME DESTINATION bin/)
-
   get_filename_component(dir ${benchmark} DIRECTORY)
   set_property(TARGET ${target} PROPERTY FOLDER ${dir})
 endforeach(benchmark)
 
+
+install(PROGRAMS bin/run-suite DESTINATION bin/)
+install(FILES ${PROJECT_SOURCE_DIR}/Brommy.bmp DESTINATION share/)
