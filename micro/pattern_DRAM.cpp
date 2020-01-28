@@ -58,8 +58,8 @@ public:
 
   static std::string getBenchmarkName() {
     std::stringstream name;
-    name << "MicroBench_";
-    name << ReadableTypename<DATA_TYPE>::name;
+    name << "MicroBench_DRAM_";
+    name << ReadableTypename<DATA_TYPE>::name << "_";
     name << N;
     return name.str();
   }
