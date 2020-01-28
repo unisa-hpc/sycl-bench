@@ -188,7 +188,9 @@ T reduce(s::buffer<T, 1> &input_buf) {
 int main(int argc, char** argv)
 {
   BenchmarkApp app(argc, argv);
-  app.run<LinearRegressionCoeffBench<float>>();
-  app.run<LinearRegressionCoeffBench<double>>();   
+  if(app.shouldRunNDRangeKernels()){
+    app.run<LinearRegressionCoeffBench<float>>();
+    app.run<LinearRegressionCoeffBench<double>>();   
+  }
   return 0;
 }
