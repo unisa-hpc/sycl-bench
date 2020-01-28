@@ -11,6 +11,10 @@
 
 using DATA_TYPE = float;
 
+class Gramschmidt1;
+class Gramschmidt2;
+class Gramschmidt3;
+
 void init_array(DATA_TYPE* A, size_t size) {
 	const auto M = 0;
 	const auto N = 0;
@@ -73,7 +77,7 @@ class Polybench_Gramschmidt {
 				auto A = A_buffer.get_access<access::mode::read>(cgh);
 				auto R = R_buffer.get_access<access::mode::write>(cgh);
 
-				cgh.parallel_for<class Gramschmidt1>(range<2>(1, 1), [=, M_ = size](item<2> item) {
+				cgh.parallel_for<Gramschmidt1>(range<2>(1, 1), [=, M_ = size](item<2> item) {
 					DATA_TYPE nrm = 0;
 					for(size_t i = 0; i < M_; i++) {
 						nrm += A[{i, k}] * A[{i, k}];
@@ -87,7 +91,7 @@ class Polybench_Gramschmidt {
 				auto R = R_buffer.get_access<access::mode::read>(cgh);
 				auto Q = Q_buffer.get_access<access::mode::write>(cgh);
 
-				cgh.parallel_for<class Gramschmidt2>(range<2>(size, 1), id<2>(0, k), [=](item<2> item) { Q[item] = A[item] / R[{k, k}]; });
+				cgh.parallel_for<Gramschmidt2>(range<2>(size, 1), id<2>(0, k), [=](item<2> item) { Q[item] = A[item] / R[{k, k}]; });
 			});
 
 			args.device_queue.submit([&](handler& cgh) {
@@ -95,7 +99,7 @@ class Polybench_Gramschmidt {
 				auto R = R_buffer.get_access<access::mode::write>(cgh);
 				auto Q = Q_buffer.get_access<access::mode::read>(cgh);
 
-				cgh.parallel_for<class Gramschmidt3>(range<2>(size, 1), [=, M_ = size, N_ = size](item<2> item) {
+				cgh.parallel_for<Gramschmidt3>(range<2>(size, 1), [=, M_ = size, N_ = size](item<2> item) {
 					const auto j = item[0];
 
 					if(j <= k || j >= N_) return;

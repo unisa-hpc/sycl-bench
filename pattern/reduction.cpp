@@ -93,7 +93,7 @@ private:
     // Retrieve result
     using namespace cl::sycl::access;
     _result = output_buff->template get_access<mode::read>(
-        sycl::range<1>{0}, sycl::range<1>{1})[0];
+        sycl::range<1>{0}, sycl::id<1>{1})[0];
   }
 
   void local_reduce_ndrange(

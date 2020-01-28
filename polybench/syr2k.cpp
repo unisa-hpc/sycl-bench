@@ -10,6 +10,8 @@
 
 using DATA_TYPE = float;
 
+class Syr2k1;
+
 constexpr DATA_TYPE ALPHA = 1;
 constexpr DATA_TYPE BETA = 1;
 
@@ -73,7 +75,7 @@ class Polybench_Syr2k {
 			auto B = B_buffer.get_access<access::mode::read>(cgh);
 			auto C = C_buffer.get_access<access::mode::read_write>(cgh);
 
-			cgh.parallel_for<class Syr2k1>(C_buffer.get_range(), [=, M_ = size](item<2> item) {
+			cgh.parallel_for<Syr2k1>(C_buffer.get_range(), [=, M_ = size](item<2> item) {
 				const auto i = item[0];
 				const auto j = item[1];
 

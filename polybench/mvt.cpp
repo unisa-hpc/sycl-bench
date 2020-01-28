@@ -10,6 +10,9 @@
 
 using DATA_TYPE = float;
 
+class Mvt1;
+class Mvt2;
+
 void init_arrays(DATA_TYPE* a, DATA_TYPE* x1, DATA_TYPE* x2, DATA_TYPE* y_1, DATA_TYPE* y_2, size_t size) {
 	const auto N = size;
 
@@ -69,7 +72,7 @@ class Polybench_Mvt {
 			auto y1 = y1_buffer.get_access<access::mode::read>(cgh);
 			auto x1 = x1_buffer.get_access<access::mode::read_write>(cgh);
 
-			cgh.parallel_for<class Mvt1>(x1_buffer.get_range(), [=, N_ = size](item<1> item) {
+			cgh.parallel_for<Mvt1>(x1_buffer.get_range(), [=, N_ = size](item<1> item) {
 				const auto i = item[0];
 
 				for(size_t j = 0; j < N_; j++) {
@@ -83,7 +86,7 @@ class Polybench_Mvt {
 			auto y2 = y2_buffer.get_access<access::mode::read>(cgh);
 			auto x2 = x2_buffer.get_access<access::mode::read_write>(cgh);
 
-			cgh.parallel_for<class Mvt2>(x1_buffer.get_range(), [=, N_ = size](item<1> item) {
+			cgh.parallel_for<Mvt2>(x1_buffer.get_range(), [=, N_ = size](item<1> item) {
 				const auto k = item[0];
 
 				for(size_t l = 0; l < N_; l++) {

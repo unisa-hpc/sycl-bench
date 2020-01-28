@@ -16,6 +16,12 @@
 
 using DATA_TYPE = float;
 
+class CorrelationMean;
+class CorrelationStd;
+class CorrelationReduce;
+class CorrelationCorr;
+class Correlation5;
+
 void init_arrays(DATA_TYPE* data, size_t size) {
 	const auto M = size;
 	const auto N = size;
@@ -107,7 +113,7 @@ class Polybench_Correlation {
 			auto data = data_buffer.get_access<access::mode::read>(cgh);
 			auto mean = mean_buffer.get_access<access::mode::read_write>(cgh);
 
-			cgh.parallel_for<class CorrelationMean>(range<1>(size), id<1>(1), [=, N_ = size](item<1> item) {
+			cgh.parallel_for<CorrelationMean>(range<1>(size), id<1>(1), [=, N_ = size](item<1> item) {
 				const auto j = item[0];
 
 				for(size_t i = 1; i <= N_; i++) {
@@ -122,7 +128,7 @@ class Polybench_Correlation {
 			auto mean = mean_buffer.get_access<access::mode::read>(cgh);
 			auto stddev = stddev_buffer.get_access<access::mode::read_write>(cgh);
 
-			cgh.parallel_for<class CorrelationStd>(range<1>(size), id<1>(1), [=, N_ = size](item<1> item) {
+			cgh.parallel_for<CorrelationStd>(range<1>(size), id<1>(1), [=, N_ = size](item<1> item) {
 				const auto j = item[0];
 
 				for(size_t i = 1; i <= N_; i++) {
@@ -140,7 +146,7 @@ class Polybench_Correlation {
 			auto mean = mean_buffer.get_access<access::mode::read>(cgh);
 			auto stddev = stddev_buffer.get_access<access::mode::read>(cgh);
 
-			cgh.parallel_for<class CorrelationReduce>(range<2>(size, size), id<2>(1, 1), [=](item<2> item) {
+			cgh.parallel_for<CorrelationReduce>(range<2>(size, size), id<2>(1, 1), [=](item<2> item) {
 				const auto j = item[1];
 
 				data[item] -= mean[j];
@@ -153,7 +159,7 @@ class Polybench_Correlation {
 			auto data = data_buffer.get_access<access::mode::read>(cgh);
 			auto symmat = symmat_buffer.get_access<access::mode::read_write>(cgh);
 
-			cgh.parallel_for<class CorrelationCorr>(range<1>(size), id<1>(1), [=, M_ = size, N_ = size](item<1> item) {
+			cgh.parallel_for<CorrelationCorr>(range<1>(size), id<1>(1), [=, M_ = size, N_ = size](item<1> item) {
 				// if(item[0] >= M_ - 1) return;
 
 				const auto j1 = item[0];
@@ -174,7 +180,7 @@ class Polybench_Correlation {
 
 		args.device_queue.submit([&](handler& cgh) {
 			auto symmat = symmat_buffer.get_access<access::mode::discard_write>(cgh);
-			cgh.parallel_for<class Correlation5>(range<2>(1, 1), id<2>(size, size), [=](item<2> item) { symmat[item] = 1.0; });
+			cgh.parallel_for<Correlation5>(range<2>(1, 1), id<2>(size, size), [=](item<2> item) { symmat[item] = 1.0; });
 		});
 	}
 

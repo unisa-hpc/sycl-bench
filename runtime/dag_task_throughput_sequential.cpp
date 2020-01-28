@@ -2,6 +2,11 @@
 
 using namespace cl;
 
+class DagTaskThroughputKernelSingleTask;
+class DagTaskThroughputKernelBasicPF;
+class DagTaskThroughputKernelNdrangePF;
+class DagTaskThroughputKernelHierarchicalPF;
+
 // Measures the time it takes to run <problem-size> trivial single_task and parallel_for kernels
 // that depend on each other, and have to be executed in-order (-> Utilization of
 // parallel hardware is *not* tested)
@@ -33,7 +38,7 @@ public:
           [&](cl::sycl::handler& cgh) {
         auto acc = dummy_counter.get_access<sycl::access::mode::read_write>(cgh);
         
-        cgh.single_task<class DagTaskThroughputKernelSingleTask>(
+        cgh.single_task<DagTaskThroughputKernelSingleTask>(
           [=]()
         {
           acc[0] += 1;
@@ -49,7 +54,7 @@ public:
           [&](cl::sycl::handler& cgh) {
         auto acc = dummy_counter.get_access<sycl::access::mode::read_write>(cgh);
         
-        cgh.parallel_for<class DagTaskThroughputKernelBasicPF>(
+        cgh.parallel_for<DagTaskThroughputKernelBasicPF>(
           // while we cannot control it, let's hope the SYCL implementation 
           // spawns a single work group.
           sycl::range<1>{args.local_size},
@@ -69,7 +74,7 @@ public:
           [&](cl::sycl::handler& cgh) {
         auto acc = dummy_counter.get_access<sycl::access::mode::read_write>(cgh);
         
-        cgh.parallel_for<class DagTaskThroughputKernelNdrangePF>(
+        cgh.parallel_for<DagTaskThroughputKernelNdrangePF>(
           sycl::nd_range<1>{
             sycl::range<1>{args.local_size},
             sycl::range<1>{args.local_size}},
@@ -89,7 +94,7 @@ public:
           [&](cl::sycl::handler& cgh) {
         auto acc = dummy_counter.get_access<sycl::access::mode::read_write>(cgh);
         
-        cgh.parallel_for_work_group<class DagTaskThroughputKernelHierarchicalPF>(
+        cgh.parallel_for_work_group<DagTaskThroughputKernelHierarchicalPF>(
           sycl::range<1>{1}, sycl::range<1>{args.local_size},
           [=](sycl::group<1> grp)
         {

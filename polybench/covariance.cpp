@@ -11,6 +11,10 @@
 
 using DATA_TYPE = float;
 
+class CovarianceMean;
+class CovarianceReduce;
+class CovarianceCovar;
+
 constexpr DATA_TYPE float_n = 3214212.01;
 
 void init_arrays(DATA_TYPE* data, size_t size) {
@@ -79,7 +83,7 @@ class Polybench_Covariance {
 			auto data = data_buffer.get_access<access::mode::read>(cgh);
 			auto mean = mean_buffer.get_access<access::mode::discard_write>(cgh);
 
-			cgh.parallel_for<class CovarianceMean>(range<1>(size), id<1>(1), [=, N_ = size](item<1> item) {
+			cgh.parallel_for<CovarianceMean>(range<1>(size), id<1>(1), [=, N_ = size](item<1> item) {
 				const auto j = item[0];
 
 				mean[item] = 0;
@@ -94,7 +98,7 @@ class Polybench_Covariance {
 			auto mean = mean_buffer.get_access<access::mode::read>(cgh);
 			auto data = data_buffer.get_access<access::mode::read_write>(cgh);
 
-			cgh.parallel_for<class CovarianceReduce>(range<2>(size, size), id<2>(1, 1), [=](item<2> item) {
+			cgh.parallel_for<CovarianceReduce>(range<2>(size, size), id<2>(1, 1), [=](item<2> item) {
 				const auto j = item[1];
 				data[item] -= mean[j];
 			});
@@ -105,7 +109,7 @@ class Polybench_Covariance {
 			auto symmat = symmat_buffer.get_access<access::mode::discard_write>(cgh);
 			auto symmat2 = symmat_buffer.get_access<access::mode::discard_write>(cgh);
 
-			cgh.parallel_for<class CovarianceCovar>(range<1>(size), id<1>(1), [=, M_ = size, N_ = size](item<1> item) {
+			cgh.parallel_for<CovarianceCovar>(range<1>(size), id<1>(1), [=, M_ = size, N_ = size](item<1> item) {
 				const auto j1 = item[0];
 
 				symmat[{j1, j1}] = 1.0;

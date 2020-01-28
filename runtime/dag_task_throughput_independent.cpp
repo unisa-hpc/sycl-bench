@@ -4,6 +4,11 @@
 
 using namespace cl;
 
+class IndependentDagTaskThroughputKernelSingleTask;
+class IndependentDagTaskThroughputKernelBasicPF;
+class DagTaskThroughputKernelNdrangePF;
+class DagTaskThroughputKernelHierarchicalPF;
+
 // Measures the time it takes to run <problem-size> trivial single_task and parallel_for kernels
 // that are *independent*. 
 // This benchmark can be used to see how well a SYCL implementation
@@ -32,7 +37,7 @@ public:
           [&](cl::sycl::handler& cgh) {
         auto acc = dummy_buffers[i].get_access<sycl::access::mode::discard_write>(cgh);
         
-        cgh.single_task<class IndependentDagTaskThroughputKernelSingleTask>(
+        cgh.single_task<IndependentDagTaskThroughputKernelSingleTask>(
           [=]()
         {
           acc[0] = i;
@@ -48,7 +53,7 @@ public:
           [&](cl::sycl::handler& cgh) {
         auto acc = dummy_buffers[i].get_access<sycl::access::mode::discard_write>(cgh);
         
-        cgh.parallel_for<class IndependentDagTaskThroughputKernelBasicPF>(
+        cgh.parallel_for<IndependentDagTaskThroughputKernelBasicPF>(
           
           sycl::range<1>{args.local_size},
           [=](sycl::id<1> idx)
@@ -67,7 +72,7 @@ public:
           [&](cl::sycl::handler& cgh) {
         auto acc = dummy_buffers[i].get_access<sycl::access::mode::discard_write>(cgh);
         
-        cgh.parallel_for<class DagTaskThroughputKernelNdrangePF>(
+        cgh.parallel_for<DagTaskThroughputKernelNdrangePF>(
           sycl::nd_range<1>{
             sycl::range<1>{args.local_size},
             sycl::range<1>{args.local_size}},
@@ -87,7 +92,7 @@ public:
           [&](cl::sycl::handler& cgh) {
         auto acc = dummy_buffers[i].get_access<sycl::access::mode::discard_write>(cgh);
         
-        cgh.parallel_for_work_group<class DagTaskThroughputKernelHierarchicalPF>(
+        cgh.parallel_for_work_group<DagTaskThroughputKernelHierarchicalPF>(
           sycl::range<1>{1}, sycl::range<1>{args.local_size},
           [=](sycl::group<1> grp)
         {

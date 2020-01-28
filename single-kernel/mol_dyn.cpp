@@ -55,16 +55,18 @@ public:
       cl::sycl::range<1> ndrange (args.problem_size);
 
       cgh.parallel_for<class MolecularDynamicsKernel>(ndrange,
-        [=](cl::sycl::id<1> idx) 
+        [=, problem_size = args.problem_size, neighCount_ = neighCount,
+         inum_ = inum, cutsq_ = cutsq, lj1_ = lj1, lj2_ = lj2]
+        (cl::sycl::id<1> idx)
         {
             size_t gid= idx[0];
 
-            if (gid < args.problem_size) {
+            if (gid < problem_size) {
                 s::float4 ipos = in[gid];
                 s::float4 f = {0.0f, 0.0f, 0.0f, 0.0f};
                 int j = 0;
-                while (j < neighCount) {
-                    int jidx = neigh[j*inum + gid];
+                while (j < neighCount_) {
+                    int jidx = neigh[j*inum_ + gid];
                     s::float4 jpos = in[jidx];
 
                     // Calculate distance
@@ -74,10 +76,10 @@ public:
                     float r2inv = delx*delx + dely*dely + delz*delz;
 
                     // If distance is less than cutoff, calculate force
-                    if (r2inv < cutsq) {
+                    if (r2inv < cutsq_) {
                         r2inv = 10.0f/r2inv;
                         float r6inv = r2inv * r2inv * r2inv;
-                        float forceC = r2inv*r6inv*(lj1*r6inv - lj2);
+                        float forceC = r2inv*r6inv*(lj1_*r6inv - lj2_);
 
                         f.x() += delx * forceC;
                         f.y() += dely * forceC;
@@ -85,7 +87,7 @@ public:
                     }
                     j++;
                 }
-                output[gid] = f;
+                out[gid] = f;
             }
         });
     });
