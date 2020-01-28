@@ -1,0 +1,13 @@
+BasedOnStyle: llvm
+
+AlignAfterOpenBracket: DontAlign
+AllowShortLoopsOnASingleLine: true
+AlwaysBreakTemplateDeclarations: true
+BreakBeforeBraces: Attach
+ColumnLimit: 120
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 2
+PointerAlignment: Left
+SpaceBeforeParens: Never
+Standard: Cpp11
+
