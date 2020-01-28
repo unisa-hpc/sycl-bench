@@ -114,14 +114,18 @@ if __name__ == '__main__':
   install_dir = os.path.dirname(os.path.realpath(__file__))
 
   profilename = 'default'
-  
-  if len(sys.argv) > 1:
-    if not sys.argv[1] in profiles:
-      print("Invalid benchmarking profile:",sys.argv[1])
-      print("Valid entries are:"," ".join(x for x in profiles))
-      sys.exit(-1)
-    else:
-      profilename = sys.argv[1]
+
+  if len(sys.argv) != 2:
+    print("Usage: ./run-suite <profile>")
+    print("Valid profiles are:", " ".join(x for x in profiles))
+    sys.exit(-1)
+
+  if not sys.argv[1] in profiles:
+    print("Invalid benchmarking profile:",sys.argv[1])
+    print("Valid profiles are:"," ".join(x for x in profiles))
+    sys.exit(-1)
+    
+  profilename = sys.argv[1]
   
   print("Using test profile:",profilename)
   profile = profiles[profilename]
