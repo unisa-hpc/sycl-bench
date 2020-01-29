@@ -1,27 +1,29 @@
 #include "common.h"
 
 #include <iostream>
+#include <type_traits>
+#include <iomanip>
 
 //using namespace cl::sycl;
 namespace s = cl::sycl;
 
-template<bool>
+template<typename T, bool>
 class ScalarProdKernel;
-template<bool>
+template<typename T, bool>
 class ScalarProdKernelHierarchical;
 
-template<bool>
+template<typename T, bool>
 class ScalarProdReduction;
-template<bool>
+template<typename T, bool>
 class ScalarProdReductionHierarchical;
 
-template<bool Use_ndrange = true>
+template<typename T, bool Use_ndrange = true>
 class ScalarProdBench
 {
 protected:    
-    std::vector<int> input1;
-    std::vector<int> input2;
-    std::vector<int> output;
+    std::vector<T> input1;
+    std::vector<T> input2;
+    std::vector<T> output;
     BenchmarkArgs args;
 
 public:
@@ -31,31 +33,31 @@ public:
     // host memory allocation and initialization
     input1.resize(args.problem_size);
     input2.resize(args.problem_size);
-    output.resize(args.problem_size, 0);
+    output.resize(args.problem_size);
 
-    for (size_t i =0; i < args.problem_size; i++) {
-      input1[i] = i;
-      input2[i] = i;
+    for (size_t i = 0; i < args.problem_size; i++) {
+      input1[i] = static_cast<T>(1);
+      input2[i] = static_cast<T>(2);
+      output[i] = static_cast<T>(0);
     }
-
   }
 
   void run() {    
-    s::buffer<int, 1> input1_buf(input1.data(), s::range<1>(args.problem_size));
-    s::buffer<int, 1> input2_buf(input2.data(), s::range<1>(args.problem_size));
-    s::buffer<int, 1> output_buf(output.data(), s::range<1>(args.problem_size));
+    s::buffer<T, 1> input1_buf(input1.data(), s::range<1>(args.problem_size));
+    s::buffer<T, 1> input2_buf(input2.data(), s::range<1>(args.problem_size));
+    s::buffer<T, 1> output_buf(output.data(), s::range<1>(args.problem_size));
     
     args.device_queue.submit(
         [&](cl::sycl::handler& cgh) {
-      auto in1 = input1_buf.get_access<s::access::mode::read>(cgh);
-      auto in2 = input2_buf.get_access<s::access::mode::read>(cgh);
+      auto in1 = input1_buf.template get_access<s::access::mode::read>(cgh);
+      auto in2 = input2_buf.template get_access<s::access::mode::read>(cgh);
       // Use discard_write here, otherwise the content of the hostbuffer must first be copied to device
-      auto intermediate_product = output_buf.get_access<s::access::mode::discard_write>(cgh);
+      auto intermediate_product = output_buf.template get_access<s::access::mode::discard_write>(cgh);
 
       if(Use_ndrange){
         cl::sycl::nd_range<1> ndrange (args.problem_size, args.local_size);
 
-        cgh.parallel_for<class ScalarProdKernel<Use_ndrange>>(ndrange,
+        cgh.parallel_for<class ScalarProdKernel<T, Use_ndrange>>(ndrange,
           [=](cl::sycl::nd_item<1> item) 
           {
             size_t gid= item.get_global_linear_id();
@@ -63,7 +65,7 @@ public:
           });
       }
       else {
-        cgh.parallel_for_work_group<class ScalarProdKernelHierarchical<Use_ndrange>>(
+        cgh.parallel_for_work_group<class ScalarProdKernelHierarchical<T, Use_ndrange>>(
           cl::sycl::range<1>{args.problem_size / args.local_size},
           cl::sycl::range<1>{args.local_size},
           [=](cl::sycl::group<1> grp){
@@ -88,14 +90,14 @@ public:
       args.device_queue.submit(
         [&](cl::sycl::handler& cgh) {
 
-          auto global_mem = output_buf.get_access<s::access::mode::read_write>(cgh);
+          auto global_mem = output_buf.template get_access<s::access::mode::read_write>(cgh);
       
           // local memory for reduction
-          auto local_mem = s::accessor <int, 1, s::access::mode::read_write, s::access::target::local> {s::range<1>(wgroup_size), cgh};
+          auto local_mem = s::accessor <T, 1, s::access::mode::read_write, s::access::target::local> {s::range<1>(wgroup_size), cgh};
           cl::sycl::nd_range<1> ndrange (n_wgroups*wgroup_size, wgroup_size);
     
           if(Use_ndrange) {
-            cgh.parallel_for<class ScalarProdReduction<Use_ndrange>>(ndrange,
+            cgh.parallel_for<class ScalarProdReduction<T, Use_ndrange>>(ndrange,
             [=](cl::sycl::nd_item<1> item) 
               {
                 size_t gid= item.get_global_linear_id();
@@ -126,7 +128,7 @@ public:
               });
           }
           else {
-            cgh.parallel_for_work_group<class ScalarProdReductionHierarchical<Use_ndrange>>(
+            cgh.parallel_for_work_group<class ScalarProdReductionHierarchical<T, Use_ndrange>>(
               cl::sycl::range<1>{n_wgroups}, cl::sycl::range<1>{wgroup_size},
               [=](cl::sycl::group<1> grp){
                 grp.parallel_for_work_item([&](cl::sycl::h_item<1> idx){
@@ -168,7 +170,7 @@ public:
 
   bool verify(VerificationSetting &ver) { 
     bool pass = true;
-    int expected = 0;
+    auto expected = static_cast <T>(0);
 
     for(size_t i = 0; i < args.problem_size; i++) {
         expected += input1[i] * input2[i];
@@ -176,10 +178,13 @@ public:
 
     std::cout << "Scalar product on CPU =" << expected << std::endl;
     std::cout << "Scalar product on Device =" << output[0] << std::endl;
-    
-    if(expected != output[0]) {
+
+    // Todo: update to type-specific test (Template specialization?)
+    const auto tolerance = 0.00001f;
+    if(std::fabs(expected - output[0]) > tolerance) {
       pass = false;
     }
+
     return pass;
   }
   
@@ -194,9 +199,17 @@ public:
 int main(int argc, char** argv)
 {
   BenchmarkApp app(argc, argv);
-  if(app.shouldRunNDRangeKernels())
-    app.run<ScalarProdBench<true>>();
-  
-  app.run<ScalarProdBench<false>>();
+  if(app.shouldRunNDRangeKernels()) {
+    app.run<ScalarProdBench<int, true>>();
+    app.run<ScalarProdBench<long long, true>>();
+    app.run<ScalarProdBench<float, true>>();
+    app.run<ScalarProdBench<double, true>>();
+  }
+
+  app.run<ScalarProdBench<int, false>>();
+  app.run<ScalarProdBench<long long, false>>();
+  app.run<ScalarProdBench<float, false>>();
+  app.run<ScalarProdBench<double, false>>();  
+
   return 0;
 }
