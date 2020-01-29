@@ -52,17 +52,19 @@ public:
       cl::sycl::range<1> ndrange (args.problem_size);
 
       cgh.parallel_for<class KmeansKernel<T>>(ndrange,
-        [=](cl::sycl::id<1> idx) 
+        [features, clusters, membership, problem_size = args.problem_size,
+         nclusters_ = nclusters, nfeatures_ = nfeatures]
+        (cl::sycl::id<1> idx)
         {
             size_t gid= idx[0];
 
-            if (gid < args.problem_size) {
+            if (gid < problem_size) {
                 int index = 0;
                 T min_dist = FLT_MAX;
-                for (size_t i = 0; i < nclusters; i++) {
+                for (size_t i = 0; i < nclusters_; i++) {
                     T dist = 0;
-                    for (size_t l = 0; l < nfeatures; l++) {
-                        dist += (features[l * args.problem_size + gid] - clusters[i * nfeatures + l]) * (features[l * args.problem_size + gid] - clusters[i * nfeatures + l]);
+                    for (size_t l = 0; l < nfeatures_; l++) {
+                        dist += (features[l * problem_size + gid] - clusters[i * nfeatures_ + l]) * (features[l * problem_size + gid] - clusters[i * nfeatures_ + l]);
 		            }
                     if (dist < min_dist) {
                         min_dist = dist;

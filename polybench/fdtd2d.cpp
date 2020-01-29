@@ -10,6 +10,10 @@
 
 using DATA_TYPE = double;
 
+class Fdtd2d1;
+class Fdtd2d2;
+class Fdtd2d3;
+
 constexpr auto TMAX = 500;
 
 void init_arrays(DATA_TYPE* fict, DATA_TYPE* ex, DATA_TYPE* ey, DATA_TYPE* hz, size_t size) {
@@ -85,7 +89,7 @@ class Polybench_Fdtd2d {
 				auto ey = ey_buffer.get_access<access::mode::read_write>(cgh);
 				auto hz = hz_buffer.get_access<access::mode::read>(cgh);
 
-				cgh.parallel_for<class Fdtd2d1>(range<2>(size, size), [=](item<2> item) {
+				cgh.parallel_for<Fdtd2d1>(range<2>(size, size), [=](item<2> item) {
 					const auto i = item[0];
 					const auto j = item[1];
 
@@ -101,7 +105,7 @@ class Polybench_Fdtd2d {
 				auto ex = ex_buffer.get_access<access::mode::read_write>(cgh);
 				auto hz = hz_buffer.get_access<access::mode::read>(cgh);
 
-				cgh.parallel_for<class Fdtd2d2>(range<2>(size, size), [=, NX_ = size, NY_ = size](item<2> item) {
+				cgh.parallel_for<Fdtd2d2>(range<2>(size, size), [=, NX_ = size, NY_ = size](item<2> item) {
 					const auto i = item[0];
 					const auto j = item[1];
 
@@ -114,7 +118,7 @@ class Polybench_Fdtd2d {
 				auto ey = ey_buffer.get_access<access::mode::read>(cgh);
 				auto hz = hz_buffer.get_access<access::mode::read_write>(cgh);
 
-				cgh.parallel_for<class Fdtd2d3>(hz_buffer.get_range(), [=](item<2> item) {
+				cgh.parallel_for<Fdtd2d3>(hz_buffer.get_range(), [=](item<2> item) {
 					const auto i = item[0];
 					const auto j = item[1];
 

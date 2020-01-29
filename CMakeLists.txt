@@ -15,6 +15,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 if(CMAKE_GENERATOR STREQUAL "Ninja")
   set(CMAKE_SYCL_FLAGS "${CMAKE_SYCL_FLAGS} -fdiagnostics-color=always")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
+  set(COMPUTECPP_USER_FLAGS "${COMPUTECPP_USER_FLAGS} -fdiagnostics-color=always")
 endif()
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
