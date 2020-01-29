@@ -44,8 +44,7 @@ public:
         [&](cl::sycl::handler& cgh) {
       auto in1 = input1_buf.template get_access<s::access::mode::read>(cgh);
       auto in2 = input2_buf.template get_access<s::access::mode::read>(cgh);
-      // Use discard_write here, otherwise the content of the host
-      // buffer must first be copied to device
+      // Use discard_write here, otherwise the content of the host buffer must first be copied to device
       auto out = output_buf.template get_access<s::access::mode::discard_write>(cgh);
       cl::sycl::range<1> ndrange {args.problem_size};
 

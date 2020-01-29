@@ -109,9 +109,6 @@ public:
       expected_output[i] = error; 
     }
 
-    //for (size_t i = 0; i < args.problem_size; i++)
-      //std::cout << "Expected= " << expected_output[i] << "," << "output = " << output[i] << std::endl;
-
     bool equal = compare(expected_output, output, args.problem_size, 0.000001);
     
     if(!equal) {
