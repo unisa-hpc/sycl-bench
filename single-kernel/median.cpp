@@ -8,6 +8,15 @@
 namespace s = cl::sycl;
 class MedianFilterBenchKernel; // kernel forward declaration
 
+void swap(cl::sycl::float4 A[], int i, int j) {
+  /*if(A[i] > A[j]) {
+    float temp = A[i];
+    A[i] = A[j];
+    A[j] = temp;
+    }*/
+  A[i] = fmin(A[i], A[j]);
+  A[j] = fmax(A[i], A[j]);
+}
 
 /*
   A median filter with a windows of 3 pixels (3x3).
@@ -33,16 +42,6 @@ public:
     output.resize(size * size);
   }
 
-  inline void swap(cl::sycl::float4 A[], int i, int j){    
-    /*if(A[i] > A[j]) {
-      float temp = A[i];
-      A[i] = A[j];
-      A[j] = temp;
-    }*/    
-    A[i] = fmin(A[i], A[j]);
-    A[j] = fmax(A[i], A[j]);
-  }
-
   void run() {    
     s::buffer<cl::sycl::float4, 2>  input_buf( input.data(), s::range<2>(size, size));    
     s::buffer<cl::sycl::float4, 2> output_buf(output.data(), s::range<2>(size, size));
@@ -54,7 +53,7 @@ public:
       cl::sycl::range<2> ndrange {size, size};
 
       cgh.parallel_for<class MedianFilterBenchKernel>(ndrange,
-        [=](cl::sycl::id<2> gid) 
+        [in, out, size_ = size](cl::sycl::id<2> gid)
         {
           int x = gid[0];
           int y = gid[1];
@@ -64,8 +63,8 @@ public:
           int k = 0;
           for(int i = -1; i<2; i++)
             for(int j = -1; j<2; j++) {
-              uint xs = s::min(s::max(x+j, 0), static_cast<int>(size-1)); // borders are handled here with extended values
-              uint ys = s::min(s::max(y+i, 0), static_cast<int>(size-1));
+              uint xs = s::min(s::max(x+j, 0), static_cast<int>(size_-1)); // borders are handled here with extended values
+              uint ys = s::min(s::max(y+i, 0), static_cast<int>(size_-1));
               window[k] =in[ {xs,ys} ];
               k++;
             }

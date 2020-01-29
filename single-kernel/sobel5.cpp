@@ -6,7 +6,7 @@
 
 
 namespace s = cl::sycl;
-class SobelBenchKernel; // kernel forward declaration
+class Sobel5BenchKernel; // kernel forward declaration
 
 
 /*
@@ -54,8 +54,8 @@ public:
 	      1,  2, 0,  -2, -1
       };
 
-      cgh.parallel_for<class Sobel5BenchKernel>(ndrange,
-        [=](cl::sycl::id<2> gid)
+      cgh.parallel_for<Sobel5BenchKernel>(ndrange,
+        [in, out, kernel, size_ = size](cl::sycl::id<2> gid)
         {
           int x = gid[0];
           int y = gid[1];
@@ -74,7 +74,7 @@ public:
               // for the same pixel, convolution is always 0  
               if(x==xs && y==ys) continue;
               // boundary check
-              if(xs < 0 || xs >= size || ys < 0 || ys >= size) continue;
+              if(xs < 0 || xs >= size_ || ys < 0 || ys >= size_) continue;
 
               // sample color
               cl::sycl::float4 sample = in[ {xs,ys} ];

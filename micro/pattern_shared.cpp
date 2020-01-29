@@ -34,7 +34,7 @@ public:
       auto out = output_buf.template get_access<s::access::mode::discard_write>(cgh);
       // local memory definition
       s::accessor<DATA_TYPE, 1,s::access::mode::read_write, s::access::target::local> 
-        local_mem(s::range<1>(TILE_DIM), cgh);
+        local_mem(TILE_DIM, cgh);
 
       s::range<1> ndrange {args.problem_size};
 

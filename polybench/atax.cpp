@@ -14,6 +14,9 @@
 
 using DATA_TYPE = float;
 
+class Atax1;
+class Atax2;
+
 void init_array(DATA_TYPE* x, DATA_TYPE* A, size_t size) {
 	const auto NX = size;
 	const auto NY = size;
@@ -67,7 +70,7 @@ class Polybench_Atax {
 			auto x = x_buffer.get_access<access::mode::read>(cgh);
 			auto tmp = tmp_buffer.get_access<access::mode::read_write>(cgh);
 
-			cgh.parallel_for<class Atax1>(tmp_buffer.get_range(), [=, size_ = size](item<1> item) {
+			cgh.parallel_for<Atax1>(tmp_buffer.get_range(), [=, size_ = size](item<1> item) {
 				const auto i = item[0];
 
 				for(size_t j = 0; j < size_; j++) {
@@ -81,7 +84,7 @@ class Polybench_Atax {
 			auto y = y_buffer.get_access<access::mode::read_write>(cgh);
 			auto tmp = tmp_buffer.get_access<access::mode::read>(cgh);
 
-			cgh.parallel_for<class Atax2>(y_buffer.get_range(), [=, size_ = size](item<1> item) {
+			cgh.parallel_for<Atax2>(y_buffer.get_range(), [=, size_ = size](item<1> item) {
 				const auto j = item[0];
 
 				for(size_t i = 0; i < size_; i++) {

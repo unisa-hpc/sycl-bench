@@ -10,6 +10,10 @@
 
 using DATA_TYPE = float;
 
+class Polybench_3mm_1;
+class Polybench_3mm_2;
+class Polybench_3mm_3;
+
 void init_array(DATA_TYPE* A, DATA_TYPE* B, DATA_TYPE* C, DATA_TYPE* D, size_t size) {
 	const auto NI = size;
 	const auto NJ = size;
@@ -112,7 +116,7 @@ class Polybench_3mm {
 			auto B = B_buffer.get_access<access::mode::read>(cgh);
 			auto E = E_buffer.get_access<access::mode::read_write>(cgh);
 
-			cgh.parallel_for<class Polybench_3mm_1>(E_buffer.get_range(), [=, size_ = size](item<2> item) {
+			cgh.parallel_for<Polybench_3mm_1>(E_buffer.get_range(), [=, size_ = size](item<2> item) {
 				const auto i = item[0];
 				const auto j = item[1];
 
@@ -127,7 +131,7 @@ class Polybench_3mm {
 			auto D = D_buffer.get_access<access::mode::read>(cgh);
 			auto F = F_buffer.get_access<access::mode::read_write>(cgh);
 
-			cgh.parallel_for<class Polybench_3mm_2>(F_buffer.get_range(), [=, size_ = size](item<2> item) {
+			cgh.parallel_for<Polybench_3mm_2>(F_buffer.get_range(), [=, size_ = size](item<2> item) {
 				const auto i = item[0];
 				const auto j = item[1];
 
@@ -142,7 +146,7 @@ class Polybench_3mm {
 			auto F = F_buffer.get_access<access::mode::read>(cgh);
 			auto G = G_buffer.get_access<access::mode::read_write>(cgh);
 
-			cgh.parallel_for<class Polybench_3mm_3>(F_buffer.get_range(), [=, size_ = size](item<2> item) {
+			cgh.parallel_for<Polybench_3mm_3>(F_buffer.get_range(), [=, size_ = size](item<2> item) {
 				const auto i = item[0];
 				const auto j = item[1];
 

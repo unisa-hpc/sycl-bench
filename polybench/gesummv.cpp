@@ -10,6 +10,8 @@
 
 using DATA_TYPE = float;
 
+class Gesummv;
+
 constexpr DATA_TYPE ALPHA = 1;
 constexpr DATA_TYPE BETA = 1;
 
@@ -82,7 +84,7 @@ class Polybench_Gesummv {
 			auto y = y_buffer.get_access<access::mode::read_write>(cgh);
 			auto tmp = tmp_buffer.get_access<access::mode::read_write>(cgh);
 
-			cgh.parallel_for<class Gesummv>(y.get_range(), [=, N_ = size](item<1> item) {
+			cgh.parallel_for<Gesummv>(y.get_range(), [=, N_ = size](item<1> item) {
 				const auto i = item[0];
 
 				for(size_t j = 0; j < N_; j++) {

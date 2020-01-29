@@ -13,6 +13,8 @@
 
 using DATA_TYPE = float;
 
+class Gemm;
+
 void init(DATA_TYPE* A, DATA_TYPE* B, DATA_TYPE* C, size_t size) {
 	const auto NI = size;
 	const auto NJ = size;
@@ -77,7 +79,7 @@ class Polybench_Gemm {
 			auto B = B_buffer.get_access<access::mode::read>(cgh);
 			auto C = C_buffer.get_access<access::mode::read_write>(cgh);
 
-			cgh.parallel_for<class Gemm>(C_buffer.get_range(), [=, NK_ = size](item<2> item) {
+			cgh.parallel_for<Gemm>(C_buffer.get_range(), [=, NK_ = size](item<2> item) {
 				const auto i = item[0];
 				const auto j = item[1];
 

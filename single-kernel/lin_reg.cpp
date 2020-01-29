@@ -56,15 +56,15 @@ public:
       cl::sycl::range<1> ndrange (args.problem_size);
 
       cgh.parallel_for<class LinearRegressionKernel<T>>(ndrange,
-        [=](cl::sycl::id<1> idx) 
+        [=, problem_size = args.problem_size](cl::sycl::id<1> idx)
         {
           size_t gid= idx[0];
           T a = alpha[gid];
           T b = beta[gid];
           T error = 0.0;
-          if (gid < args.problem_size) {
+          if (gid < problem_size) {
               // Use parallel reduction to add errors
-              for (size_t i = 0; i < args.problem_size; i++) {
+              for (size_t i = 0; i < problem_size; i++) {
                 T e = (a*in1[i] + b) - in2[i];
                 error += e*e;
               }

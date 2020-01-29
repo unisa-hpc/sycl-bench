@@ -10,6 +10,8 @@
 
 using DATA_TYPE = float;
 
+class conv3D;
+
 void init(DATA_TYPE* A, size_t size) {
 	const auto NI = size;
 	const auto NJ = size;

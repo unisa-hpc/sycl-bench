@@ -10,6 +10,9 @@
 
 using DATA_TYPE = float;
 
+class Polybench_2mm_2;
+class Polybench_2mm_1;
+
 void init_array(DATA_TYPE* A, DATA_TYPE* B, DATA_TYPE* C, DATA_TYPE* D, size_t size) {
 	const auto NI = size;
 	const auto NJ = size;
@@ -93,7 +96,7 @@ class Polybench_2mm {
 			auto B = B_buffer.get_access<access::mode::read>(cgh);
 			auto C = C_buffer.get_access<access::mode::read_write>(cgh);
 
-			cgh.parallel_for<class Polybench_2mm_1>(C_buffer.get_range(), [=, size_ = size](item<2> item) {
+			cgh.parallel_for<Polybench_2mm_1>(C_buffer.get_range(), [=, size_ = size](item<2> item) {
 				const auto i = item[0];
 				const auto j = item[1];
 
@@ -108,7 +111,7 @@ class Polybench_2mm {
 			auto D = D_buffer.get_access<access::mode::read>(cgh);
 			auto E = E_buffer.get_access<access::mode::discard_write>(cgh);
 
-			cgh.parallel_for<class Polybench_2mm_2>(E_buffer.get_range(), [=, size_ = size](item<2> item) {
+			cgh.parallel_for<Polybench_2mm_2>(E_buffer.get_range(), [=, size_ = size](item<2> item) {
 				const auto i = item[0];
 				const auto j = item[1];
 

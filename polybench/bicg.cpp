@@ -14,6 +14,9 @@
 
 using DATA_TYPE = float;
 
+class Bicg1;
+class Bicg2;
+
 void init_array(DATA_TYPE* A, DATA_TYPE* p, DATA_TYPE* r, size_t size) {
 	const auto NX = size;
 	const auto NY = size;
@@ -71,7 +74,7 @@ class Polybench_Bicg {
 			auto r = r_buffer.get_access<access::mode::read>(cgh);
 			auto s = s_buffer.get_access<access::mode::read_write>(cgh);
 
-			cgh.parallel_for<class Bicg1>(s_buffer.get_range(), [=, size_ = size](item<1> item) {
+			cgh.parallel_for<Bicg1>(s_buffer.get_range(), [=, size_ = size](item<1> item) {
 				const auto j = item[0];
 
 				for(size_t i = 0; i < size_; i++) {
@@ -85,7 +88,7 @@ class Polybench_Bicg {
 			auto p = p_buffer.get_access<access::mode::read>(cgh);
 			auto q = q_buffer.get_access<access::mode::read_write>(cgh);
 
-			cgh.parallel_for<class Bicg2>(q_buffer.get_range(), [=, size_ = size](item<1> item) {
+			cgh.parallel_for<Bicg2>(q_buffer.get_range(), [=, size_ = size](item<1> item) {
 				const auto i = item[0];
 
 				for(size_t j = 0; j < size_; j++) {
