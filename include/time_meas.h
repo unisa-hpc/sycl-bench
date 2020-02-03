@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <chrono>
+#include <string>
 #include <vector>
 #include <numeric>
 #include <cmath>
@@ -38,6 +39,13 @@ public:
 
     virtual void emitResults(ResultConsumer& consumer) override {
 
+        std::string full_result_string = "\"";
+        for(auto s : seconds) {
+          full_result_string += std::to_string(s);
+          full_result_string += " ";
+        }
+        full_result_string += "\"";
+      
         double mean_sec = std::accumulate(seconds.begin(), seconds.end(), 0.)
                         / static_cast<double>(seconds.size());
 
@@ -58,5 +66,6 @@ public:
             std::to_string(mean_sec), 
             " [s]");
         consumer.consumeResult("run-time-stddev", std::to_string(stddev), " [s]");
+        consumer.consumeResult("run-time-samples", full_result_string);
     }
 };
