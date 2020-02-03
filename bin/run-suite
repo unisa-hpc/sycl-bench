@@ -96,6 +96,7 @@ def invoke_benchmark(benchmark_executable, args):
 
 def is_benchmark(filepath):
   # Don't execute this script again
+  print os.path.realpath(__file__), os.path.relpath(__file__)
   if filepath == os.path.realpath(__file__):
     return False
   
@@ -111,22 +112,27 @@ def is_benchmark(filepath):
   return True
 
 if __name__ == '__main__':
-  install_dir = os.path.dirname(os.path.realpath(__file__))
+  #install_dir = os.path.dirname(os.path.realpath(__file__))
 
   profilename = 'default'
 
-  if len(sys.argv) != 2:
+  if len(sys.argv) < 2:
     print("Usage: ./run-suite <profile>")
     print("Valid profiles are:", " ".join(x for x in profiles))
     sys.exit(-1)
 
-  if not sys.argv[1] in profiles:
+  profilename = sys.argv[1]
+
+  if not profilename in profiles:
     print("Invalid benchmarking profile:",sys.argv[1])
     print("Valid profiles are:"," ".join(x for x in profiles))
     sys.exit(-1)
-    
-  profilename = sys.argv[1]
-  
+
+  if len(sys.argv) == 3:
+    install_dir = sys.argv[2]
+  else:
+    install_dir = os.getcwd()
+
   print("Using test profile:",profilename)
   profile = profiles[profilename]
   
@@ -147,6 +153,7 @@ if __name__ == '__main__':
     for filename in files:
       benchmark_name = filename
       benchmark_executable = os.path.realpath(filename)
+      print install_dir, benchmark_name, benchmark_executable, filename
       if is_benchmark(benchmark_executable):
         
         print("\n\n##################################################")
