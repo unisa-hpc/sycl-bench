@@ -29,7 +29,7 @@ public:
   void setup() {
     size = args.problem_size; // input size defined by the user
     input.resize(size * size);
-    load_bitmap_mirrored("../share/Brommy.bmp", size, input);
+    load_bitmap_mirrored("../../share/Brommy.bmp", size, input);
     output.resize(size * size);
   }
 

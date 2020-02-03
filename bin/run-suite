@@ -95,10 +95,7 @@ def invoke_benchmark(benchmark_executable, args):
   return retcode, elapsed_time
 
 def is_benchmark(filepath):
-  # Don't execute this script again
-  if filepath == os.path.realpath(__file__):
-    return False
-  
+
   filename, extension = os.path.splitext(filepath)
 
   # Yeah, so this is a bit of a hack.. the better solution would be
@@ -111,7 +108,7 @@ def is_benchmark(filepath):
   return True
 
 if __name__ == '__main__':
-  install_dir = os.path.dirname(os.path.realpath(__file__))
+  install_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),"benchmarks")
 
   profilename = 'default'
 
@@ -146,7 +143,7 @@ if __name__ == '__main__':
   for root, dirs, files in os.walk(install_dir):
     for filename in files:
       benchmark_name = filename
-      benchmark_executable = os.path.realpath(filename)
+      benchmark_executable = os.path.realpath(os.path.join(install_dir,filename))
       if is_benchmark(benchmark_executable):
         
         print("\n\n##################################################")
