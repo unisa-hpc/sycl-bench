@@ -88,7 +88,7 @@ foreach(benchmark IN LISTS benchmarks)
     add_sycl_to_target(TARGET ${target} SOURCES ${benchmark})
   endif()
 
-  install(TARGETS ${target} RUNTIME DESTINATION bin/)
+  install(TARGETS ${target} RUNTIME DESTINATION bin/benchmarks/)
   get_filename_component(dir ${benchmark} DIRECTORY)
   set_property(TARGET ${target} PROPERTY FOLDER ${dir})
 endforeach(benchmark)
