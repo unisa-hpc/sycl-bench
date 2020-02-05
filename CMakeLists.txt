@@ -61,6 +61,7 @@ set(benchmarks
   runtime/dag_task_throughput_sequential.cpp
   runtime/dag_task_throughput_independent.cpp
   runtime/blocked_transform.cpp
+  runtime/matmulchain.cpp
   polybench/2DConvolution.cpp
   polybench/2mm.cpp
   polybench/3DConvolution.cpp
