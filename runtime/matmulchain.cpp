@@ -42,6 +42,9 @@ protected:
 public:
 	MatmulChain(const BenchmarkArgs &_args) : args(_args) {
 		mat_size = args.problem_size;
+	}
+
+	void setup() {
 		mat_a = std::vector<T>(mat_size * mat_size);
 		mat_b = std::vector<T>(mat_size * mat_size);
 		mat_c = std::vector<T>(mat_size * mat_size);
@@ -57,9 +60,6 @@ public:
         	                mat_d[i * mat_size + j] = i == j;
         	        }
         	}
-	}
-
-	void setup() {
 	}
 
 	void run() {
