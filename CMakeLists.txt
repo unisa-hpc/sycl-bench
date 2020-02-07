@@ -56,6 +56,7 @@ set(benchmarks
   single-kernel/lin_reg_coeff.cpp
   single-kernel/kmeans.cpp
   single-kernel/mol_dyn.cpp
+  single-kernel/nbody.cpp
   pattern/segmentedreduction.cpp
   pattern/reduction.cpp
   runtime/dag_task_throughput_sequential.cpp
