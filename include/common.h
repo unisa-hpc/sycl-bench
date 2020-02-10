@@ -8,6 +8,7 @@
 #include <memory>
 #include <algorithm> // for std::min
 #include <type_traits>
+#include <unordered_set>
 
 #include "command_line.h"
 #include "result_consumer.h"
@@ -49,8 +50,7 @@ public:
   template<typename... Args>
   void run(Args&&... additionalArgs)
   {
-    args.result_consumer->proceedToBenchmark(
-      Benchmark{args, additionalArgs...}.getBenchmarkName());
+    args.result_consumer->proceedToBenchmark(Benchmark{args, additionalArgs...}.getBenchmarkName());
 
     args.result_consumer->consumeResult(
       "problem-size", std::to_string(args.problem_size));
@@ -139,6 +139,7 @@ class BenchmarkApp
 {
   BenchmarkArgs args;  
   cl::sycl::queue device_queue;
+  std::unordered_set<std::string> benchmark_names;
   
 public:  
   BenchmarkApp(int argc, char** argv)
@@ -163,6 +164,14 @@ public:
   void run(AdditionalArgs&&... additional_args)
   {
     try {
+      const auto name = Benchmark{args, additional_args...}.getBenchmarkName();
+      if(benchmark_names.count(name) == 0) {
+        benchmark_names.insert(name);
+      } else {
+        std::cerr << "Benchmark with name '" << name << "' has already been run\n";
+        throw std::runtime_error("Duplicate benchmark name");
+      }
+
       BenchmarkManager<Benchmark> mgr(args);
 
       // Add hooks to benchmark manager, perhaps depending on command line
