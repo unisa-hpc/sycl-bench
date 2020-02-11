@@ -59,6 +59,7 @@ public:
 
       for(auto h : hooks) h->preSetup();    
       b.setup();
+      args.device_queue.wait_and_throw();
       for(auto h: hooks)  h->postSetup();
       
       for(auto h: hooks)  h->preKernel();
