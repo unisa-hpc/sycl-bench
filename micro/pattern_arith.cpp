@@ -52,12 +52,6 @@ public:
     args.device_queue.wait_and_throw();
   }
 
-  bool verify(VerificationSetting &ver) { 
-    bool pass = true;
-    std::cout << "No verification available" << std::endl;
-    return pass;
-  }
-  
   static std::string getBenchmarkName() {
     std::stringstream name;
     name << "MicroBench_Arith_";
