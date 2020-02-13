@@ -189,10 +189,11 @@ public:
   }
   
   static std::string getBenchmarkName() {
-    if(Use_ndrange)
-      return "ScalarProduct_NDRange";
-    else
-      return "ScalarProduct_Hierarchical";
+    std::stringstream name;
+    name << "ScalarProduct_";
+    name << (Use_ndrange ? "NDRange_" : "Hierarchical_");
+    name << ReadableTypename<T>::name;
+    return name.str();
   }
 };
 

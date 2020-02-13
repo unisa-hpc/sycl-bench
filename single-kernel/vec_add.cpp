@@ -70,7 +70,10 @@ public:
   }
   
   static std::string getBenchmarkName() {
-    return "VectorAddition";
+    std::stringstream name;
+    name << "VectorAddition_";
+    name << ReadableTypename<T>::name;
+    return name.str();
   }
 };
 
