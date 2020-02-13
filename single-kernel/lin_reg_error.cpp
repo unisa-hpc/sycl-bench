@@ -92,7 +92,7 @@ public:
       T normError = sqrtf((T) error);
       error = normError / normRef;
 
-      std::cout << "error =" << error << "epsilon =" << epsilon;
+      //std::cout << "error =" << error << "epsilon =" << epsilon;
 
       return error < epsilon;
   }

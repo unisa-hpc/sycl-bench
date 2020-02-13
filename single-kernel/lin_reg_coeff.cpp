@@ -167,8 +167,8 @@ T reduce(s::buffer<T, 1> &input_buf) {
     T expected_coeff_b1 = ss_xy/ss_xx;
     T expected_coeff_b0 = mean_y - expected_coeff_b1*mean_x;
 
-    std::cout << "Coeff_b1 = " << coeff_b1 << ", " << "Coeff_b0 = " << coeff_b0 << std::endl;
-    std::cout << "Expected Coeff_b1 = " << expected_coeff_b1 << ", " << "Expected Coeff_b0 = " << expected_coeff_b0 << std::endl;
+    //std::cout << "Coeff_b1 = " << coeff_b1 << ", " << "Coeff_b0 = " << coeff_b0 << std::endl;
+    //std::cout << "Expected Coeff_b1 = " << expected_coeff_b1 << ", " << "Expected Coeff_b0 = " << expected_coeff_b0 << std::endl;
 
     const T tolerance = 0.00001;
     if ((fabs(expected_coeff_b0 - coeff_b0) > tolerance) || (fabs(expected_coeff_b1 - coeff_b1) > tolerance))

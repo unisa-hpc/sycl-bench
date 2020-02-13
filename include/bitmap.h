@@ -388,7 +388,7 @@ void Bitmap::fromPixelMatrix(const PixelMatrix & values)
 void load_bitmap_mirrored(string filename, int size, std::vector<cl::sycl::float4> &input){
   Bitmap input_image;
   input_image.open(filename);
-  std::cout << "input image " << filename << " loaded" << std::endl;
+  //std::cout << "input image " << filename << " loaded" << std::endl;
   PixelMatrix pixels = input_image.toPixelMatrix();
   int w = pixels.size();
   int h;
@@ -404,14 +404,14 @@ void load_bitmap_mirrored(string filename, int size, std::vector<cl::sycl::float
       cl::sycl::float4 color = cl::sycl::float4(pixel.r / 255.0f, pixel.g / 255.0f, pixel.b / 255.0f, 1.0f); // cast to float  
       input[j + i * size] = color; // write to input buffer
     }
-    std::cout << "image resized to match the input size: ";
-    std::cout << "[" << w << "x" << h << "] => [" << size << "x" << size << "]" << std::endl;
+    //std::cout << "image resized to match the input size: ";
+    //std::cout << "[" << w << "x" << h << "] => [" << size << "x" << size << "]" << std::endl;
 }
 
 
 void save_bitmap(string filename, int size, const std::vector<cl::sycl::float4> &output){
     // write the output picture
-    std::cout << "saving the output picture in " << filename << std::endl;
+    //std::cout << "saving the output picture in " << filename << std::endl;
     Bitmap output_image;
     PixelMatrix pixels;
     pixels.resize(size);

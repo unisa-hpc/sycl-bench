@@ -176,8 +176,8 @@ public:
         expected += input1[i] * input2[i];
     }
 
-    std::cout << "Scalar product on CPU =" << expected << std::endl;
-    std::cout << "Scalar product on Device =" << output[0] << std::endl;
+    //std::cout << "Scalar product on CPU =" << expected << std::endl;
+    //std::cout << "Scalar product on Device =" << output[0] << std::endl;
 
     // Todo: update to type-specific test (Template specialization?)
     const auto tolerance = 0.00001f;
