@@ -42,13 +42,18 @@ public:
         input_buf(input.data(), buffer_size), output_buf(buffer_size) {}
 
   void setup() {
-    // args.result_consumer->consumeResult("bytes copied", std::to_string(buffer_size.size() * sizeof(DataT)));
-
     // Submit dummy kernel to force H->D transfer of input buffer.
     args.device_queue.submit([&](cl::sycl::handler& cgh) {
       auto acc = input_buf.template get_access<s::access::mode::read>(cgh);
       cgh.single_task<CopyBufferDummyKernel<DataT, Dims>>([=]() { /* NOP */ });
     });
+  }
+
+  static ThroughputMetric getThroughputMetric(const BenchmarkArgs& args) {
+    const double copiedGiB =
+        getBufferSize<DataT, Dims>(args.problem_size).size() * sizeof(DataT) / 1024.0 / 1024.0 / 1024.0;
+    // Multiply by two as we are both reading and writing one element in each thread.
+    return {copiedGiB * 2.0, "GiB"};
   }
 
   void run() {
