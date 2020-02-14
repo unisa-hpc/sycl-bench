@@ -25,8 +25,26 @@ def read_data(filename):
 
   return result
 
-def filter_data(data, filter_selector):
-  pass
+def filter_data(data, selection_function):
+  result = {}
+  for field in data:
+    result[field] = []
+
+  for i in range(0, len(data['Benchmark name'])):
+    line = {}
+
+    for field in data:
+      line[field] = data[field][i]
+
+    if selection_function(line):
+      for field in line:
+        result[field].append(line[field])
+
+
+  for f in result:
+    result[f] = np.array(result[f])
+  
+  return result
 
 # filters data based on equality. field_value_selector is a dict
 # that specifies for field names the values that a result must have
@@ -34,28 +52,18 @@ def filter_data(data, filter_selector):
 # for example, {'problem-size' : 1024} selects results where the problem
 # size is 1024. When multiple values are present in the dict, they act via
 # a logical and.
-def filter_data(data, field_value_selector):
-  result = {}
+def filter_data_by_equality(data, field_value_selector):
 
-  for field in data:
-    result[field] = []
-
-
-  def should_include_result(i):
+  def should_include_result(line):
     for selection_key in field_value_selector:
-      if data[selection_key][i] != field_value_selector[selection_key]:
+      if not selection_key in line:
+        return False
+
+      if line[selection_key] != field_value_selector[selection_key]:
         return False
     return True
   
-  for i in range(0, len(data['Benchmark name'])):
-    if should_include_result(i):
-      for field in data:
-        result[field].append(data[field][i])
-
-  for f in result:
-    result[f] = np.array(result[f])
-
-  return result
+  return filter_data(data, should_include_result)
 
 
 def default_secondary_key_label_generator(key, key_value):
@@ -117,7 +125,7 @@ def plot(data, x_field, secondary_xfield, figname, title="", xlabel="",
   for secondary_key in secondary_keys:
     # Extract only those measurements with specific
     # secondary key
-    d = filter_data(data, {secondary_xfield: secondary_key})
+    d = filter_data_by_equality(data, {secondary_xfield: secondary_key})
     filtered_bar_positions = [
       b[0] for b in zip(bar_positions,data[secondary_xfield]) if b[1]==secondary_key]
 
@@ -139,4 +147,6 @@ if __name__ == '__main__':
 
   data = read_data("./sycl-bench.csv")
   
-  plot(filter_data(data,{'Benchmark name' : 'MolecularDynamics'}), 'problem-size', 'local-size', 'test.png', xlabel="Problem size")
+  filtered_data = filter_data_by_equality(data, {'Benchmark name': 'MolecularDynamics'})
+  
+  plot(filtered_data, 'problem-size', 'local-size', 'test.png', xlabel="Problem size")
