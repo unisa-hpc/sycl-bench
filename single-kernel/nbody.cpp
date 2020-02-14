@@ -9,7 +9,6 @@ template<class float_type> class NDRangeNBodyKernel;
 template<class float_type> class HierarchicalNBodyKernel;
 
 
-
 template<class float_type>
 class NBody
 {
@@ -25,8 +24,14 @@ protected:
 
   const float gravitational_softening;
   const float dt;
+
+  sycl::buffer<particle_type> output_particles;
+  sycl::buffer<vector_type> output_velocities;
+
 public:
-  NBody(const BenchmarkArgs& _args) : args(_args), gravitational_softening{1.e-5f}, dt{1.e-3f} {
+  NBody(const BenchmarkArgs& _args)
+      : args(_args), gravitational_softening{1.e-5f}, dt{1.e-2f}, output_particles(sycl::range<1>{args.problem_size}),
+        output_velocities(sycl::range<1>{args.problem_size}) {
     assert(args.problem_size % args.local_size == 0);
   }
 
@@ -52,17 +57,92 @@ public:
 
 
   bool verify(VerificationSetting &ver) {
-    bool pass = true;
-    return pass;
+    auto resulting_particles = output_particles.template get_access<sycl::access::mode::read>();
+    auto resulting_velocities = output_velocities.template get_access<sycl::access::mode::read>();
+
+    std::vector<particle_type> host_resulting_particles(particles.size());
+    std::vector<vector_type> host_resulting_velocities(particles.size());
+  
+
+    for(std::size_t i = 0; i < particles.size(); ++i) {
+      const particle_type my_p = particles[i];
+      const vector_type my_v = velocities[i];
+      vector_type acceleration{static_cast<float_type>(0.0f)};
+
+      for(std::size_t j = 0; j < particles.size(); ++j) {
+
+        if(i != j) {
+          const particle_type p = particles[j];
+          
+          const vector_type R {
+            p.x() - my_p.x(), 
+            p.y() - my_p.y(),
+            p.z() - my_p.z()
+          };
+
+          const float_type r_inv = sycl::rsqrt(R.x() * R.x() + R.y() * R.y() + R.z() * R.z() + gravitational_softening);
+
+          acceleration += p.w() * r_inv * r_inv * r_inv * R;
+        }
+        
+      }
+
+      vector_type new_v = my_v + acceleration * dt;
+      particle_type new_p = my_p;
+      new_p.x() += new_v.x() * dt; 
+      new_p.y() += new_v.y() * dt;
+      new_p.z() += new_v.z() * dt;
+
+      host_resulting_particles[i] = new_p;
+      host_resulting_velocities[i] = new_v;
+    }
+
+    double deviation = std::sqrt(
+        calculateSquaredDifference(host_resulting_particles.data(), resulting_particles.get_pointer(), particles.size()) +
+        calculateSquaredDifference(host_resulting_velocities.data(), resulting_velocities.get_pointer(), particles.size()));
+
+    return deviation < 1.e-6;
   }
 
 protected:
+
+  template<class T>
+  double calculateSquaredDifference(sycl::vec<T,3> a, sycl::vec<T,3> b) {
+    auto diff = a - b;
+    diff *= diff;
+
+    return diff.x()+diff.y()+diff.z();
+  }
+
+  template<class T>
+  double calculateSquaredDifference(sycl::vec<T,4> a, sycl::vec<T,4> b) {
+    auto diff = a - b;
+    diff *= diff;
+
+    return diff.x()+diff.y()+diff.z()+diff.w();
+  }
+
+  template<class T>
+  double calculateSquaredDifference(const T* a, const T* b, std::size_t size) {
+
+    double result = 0.0;
+
+    for(std::size_t i = 0; i < size; ++i) {
+      result += calculateSquaredDifference(a[i], b[i]);
+    }
+
+    return result;
+  }
+
   void submitNDRange(sycl::buffer<particle_type>& particles, sycl::buffer<vector_type>& velocities) {
     args.device_queue.submit([&](sycl::handler& cgh) {
       sycl::nd_range<1> execution_range{sycl::range<1>{args.problem_size}, sycl::range<1>{args.local_size}};
 
-      auto particles_access = particles.template get_access<sycl::access::mode::read_write>(cgh);
-      auto velocities_access = velocities.template get_access<sycl::access::mode::read_write>(cgh);
+      auto particles_access = particles.template get_access<sycl::access::mode::read>(cgh);
+      auto velocities_access = velocities.template get_access<sycl::access::mode::read>(cgh);
+
+      auto output_particles_access = output_particles.template get_access<sycl::access::mode::discard_write>(cgh);
+      auto output_velocities_access = output_velocities.template get_access<sycl::access::mode::discard_write>(cgh);
 
       auto scratch = sycl::accessor<particle_type, 1, sycl::access::mode::read_write, sycl::access::target::local>{
           sycl::range<1>{args.local_size}, cgh};
@@ -120,8 +200,8 @@ protected:
         my_particle.z() += v.z() * dt;
 
         if(global_id < num_particles) {
-          velocities_access[global_id] = v;
-          particles_access[global_id] = my_particle;
+          output_velocities_access[global_id] = v;
+          output_particles_access[global_id] = my_particle;
         }
       });
     });
@@ -131,8 +211,11 @@ protected:
     args.device_queue.submit([&](sycl::handler& cgh) {
       sycl::nd_range<1> execution_range{sycl::range<1>{args.problem_size}, sycl::range<1>{args.local_size}};
 
-      auto particles_access = particles.template get_access<sycl::access::mode::read_write>(cgh);
-      auto velocities_access = velocities.template get_access<sycl::access::mode::read_write>(cgh);
+      auto particles_access = particles.template get_access<sycl::access::mode::read>(cgh);
+      auto velocities_access = velocities.template get_access<sycl::access::mode::read>(cgh);
+
+      auto output_particles_access = output_particles.template get_access<sycl::access::mode::discard_write>(cgh);
+      auto output_velocities_access = output_velocities.template get_access<sycl::access::mode::discard_write>(cgh);
 
       auto scratch = sycl::accessor<particle_type, 1, sycl::access::mode::read_write, sycl::access::target::local>{
           sycl::range<1>{args.local_size}, cgh};
@@ -200,8 +283,8 @@ protected:
           my_p.z() += v.z() * dt;
           
           if(global_id < problem_size) {
-            velocities_access[global_id] = v;
-            particles_access[global_id] = my_p;
+            output_velocities_access[global_id] = v;
+            output_particles_access[global_id] = my_p;
           }
         });
         
