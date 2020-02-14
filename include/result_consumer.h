@@ -15,7 +15,7 @@ public:
   // Register a result in the result consumer
   virtual void consumeResult(const std::string& result_name,
                             const std::string& result,
-                            const std::string& comment = std::string{}) = 0;
+                            const std::string& unit = "") = 0;
 
   // Guarantees that the results have been emitted to the output
   // as specified by the ResultConsumer implementation
@@ -45,11 +45,12 @@ public:
 
   virtual void consumeResult(const std::string& result_name,
                             const std::string& result,
-                            const std::string& comment = std::string{}) override
+                            const std::string& unit = "") override
   {
     output << result_name << ": " << result;
-    if(comment.length() > 0)
-      output << " Note: " << comment;
+    if(!unit.empty()) {
+      output << " [" << unit << "]";
+    }
     output << std::endl;
   }
 
@@ -75,7 +76,7 @@ public:
 
   virtual void consumeResult(const std::string& result_name,
                             const std::string& result,
-                            const std::string& comment = std::string{}) override
+                            const std::string& unit = "") override
   {
     data[currentBenchmark][result_name] = result;
   }

@@ -16,25 +16,12 @@
 
   
 #include "benchmark_hook.h"
+#include "benchmark_traits.h"
 #include "time_meas.h"
 
 #ifdef NV_ENERGY_MEAS    
   #include "nv_energy_meas.h"
 #endif
-
-namespace detail {
-
-template <typename T, typename = void>
-struct VerificationDispatcher {
-  static constexpr bool canVerify = false;
-};
-
-template <typename T>
-struct VerificationDispatcher<T, std::void_t<decltype(&T::verify)>> {
-  static constexpr bool canVerify = true;
-};
-
-} // namespace detail
 
 template<class Benchmark>
 class BenchmarkManager
@@ -84,7 +71,7 @@ public:
       args.device_queue.wait_and_throw();
       for (auto h : hooks) h->postKernel();
 
-      if constexpr(detail::VerificationDispatcher<Benchmark>::canVerify) {
+      if constexpr(detail::BenchmarkTraits<Benchmark>::hasVerify) {
         if(args.verification.range.size() > 0) {
           if(args.verification.enabled) {
             if(!b.verify(args.verification)) {
@@ -101,7 +88,7 @@ public:
     }
 
     if(args.verification.range.size() == 0 || !args.verification.enabled ||
-        !detail::VerificationDispatcher<Benchmark>::canVerify) {
+        !detail::BenchmarkTraits<Benchmark>::hasVerify) {
       args.result_consumer->consumeResult("Verification", "N/A");
     }
     else if(!all_runs_pass){
@@ -177,7 +164,7 @@ public:
       // Add hooks to benchmark manager, perhaps depending on command line
       // arguments?
 
-      TimeMeasurement tm;
+      TimeMeasurement<Benchmark> tm(args);
       if (!args.cli.isFlagSet("--no-runtime-measurement"))
         mgr.addHook(tm);
 
