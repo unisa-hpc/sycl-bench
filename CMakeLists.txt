@@ -53,6 +53,7 @@ endif()
 set(benchmarks
   micro/pattern_arith.cpp
   micro/DRAM.cpp
+  micro/host_device_bandwidth.cpp
   micro/pattern_L2.cpp
   micro/pattern_sf.cpp
   micro/pattern_shared.cpp
