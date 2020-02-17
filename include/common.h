@@ -114,15 +114,19 @@ private:
   BenchmarkArgs args;  
   std::vector<BenchmarkHook*> hooks;
 
-  std::string getSyclImplementation() const
-  {
+  std::string getSyclImplementation() const {
 #if defined(__HIPSYCL__)
     return "hipSYCL";
 #elif defined(__COMPUTECPP__)
     return "ComputeCpp";
+#elif defined(__LLVM_SYCL__)
+    return "LLVM (Intel DPC++)";
+#elif defined(__LLVM_SYCL_CUDA__)
+    return "LLVM CUDA (Codeplay)";
+#elif defined(__TRISYCL__)
+    return "triSYCL";
 #else
-    // ToDo: Find out how they can be distinguished
-    return "triSYCL or Intel SYCL";
+    return "UNKNOWN";
 #endif
   }
 };

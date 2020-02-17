@@ -152,8 +152,8 @@ private:
 struct VerificationSetting
 {
   bool enabled;
-  cl::sycl::id<3> begin;
-  cl::sycl::range<3> range;
+  cl::sycl::id<3> begin = {0, 0, 0};
+  cl::sycl::range<3> range = {1, 1, 1};
 };
 
 struct BenchmarkArgs
@@ -166,6 +166,18 @@ struct BenchmarkArgs
   // can be used to query additional benchmark specific information from the command line
   CommandLine cli;
   std::shared_ptr<ResultConsumer> result_consumer;
+};
+
+class CUDASelector : public cl::sycl::device_selector {
+public:
+  int operator()(const cl::sycl::device& device) const override {
+    using namespace cl::sycl::info;
+    const std::string driverVersion = device.get_info<device::driver_version>();
+    if(device.is_gpu() && (driverVersion.find("CUDA") != std::string::npos)) {
+      return 1;
+    };
+    return -1;
+  }
 };
 
 class BenchmarkCommandLine
@@ -210,6 +222,7 @@ public:
 
 private:
   std::shared_ptr<ResultConsumer>
+
   getResultConsumer(const std::string& result_consumer_name) const
   {
     if(result_consumer_name == "stdio")
@@ -220,15 +233,19 @@ private:
       return std::shared_ptr<ResultConsumer>{new AppendingCsvResultConsumer{result_consumer_name}};
   }
 
-  cl::sycl::queue getQueue(const std::string& device_selector) const
-  {
-    if (device_selector == "cpu") {
-      cl::sycl::cpu_selector selector;
-      return selector.select_device();
+  cl::sycl::queue getQueue(const std::string& device_selector) const {
+#if defined(__LLVM_SYCL_CUDA__)
+    if(device_selector != "gpu") {
+      throw std::invalid_argument{"Only the 'gpu' device is supported on LLVM CUDA"};
+    }
+    return cl::sycl::queue{CUDASelector{}};
+#endif
+
+    if(device_selector == "cpu") {
+      return cl::sycl::queue{cl::sycl::cpu_selector{}};
     }
     else if(device_selector == "gpu") {
-      cl::sycl::gpu_selector selector;
-      return selector.select_device();
+      return cl::sycl::queue{cl::sycl::gpu_selector{}};
     }
     else if(device_selector == "default") {
       return cl::sycl::queue{};
