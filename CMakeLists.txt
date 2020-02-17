@@ -27,6 +27,8 @@ include_directories(${CMAKE_SOURCE_DIR}/polybench/common)
 set(supported_implementations
   ComputeCpp
   hipSYCL
+  LLVM
+  LLVM-CUDA
   triSYCL
 )
 
@@ -39,6 +41,11 @@ if(SYCL_IMPL STREQUAL "ComputeCpp")
   find_package(ComputeCpp MODULE REQUIRED)
 elseif(SYCL_IMPL STREQUAL "hipSYCL")
   find_package(hipSYCL CONFIG REQUIRED)
+elseif(SYCL_IMPL STREQUAL "LLVM")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl")
+elseif(SYCL_IMPL STREQUAL "LLVM-CUDA")
+  set(CMAKE_CXX_FLAGS
+    "${CMAKE_CXX_FLAGS} -fsycl -fsycl-targets=nvptx64-nvidia-cuda-sycldevice")
 elseif(SYCL_IMPL STREQUAL "triSYCL")
   find_package(TriSYCL MODULE REQUIRED)
 endif()
@@ -87,10 +94,22 @@ foreach(benchmark IN LISTS benchmarks)
   get_filename_component(target ${benchmark} NAME_WE)
 
   add_executable(${target} ${benchmark})
+
+  if(SYCL_IMPL STREQUAL "ComputeCpp" OR SYCL_IMPL STREQUAL "hipSYCL")
+    add_sycl_to_target(TARGET ${target} SOURCES ${benchmark})
+  endif()
+
+  if(SYCL_IMPL STREQUAL "LLVM")
+    target_compile_definitions(${target} PRIVATE __LLVM_SYCL__)
+  endif()
+
+  if(SYCL_IMPL STREQUAL "LLVM-CUDA")
+    target_compile_definitions(${target} PRIVATE __LLVM_SYCL_CUDA__)
+  endif()
+
   if(SYCL_IMPL STREQUAL "triSYCL")
     add_sycl_to_target(${target})
-  else()
-    add_sycl_to_target(TARGET ${target} SOURCES ${benchmark})
+    target_compile_definitions(${target} PRIVATE __TRISYCL__)
   endif()
 
   install(TARGETS ${target} RUNTIME DESTINATION bin/benchmarks/)
