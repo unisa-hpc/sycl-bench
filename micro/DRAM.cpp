@@ -32,20 +32,16 @@ protected:
   // Since we cannot use explicit memory operations to initialize the input buffer,
   // we have to keep this around, unfortunately.
   std::vector<DataT> input;
-  s::buffer<DataT, Dims> input_buf;
+  PrefetchedBuffer<DataT, Dims> input_buf;
   s::buffer<DataT, Dims> output_buf;
 
 public:
   MicroBenchDRAM(const BenchmarkArgs& args)
       : args(args), buffer_size(getBufferSize<DataT, Dims>(args.problem_size)), input(buffer_size.size(), 33.f),
-        input_buf(input.data(), buffer_size), output_buf(buffer_size) {}
+        output_buf(buffer_size) {}
 
   void setup() {
-    // Submit dummy kernel to force H->D transfer of input buffer.
-    args.device_queue.submit([&](cl::sycl::handler& cgh) {
-      auto acc = input_buf.template get_access<s::access::mode::read>(cgh);
-      cgh.single_task<CopyBufferDummyKernel<DataT, Dims>>([=]() { /* NOP */ });
-    });
+    input_buf.initialize(args.device_queue, input.data(), buffer_size);
   }
 
   static ThroughputMetric getThroughputMetric(const BenchmarkArgs& args) {

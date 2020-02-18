@@ -18,10 +18,13 @@
 #include "benchmark_hook.h"
 #include "benchmark_traits.h"
 #include "time_meas.h"
+#include "prefetched_buffer.h"
 
 #ifdef NV_ENERGY_MEAS    
   #include "nv_energy_meas.h"
 #endif
+
+
 
 template<class Benchmark>
 class BenchmarkManager
