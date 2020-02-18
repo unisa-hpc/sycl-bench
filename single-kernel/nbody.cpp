@@ -22,8 +22,8 @@ protected:
   BenchmarkArgs args;
 
 
-  const float gravitational_softening;
-  const float dt;
+  const float_type gravitational_softening;
+  const float_type dt;
 
   sycl::buffer<particle_type> output_particles;
   sycl::buffer<vector_type> output_velocities;
@@ -80,9 +80,10 @@ public:
             p.z() - my_p.z()
           };
 
-          const float_type r_inv = sycl::rsqrt(R.x() * R.x() + R.y() * R.y() + R.z() * R.z() + gravitational_softening);
+          const float_type r_inv = sycl::rsqrt(R.x() * R.x() + R.y() * R.y() + R.z() * R.z() + 
+                                              gravitational_softening);
 
-          acceleration += p.w() * r_inv * r_inv * r_inv * R;
+          acceleration += static_cast<float_type>(p.w()) * r_inv * r_inv * r_inv * R;
         }
         
       }
@@ -111,7 +112,7 @@ protected:
     auto diff = a - b;
     diff *= diff;
 
-    return diff.x()+diff.y()+diff.z();
+    return static_cast<float_type>(diff.x()+diff.y()+diff.z());
   }
 
   template<class T>
@@ -119,7 +120,7 @@ protected:
     auto diff = a - b;
     diff *= diff;
 
-    return diff.x()+diff.y()+diff.z()+diff.w();
+    return static_cast<float_type>(diff.x()+diff.y()+diff.z()+diff.w());
   }
 
   template<class T>
@@ -148,62 +149,57 @@ protected:
           sycl::range<1>{args.local_size}, cgh};
 
       cgh.parallel_for<NDRangeNBodyKernel<float_type>>(execution_range,
-                                                        [=](sycl::nd_item<1> tid){
-        const size_t global_id     = tid.get_global_id(0);
-        const size_t local_id      = tid.get_local_id(0);
-        const size_t num_particles = tid.get_global_range()[0];
-        const size_t local_size = tid.get_local_range()[0];
+          [=, dt = this->dt, gravitational_softening = this->gravitational_softening](sycl::nd_item<1> tid) {
 
-        vector_type v = velocities_access[global_id];
-        
-        vector_type acceleration{static_cast<float_type>(0.0f)};
+            const size_t global_id = tid.get_global_id(0);
+            const size_t local_id = tid.get_local_id(0);
+            const size_t num_particles = tid.get_global_range()[0];
+            const size_t local_size = tid.get_local_range()[0];
 
-        particle_type my_particle =
-            (global_id < num_particles) ? particles_access[global_id] : particle_type{static_cast<float_type>(0.0f)};
+            vector_type v = velocities_access[global_id];
 
-        for(size_t offset = 0; offset < num_particles; offset += local_size)
-        {
-          scratch[local_id] = (global_id < num_particles) ? particles_access[offset + local_id]
-                                                          : particle_type{static_cast<float_type>(0.0f)};
+            vector_type acceleration{static_cast<float_type>(0.0f)};
 
-          tid.barrier();
+            particle_type my_particle = (global_id < num_particles) ? particles_access[global_id]
+                                                                    : particle_type{static_cast<float_type>(0.0f)};
 
-          for(int i = 0; i < local_size; ++i)
-          {
-            const particle_type p = scratch[i];
-            
-            const vector_type R {
-              p.x() - my_particle.x(), 
-              p.y() - my_particle.y(),
-              p.z() - my_particle.z()};
+            for(size_t offset = 0; offset < num_particles; offset += local_size) {
+              scratch[local_id] = (global_id < num_particles) ? particles_access[offset + local_id]
+                                                              : particle_type{static_cast<float_type>(0.0f)};
 
-            const float_type r_inv =
-                sycl::rsqrt(R.x()*R.x() + R.y()*R.y() + R.z()*R.z()
-                                    + gravitational_softening);
+              tid.barrier();
 
-            
-            if(global_id != offset + i)
-              acceleration += p.w() * r_inv * r_inv * r_inv * R;
-          }
+              for(int i = 0; i < local_size; ++i) {
+                const particle_type p = scratch[i];
 
-          tid.barrier();
-        }
+                const vector_type R{p.x() - my_particle.x(), p.y() - my_particle.y(), p.z() - my_particle.z()};
 
-        // This is a dirt cheap Euler integration, but could be
-        // converted into a much better leapfrog itnegration when properly
-        // initializing the velocities
-        v += acceleration * dt;
+                const float_type r_inv =
+                    sycl::rsqrt(R.x() * R.x() + R.y() * R.y() + R.z() * R.z() + gravitational_softening);
 
-        // Update position
-        my_particle.x() += v.x() * dt; 
-        my_particle.y() += v.y() * dt;
-        my_particle.z() += v.z() * dt;
 
-        if(global_id < num_particles) {
-          output_velocities_access[global_id] = v;
-          output_particles_access[global_id] = my_particle;
-        }
-      });
+                if(global_id != offset + i)
+                  acceleration += static_cast<float_type>(p.w()) * r_inv * r_inv * r_inv * R;
+              }
+
+              tid.barrier();
+            }
+
+            // This is a dirt cheap Euler integration, but could be
+            // converted into a much better leapfrog itnegration when properly
+            // initializing the velocities
+            v += acceleration * dt;
+
+            // Update position
+            my_particle.x() += v.x() * dt;
+            my_particle.y() += v.y() * dt;
+            my_particle.z() += v.z() * dt;
+
+            if(global_id < num_particles) {
+              output_velocities_access[global_id] = v;
+              output_particles_access[global_id] = my_particle;
+            }
+          });
     });
   }
 
@@ -224,71 +220,63 @@ protected:
       const size_t local_size = args.local_size;
       const size_t problem_size = args.problem_size;
       cgh.parallel_for_work_group<HierarchicalNBodyKernel<float_type>>(sycl::range<1>{problem_size / local_size},
-          sycl::range<1>{local_size}, [=](sycl::group<1> grp) {
-            
+          sycl::range<1>{local_size},
+          [=, dt = this->dt, gravitational_softening = this->gravitational_softening](sycl::group<1> grp) {
+            sycl::private_memory<particle_type> my_particle{grp};
+            sycl::private_memory<vector_type> acceleration{grp};
 
-        sycl::private_memory<particle_type> my_particle{grp};
-        sycl::private_memory<vector_type> acceleration{grp};
-
-        grp.parallel_for_work_item([&](sycl::h_item<1> idx){
-          acceleration(idx) = vector_type{static_cast<float_type>(0.0f)};
-          my_particle(idx) = (idx.get_global_id(0) < problem_size) ? particles_access[idx.get_global_id(0)]
-                                                                   : particle_type{static_cast<float_type>(0.0f)};
-        });
+            grp.parallel_for_work_item([&](sycl::h_item<1> idx) {
+              acceleration(idx) = vector_type{static_cast<float_type>(0.0f)};
+              my_particle(idx) = (idx.get_global_id(0) < problem_size) ? particles_access[idx.get_global_id(0)]
+                                                                       : particle_type{static_cast<float_type>(0.0f)};
+            });
 
 
-        for(size_t offset = 0; offset < problem_size; offset += local_size){
-          grp.parallel_for_work_item([&](sycl::h_item<1> idx) {
-            scratch[idx.get_local_id(0)] = (idx.get_global_id(0) < problem_size)
-                                               ? particles_access[offset + idx.get_local_id(0)]
-                                               : particle_type{static_cast<float_type>(0.0f)};
-          });
+            for(size_t offset = 0; offset < problem_size; offset += local_size) {
+              grp.parallel_for_work_item([&](sycl::h_item<1> idx) {
+                scratch[idx.get_local_id(0)] = (idx.get_global_id(0) < problem_size)
+                                                   ? particles_access[offset + idx.get_local_id(0)]
+                                                   : particle_type{static_cast<float_type>(0.0f)};
+              });
 
-          grp.parallel_for_work_item([&](sycl::h_item<1> idx) {
-            for(int i = 0; i < local_size; ++i)
-            {
-              const particle_type p = scratch[i];
-              const particle_type my_p = my_particle(idx);
+              grp.parallel_for_work_item([&](sycl::h_item<1> idx) {
+                for(int i = 0; i < local_size; ++i) {
+                  const particle_type p = scratch[i];
+                  const particle_type my_p = my_particle(idx);
 
-              const vector_type R{
-                p.x() - my_p.x(),
-                p.y() - my_p.y(),
-                p.z() - my_p.z()
-              };
+                  const vector_type R{p.x() - my_p.x(), p.y() - my_p.y(), p.z() - my_p.z()};
 
-              const float_type r_inv =
-                  sycl::rsqrt(R.x()*R.x() + R.y()*R.y() + R.z()*R.z()
-                                      + gravitational_softening);
+                  const float_type r_inv =
+                      sycl::rsqrt(R.x() * R.x() + R.y() * R.y() + R.z() * R.z() + gravitational_softening);
 
-              
-              if(idx.get_global_id(0) != offset + i)
-                acceleration(idx) += p.w() * r_inv * r_inv * r_inv * R;
+
+                  if(idx.get_global_id(0) != offset + i)
+                    acceleration(idx) += static_cast<float_type>(p.w()) * r_inv * r_inv * r_inv * R;
+                }
+              });
             }
+
+            grp.parallel_for_work_item([&](sycl::h_item<1> idx) {
+              const size_t global_id = idx.get_global_id(0);
+
+              vector_type v = velocities_access[global_id];
+              // This is a dirt cheap Euler integration, but could be
+              // converted into a much better leapfrog integration when properly
+              // initializing the velocities to the state at 0.5*dt
+              v += acceleration(idx) * dt;
+
+              // Update position
+              particle_type my_p = my_particle(idx);
+              my_p.x() += v.x() * dt;
+              my_p.y() += v.y() * dt;
+              my_p.z() += v.z() * dt;
+
+              if(global_id < problem_size) {
+                output_velocities_access[global_id] = v;
+                output_particles_access[global_id] = my_p;
+              }
+            });
           });
-        }
-
-        grp.parallel_for_work_item([&](sycl::h_item<1> idx){
-          const size_t global_id = idx.get_global_id(0);
-
-          vector_type v = velocities_access[global_id];
-          // This is a dirt cheap Euler integration, but could be
-          // converted into a much better leapfrog integration when properly
-          // initializing the velocities to the state at 0.5*dt
-          v += acceleration(idx) * dt;
-
-          // Update position
-          particle_type my_p = my_particle(idx);
-          my_p.x() += v.x() * dt; 
-          my_p.y() += v.y() * dt;
-          my_p.z() += v.z() * dt;
-          
-          if(global_id < problem_size) {
-            output_velocities_access[global_id] = v;
-            output_particles_access[global_id] = my_p;
-          }
-        });
-        
-      });
     });
   }
 };
