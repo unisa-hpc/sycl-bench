@@ -53,33 +53,39 @@ public:
     for(auto h : hooks) h->atInit();
 
     bool all_runs_pass = true;
-    // Run until we have as many runs as requested or until
-    // verification fails
-    for(std::size_t run = 0; run < args.num_runs && all_runs_pass; ++run) {
-      Benchmark b(args, additionalArgs...);
+    try {
+      // Run until we have as many runs as requested or until
+      // verification fails
+      for(std::size_t run = 0; run < args.num_runs && all_runs_pass; ++run) {
+        Benchmark b(args, additionalArgs...);
 
-      for(auto h : hooks) h->preSetup();    
-      b.setup();
-      args.device_queue.wait_and_throw();
-      for(auto h: hooks)  h->postSetup();
-      
-      for(auto h: hooks)  h->preKernel();
-      b.run();
-      // Make sure work has actually completed,
-      // otherwise we may end up measuring incorrect
-      // runtimes!
-      args.device_queue.wait_and_throw();
-      for (auto h : hooks) h->postKernel();
+        for(auto h : hooks) h->preSetup();
 
-      if constexpr(detail::BenchmarkTraits<Benchmark>::hasVerify) {
-        if(args.verification.range.size() > 0) {
-          if(args.verification.enabled) {
-            if(!b.verify(args.verification)) {
-              all_runs_pass = false;
+        b.setup();
+
+        args.device_queue.wait_and_throw();
+        for(auto h : hooks) h->postSetup();
+
+        for(auto h : hooks) h->preKernel();
+
+        b.run();
+
+        args.device_queue.wait_and_throw();
+        for(auto h : hooks) h->postKernel();
+
+        if constexpr(detail::BenchmarkTraits<Benchmark>::hasVerify) {
+          if(args.verification.range.size() > 0) {
+            if(args.verification.enabled) {
+              if(!b.verify(args.verification)) {
+                all_runs_pass = false;
+              }
             }
           }
         }
       }
+    } catch(...) {
+      args.result_consumer->discard();
+      std::rethrow_exception(std::current_exception());
     }
 
     for (auto h : hooks) {

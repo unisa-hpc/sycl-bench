@@ -1,6 +1,7 @@
 #ifndef RESULT_CONSUMER_HPP
 #define RESULT_CONSUMER_HPP
 
+#include <cassert>
 #include <fstream>
 #include <string>
 #include <unordered_map>
@@ -20,6 +21,9 @@ public:
   // Guarantees that the results have been emitted to the output
   // as specified by the ResultConsumer implementation
   virtual void flush() = 0;
+
+  // Discards the current benchmark's results, useful e.g. in case of errors.
+  virtual void discard() {}
 
   virtual ~ResultConsumer(){}
   
@@ -112,6 +116,13 @@ public:
     data.clear();
     
   }
+
+  void discard() override {
+    assert(!currentBenchmark.empty());
+    data.erase(currentBenchmark);
+    currentBenchmark.clear();
+  }
+
 private:
   std::string currentBenchmark;
 
