@@ -19,7 +19,6 @@ s::range<Dims> getBufferSize(size_t problemSize) {
   if constexpr(Dims == 3) {
     return s::range<3>(problemSize / sizeof(DataT), problemSize, problemSize);
   }
-  return {};
 }
 
 /**
