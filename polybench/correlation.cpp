@@ -99,15 +99,15 @@ class Polybench_Correlation {
 		symmat.resize((size + 1) * (size + 1));
 
 		init_arrays(data.data(), size);
+
+		data_buffer.initialize(args.device_queue, data.data(), cl::sycl::range<2>(size + 1, size + 1));
+		mean_buffer.initialize(args.device_queue, mean.data(), cl::sycl::range<1>(size + 1));
+		stddev_buffer.initialize(args.device_queue, stddev.data(), cl::sycl::range<1>(size + 1));
+		symmat_buffer.initialize(args.device_queue, symmat.data(), cl::sycl::range<2>(size + 1, size + 1));
 	}
 
 	void run() {
 		using namespace cl::sycl;
-
-		buffer<DATA_TYPE, 2> data_buffer{data.data(), range<2>(size + 1, size + 1)};
-		buffer<DATA_TYPE, 1> mean_buffer{mean.data(), range<1>(size + 1)};
-		buffer<DATA_TYPE, 1> stddev_buffer{stddev.data(), range<1>(size + 1)};
-		buffer<DATA_TYPE, 2> symmat_buffer{symmat.data(), range<2>(size + 1, size + 1)};
 
 		args.device_queue.submit([&](handler& cgh) {
 			auto data = data_buffer.get_access<access::mode::read>(cgh);
@@ -192,6 +192,9 @@ class Polybench_Correlation {
 		std::vector<DATA_TYPE> stddev_cpu(size + 1);
 		std::vector<DATA_TYPE> symmat_cpu((size + 1) * (size + 1));
 
+		// Trigger writeback
+		symmat_buffer.reset();
+
 		init_arrays(data_cpu.data(), size);
 		correlation(data_cpu.data(), mean_cpu.data(), stddev_cpu.data(), symmat_cpu.data(), size);
 
@@ -215,6 +218,11 @@ class Polybench_Correlation {
 	std::vector<DATA_TYPE> mean;
 	std::vector<DATA_TYPE> stddev;
 	std::vector<DATA_TYPE> symmat;
+
+	PrefetchedBuffer<DATA_TYPE, 2> data_buffer;
+  PrefetchedBuffer<DATA_TYPE, 1> mean_buffer;
+	PrefetchedBuffer<DATA_TYPE, 1> stddev_buffer;
+	PrefetchedBuffer<DATA_TYPE, 2> symmat_buffer;
 };
 
 int main(int argc, char** argv) {

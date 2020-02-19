@@ -17,14 +17,14 @@ class Reduction
 protected:
     std::vector<T> _input;
     BenchmarkArgs _args;
-    sycl::buffer<T, 1> _input_buff;
-    sycl::buffer<T, 1> _output_buff;
+
+    PrefetchedBuffer<T, 1> _input_buff;
+    PrefetchedBuffer<T, 1> _output_buff;
+    sycl::buffer<T, 1>* _final_output_buff;
     T _result;
 public:
     Reduction(const BenchmarkArgs &args)
-      : _args{args}, 
-        _input_buff{sycl::range<1>{1}}, // buffer can't be default constructed
-        _output_buff{sycl::range<1>{args.problem_size}}
+      : _args{args}
   {  
     assert(_args.problem_size % _args.local_size == 0);
   }
@@ -38,8 +38,9 @@ public:
 
   void setup() {
     generate_input(_input);
-    _input_buff = sycl::buffer<T, 1>{static_cast<const T *>(_input.data()),
-                                     sycl::range<1>(_args.problem_size)};
+
+    _input_buff.initialize(_args.device_queue, static_cast<const T*>(_input.data()), sycl::range<1>(_args.problem_size));
+    _output_buff.initialize(_args.device_queue, sycl::range<1>{_args.problem_size});
   }
 
 
@@ -59,14 +60,17 @@ public:
   }
 
   bool verify(VerificationSetting &ver) {
-    return _result == std::accumulate(_input.begin(), _input.end(), T{});
+    T result = _final_output_buff->template get_access<sycl::access::mode::read>(
+        sycl::range<1>{0}, sycl::id<1>{1})[0];
+    
+    return result == std::accumulate(_input.begin(), _input.end(), T{});
   }
 private:
   template<class Kernel_invocation_function>
   void submit(Kernel_invocation_function kernel)
   {
-    sycl::buffer<T, 1>* input_buff = &_input_buff;
-    sycl::buffer<T, 1>* output_buff = &_output_buff;
+    sycl::buffer<T, 1>* input_buff = &_input_buff.get();
+    sycl::buffer<T, 1>* output_buff = &_output_buff.get();
 
     size_t current_reduction_size = _args.problem_size;
     size_t current_num_groups = _args.problem_size / _args.local_size;
@@ -90,10 +94,7 @@ private:
 
     } while(current_num_groups > 0);
     
-    // Retrieve result
-    using namespace cl::sycl::access;
-    _result = output_buff->template get_access<mode::read>(
-        sycl::range<1>{0}, sycl::id<1>{1})[0];
+    _final_output_buff = output_buff;
   }
 
   void local_reduce_ndrange(

@@ -22,6 +22,10 @@ protected:
     std::vector<T> input2ver;
     BenchmarkArgs args;
 
+    PrefetchedBuffer<T, 1> input1_buf;
+    PrefetchedBuffer<T, 1> input2_buf;
+    PrefetchedBuffer<T, 1> output_buf;
+
 public:
   LinearRegressionCoeffBench(const BenchmarkArgs &_args) : args(_args) {}
   
@@ -38,6 +42,10 @@ public:
        input1ver[i] = input1[i] = 1.0;
        input2ver[i] = input2[i] = 2.0;
     }
+
+    input1_buf.initialize(args.device_queue, input1.data(), s::range<1>(args.problem_size));
+    input2_buf.initialize(args.device_queue, input2.data(), s::range<1>(args.problem_size));
+    output_buf.initialize(args.device_queue, output.data(), s::range<1>(args.problem_size));
   }
 
   void vec_product(s::buffer<T, 1> &input1_buf, s::buffer<T, 1> &input2_buf, s::buffer<T, 1> &output_buf) {
@@ -115,20 +123,17 @@ T reduce(s::buffer<T, 1> &input_buf) {
 }
 
   void run() {    
-    s::buffer<T, 1> input1_buf(input1.data(), s::range<1>(args.problem_size));
-    s::buffer<T, 1> input2_buf(input2.data(), s::range<1>(args.problem_size));
-    s::buffer<T, 1> output_buf(output.data(), s::range<1>(args.problem_size));
 
-    vec_product(input1_buf, input2_buf, output_buf);
+    vec_product(input1_buf.get(), input2_buf.get(), output_buf.get());
 
-    T ss_xy = reduce(output_buf);
+    T ss_xy = reduce(output_buf.get());
 
-    vec_product(input1_buf, input1_buf, output_buf);
+    vec_product(input1_buf.get(), input1_buf.get(), output_buf.get());
 
-    T ss_xx = reduce(output_buf);
+    T ss_xx = reduce(output_buf.get());
 
-    T mean_x = reduce(input1_buf)/args.problem_size;
-    T mean_y = reduce(input2_buf)/args.problem_size;
+    T mean_x = reduce(input1_buf.get())/args.problem_size;
+    T mean_y = reduce(input2_buf.get())/args.problem_size;
 
     ss_xy = ss_xy - mean_x*mean_y;
     ss_xx = ss_xx - mean_x*mean_x;

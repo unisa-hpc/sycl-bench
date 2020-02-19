@@ -63,14 +63,14 @@ class Polybench_Gramschmidt {
 		Q.resize(size * size);
 
 		init_array(A.data(), size);
+
+		A_buffer.initialize(args.device_queue, A.data(), cl::sycl::range<2>(size, size));
+		R_buffer.initialize(args.device_queue, R.data(), cl::sycl::range<2>(size, size));
+		Q_buffer.initialize(args.device_queue, Q.data(), cl::sycl::range<2>(size, size));
 	}
 
 	void run() {
 		using namespace cl::sycl;
-
-		buffer<DATA_TYPE, 2> A_buffer{A.data(), range<2>(size, size)};
-		buffer<DATA_TYPE, 2> R_buffer{R.data(), range<2>(size, size)};
-		buffer<DATA_TYPE, 2> Q_buffer{Q.data(), range<2>(size, size)};
 
 		for(size_t k = 0; k < size; k++) {
 			args.device_queue.submit([&](handler& cgh) {
@@ -124,6 +124,9 @@ class Polybench_Gramschmidt {
 		std::vector<DATA_TYPE> R_cpu(size * size);
 		std::vector<DATA_TYPE> Q_cpu(size * size);
 
+		// Trigger writeback
+		A_buffer.reset();
+
 		init_array(A_cpu.data(), size);
 
 		gramschmidt(A_cpu.data(), R_cpu.data(), Q_cpu.data(), size);
@@ -147,6 +150,10 @@ class Polybench_Gramschmidt {
 	std::vector<DATA_TYPE> A;
 	std::vector<DATA_TYPE> R;
 	std::vector<DATA_TYPE> Q;
+
+	PrefetchedBuffer<DATA_TYPE, 2> A_buffer;
+	PrefetchedBuffer<DATA_TYPE, 2> R_buffer;
+	PrefetchedBuffer<DATA_TYPE, 2> Q_buffer;
 };
 
 int main(int argc, char** argv) {

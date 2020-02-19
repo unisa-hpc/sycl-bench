@@ -33,15 +33,15 @@ protected:
   // we have to keep this around, unfortunately.
   std::vector<DataT> input;
   PrefetchedBuffer<DataT, Dims> input_buf;
-  s::buffer<DataT, Dims> output_buf;
+  PrefetchedBuffer<DataT, Dims> output_buf;
 
 public:
   MicroBenchDRAM(const BenchmarkArgs& args)
-      : args(args), buffer_size(getBufferSize<DataT, Dims>(args.problem_size)), input(buffer_size.size(), 33.f),
-        output_buf(buffer_size) {}
+      : args(args), buffer_size(getBufferSize<DataT, Dims>(args.problem_size)), input(buffer_size.size(), 33.f) {}
 
   void setup() {
     input_buf.initialize(args.device_queue, input.data(), buffer_size);
+    output_buf.initialize(args.device_queue, buffer_size);
   }
 
   static ThroughputMetric getThroughputMetric(const BenchmarkArgs& args) {

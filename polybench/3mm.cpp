@@ -98,18 +98,18 @@ class Polybench_3mm {
 		G.resize(size * size);
 
 		init_array(A.data(), B.data(), C.data(), D.data(), size);
+
+		A_buffer.initialize(args.device_queue, A.data(), cl::sycl::range<2>(size, size));
+		B_buffer.initialize(args.device_queue, B.data(), cl::sycl::range<2>(size, size));
+		C_buffer.initialize(args.device_queue, C.data(), cl::sycl::range<2>(size, size));
+		D_buffer.initialize(args.device_queue, D.data(), cl::sycl::range<2>(size, size));
+		E_buffer.initialize(args.device_queue, E.data(), cl::sycl::range<2>(size, size));
+		F_buffer.initialize(args.device_queue, F.data(), cl::sycl::range<2>(size, size));
+		G_buffer.initialize(args.device_queue, G.data(), cl::sycl::range<2>(size, size));
 	}
 
 	void run() {
 		using namespace cl::sycl;
-
-		buffer<DATA_TYPE, 2> A_buffer(A.data(), range<2>(size, size));
-		buffer<DATA_TYPE, 2> B_buffer(B.data(), range<2>(size, size));
-		buffer<DATA_TYPE, 2> C_buffer(C.data(), range<2>(size, size));
-		buffer<DATA_TYPE, 2> D_buffer(D.data(), range<2>(size, size));
-		buffer<DATA_TYPE, 2> E_buffer(E.data(), range<2>(size, size));
-		buffer<DATA_TYPE, 2> F_buffer(F.data(), range<2>(size, size));
-		buffer<DATA_TYPE, 2> G_buffer(G.data(), range<2>(size, size));
 
 		args.device_queue.submit([&](handler& cgh) {
 			auto A = A_buffer.get_access<access::mode::read>(cgh);
@@ -165,11 +165,14 @@ class Polybench_3mm {
 		std::vector<DATA_TYPE> E_cpu(size * size);
 		std::vector<DATA_TYPE> F_cpu(size * size);
 		std::vector<DATA_TYPE> G_cpu(size * size);
+
 		mm3_cpu(A.data(), B.data(), C.data(), D.data(), E_cpu.data(), F_cpu.data(), G_cpu.data(), size);
+
+		auto G_acc = G_buffer.get_access<cl::sycl::access::mode::read>();
 
 		for(size_t i = 0; i < size; i++) {
 			for(size_t j = 0; j < size; j++) {
-				const auto diff = percentDiff(G_cpu[i * size + j], G[i * size + j]);
+				const auto diff = percentDiff(G_cpu[i * size + j], G_acc.get_pointer()[i * size + j]);
 				if(diff > ERROR_THRESHOLD) return false;
 			}
 		}
@@ -190,6 +193,14 @@ class Polybench_3mm {
 	std::vector<DATA_TYPE> E;
 	std::vector<DATA_TYPE> F;
 	std::vector<DATA_TYPE> G;
+
+	PrefetchedBuffer<DATA_TYPE, 2> A_buffer;
+	PrefetchedBuffer<DATA_TYPE, 2> B_buffer;
+	PrefetchedBuffer<DATA_TYPE, 2> C_buffer;
+	PrefetchedBuffer<DATA_TYPE, 2> D_buffer;
+	PrefetchedBuffer<DATA_TYPE, 2> E_buffer;
+	PrefetchedBuffer<DATA_TYPE, 2> F_buffer;
+	PrefetchedBuffer<DATA_TYPE, 2> G_buffer;
 };
 
 int main(int argc, char** argv) {

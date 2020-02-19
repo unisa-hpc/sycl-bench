@@ -16,11 +16,10 @@ class SegmentedReduction
 protected:
     std::vector<T> _input;
     BenchmarkArgs _args;
-    sycl::buffer<T, 1> _buff;
+    PrefetchedBuffer<T, 1> _buff;
 public:
   SegmentedReduction(const BenchmarkArgs &args)
-      : _args{args}, 
-        _buff{sycl::range<1>{1}} // buffer can't be default constructed
+      : _args{args}
   {
     
     assert(_args.problem_size % _args.local_size == 0);
@@ -35,7 +34,7 @@ public:
 
   void setup() {
     generate_input(_input);
-    _buff = sycl::buffer<T, 1>{_input.data(), sycl::range<1>(_args.problem_size)};
+    _buff.initialize(_args.device_queue,_input.data(), sycl::range<1>(_args.problem_size));
   }
 
   void submit_ndrange(){

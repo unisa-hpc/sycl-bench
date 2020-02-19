@@ -26,6 +26,7 @@ public:
   {
     for (std::size_t i = 0; i < args.problem_size; ++i) {
       dummy_buffers.push_back(sycl::buffer<int, 1>{sycl::range<1>{1}});
+      forceDataAllocation(args.device_queue, dummy_buffers.back());
     }
   }
 

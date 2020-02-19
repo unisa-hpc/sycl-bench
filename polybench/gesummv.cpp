@@ -55,7 +55,7 @@ void gesummv(DATA_TYPE* A, DATA_TYPE* B, DATA_TYPE* x, DATA_TYPE* y, DATA_TYPE* 
 }
 
 class Polybench_Gesummv {
-  public:
+public:
 	Polybench_Gesummv(const BenchmarkArgs& args) : args(args), size(args.problem_size) {}
 
 	void setup() {
@@ -66,16 +66,16 @@ class Polybench_Gesummv {
 		tmp.resize(size);
 
 		init(A.data(), B.data(), x.data(), size);
+
+		A_buffer.initialize(args.device_queue, A.data(), cl::sycl::range<2>(size, size));
+		B_buffer.initialize(args.device_queue, B.data(), cl::sycl::range<2>(size, size));
+		x_buffer.initialize(args.device_queue, x.data(), cl::sycl::range<1>(size));
+		y_buffer.initialize(args.device_queue, y.data(), cl::sycl::range<1>(size));
+		tmp_buffer.initialize(args.device_queue, tmp.data(), cl::sycl::range<1>(size));
 	}
 
 	void run() {
 		using namespace cl::sycl;
-
-		buffer<DATA_TYPE, 2> A_buffer{A.data(), range<2>(size, size)};
-		buffer<DATA_TYPE, 2> B_buffer{B.data(), range<2>(size, size)};
-		buffer<DATA_TYPE, 1> x_buffer{x.data(), range<1>(size)};
-		buffer<DATA_TYPE, 1> y_buffer{y.data(), range<1>(size)};
-		buffer<DATA_TYPE, 1> tmp_buffer{tmp.data(), range<1>(size)};
 
 		args.device_queue.submit([&](handler& cgh) {
 			auto A = A_buffer.get_access<access::mode::read>(cgh);
@@ -100,6 +100,9 @@ class Polybench_Gesummv {
 	bool verify(VerificationSetting&) {
 		constexpr auto ERROR_THRESHOLD = 0.05;
 
+		// Trigger writeback
+		y_buffer.reset();
+
 		std::vector<DATA_TYPE> y_cpu(size);
 		std::vector<DATA_TYPE> tmp_cpu(size);
 
@@ -115,7 +118,7 @@ class Polybench_Gesummv {
 
 	static std::string getBenchmarkName() { return "Polybench_Gesummv"; }
 
-  private:
+private:
 	BenchmarkArgs args;
 
 	const size_t size;
@@ -124,6 +127,12 @@ class Polybench_Gesummv {
 	std::vector<DATA_TYPE> x;
 	std::vector<DATA_TYPE> y;
 	std::vector<DATA_TYPE> tmp;
+
+	PrefetchedBuffer<DATA_TYPE, 2> A_buffer;
+	PrefetchedBuffer<DATA_TYPE, 2> B_buffer;
+	PrefetchedBuffer<DATA_TYPE, 1> x_buffer;
+	PrefetchedBuffer<DATA_TYPE, 1> y_buffer;
+	PrefetchedBuffer<DATA_TYPE, 1> tmp_buffer;
 };
 
 int main(int argc, char** argv) {
