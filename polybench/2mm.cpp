@@ -80,16 +80,16 @@ class Polybench_2mm {
 		E.resize(size * size);
 
 		init_array(A.data(), B.data(), C.data(), D.data(), size);
+
+		A_buffer.initialize(args.device_queue, A.data(), cl::sycl::range<2>(size, size));
+		B_buffer.initialize(args.device_queue, B.data(), cl::sycl::range<2>(size, size));
+		C_buffer.initialize(args.device_queue, C.data(), cl::sycl::range<2>(size, size));
+		D_buffer.initialize(args.device_queue, D.data(), cl::sycl::range<2>(size, size));
+		E_buffer.initialize(args.device_queue, E.data(), cl::sycl::range<2>(size, size));
 	}
 
 	void run() {
 		using namespace cl::sycl;
-
-		buffer<DATA_TYPE, 2> A_buffer(A.data(), range<2>(size, size));
-		buffer<DATA_TYPE, 2> B_buffer(B.data(), range<2>(size, size));
-		buffer<DATA_TYPE, 2> C_buffer(C.data(), range<2>(size, size));
-		buffer<DATA_TYPE, 2> D_buffer(D.data(), range<2>(size, size));
-		buffer<DATA_TYPE, 2> E_buffer(E.data(), range<2>(size, size));
 
 		args.device_queue.submit([&](handler& cgh) {
 			auto A = A_buffer.get_access<access::mode::read>(cgh);
@@ -131,9 +131,11 @@ class Polybench_2mm {
 		std::vector<DATA_TYPE> E_cpu(size * size);
 		mm2_cpu(A.data(), B.data(), C.data(), D.data(), E_cpu.data(), size);
 
+		auto E_acc = E_buffer.get_access<cl::sycl::access::mode::read>();
+
 		for(size_t i = 0; i < size; i++) {
 			for(size_t j = 0; j < size; j++) {
-				const auto diff = percentDiff(E_cpu[i * size + j], E[i * size + j]);
+				const auto diff = percentDiff(E_cpu[i * size + j], E_acc.get_pointer()[i * size + j]);
 				if(diff > ERROR_THRESHOLD) return false;
 			}
 		}
@@ -152,6 +154,12 @@ class Polybench_2mm {
 	std::vector<DATA_TYPE> C;
 	std::vector<DATA_TYPE> D;
 	std::vector<DATA_TYPE> E;
+
+	PrefetchedBuffer<DATA_TYPE, 2> A_buffer;
+	PrefetchedBuffer<DATA_TYPE, 2> B_buffer;
+	PrefetchedBuffer<DATA_TYPE, 2> C_buffer;
+	PrefetchedBuffer<DATA_TYPE, 2> D_buffer;
+	PrefetchedBuffer<DATA_TYPE, 2> E_buffer;
 };
 
 int main(int argc, char** argv) {

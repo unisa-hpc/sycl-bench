@@ -7,44 +7,50 @@ class MolecularDynamicsKernel;
 
 class MolecularDynamicsBench
 {
-protected:    
-    std::vector<s::float4> input;
-    std::vector<s::float4> output;
-    std::vector<int> neighbour;
-	int neighCount;
-	int cutsq;
-	int lj1;
-	float lj2;
-	int inum;
-    BenchmarkArgs args;
+protected:
+  std::vector<s::float4> input;
+  std::vector<s::float4> output;
+  std::vector<int> neighbour;
+  int neighCount;
+  int cutsq;
+  int lj1;
+  float lj2;
+  int inum;
+  BenchmarkArgs args;
+
+  PrefetchedBuffer<s::float4, 1> input_buf;
+  PrefetchedBuffer<int, 1> neighbour_buf;
+  PrefetchedBuffer<s::float4, 1> output_buf;
 
 public:
   MolecularDynamicsBench(const BenchmarkArgs &_args) : args(_args) {}
-  
-  void setup() {      
-    // host memory allocation and initialization
-	neighCount = 15;
-	cutsq = 50;
-	lj1 = 20;
-	lj2 = 0.003f;
-	inum = 0;
-    
-    input.resize(args.problem_size*sizeof(s::float4));
-    neighbour.resize(args.problem_size);
-    output.resize(args.problem_size*sizeof(s::float4));
 
-    for (size_t i = 0; i < args.problem_size; i++) {
-        input[i] = s::float4{(float)i,(float)i,(float)i,(float)i}; // Same value for all 4 elements. Could be changed if needed
+  void setup() {
+    // host memory allocation and initialization
+    neighCount = 15;
+    cutsq = 50;
+    lj1 = 20;
+    lj2 = 0.003f;
+    inum = 0;
+
+    input.resize(args.problem_size * sizeof(s::float4));
+    neighbour.resize(args.problem_size);
+    output.resize(args.problem_size * sizeof(s::float4));
+
+    for(size_t i = 0; i < args.problem_size; i++) {
+      input[i] = s::float4{
+          (float)i, (float)i, (float)i, (float)i}; // Same value for all 4 elements. Could be changed if needed
     }
-    for (size_t i = 0; i < args.problem_size; i++) {
-        neighbour[i] = i+1;
+    for(size_t i = 0; i < args.problem_size; i++) {
+      neighbour[i] = i + 1;
     }
+
+    input_buf.initialize(args.device_queue, input.data(), s::range<1>(args.problem_size * sizeof(s::float4)));
+    neighbour_buf.initialize(args.device_queue, neighbour.data(), s::range<1>(args.problem_size));
+    output_buf.initialize(args.device_queue, output.data(), s::range<1>(args.problem_size * sizeof(s::float4)));
   }
 
-  void run() {    
-    s::buffer<s::float4, 1> input_buf(input.data(), s::range<1>(args.problem_size*sizeof(s::float4)));
-    s::buffer<int, 1> neighbour_buf(neighbour.data(), s::range<1>(args.problem_size));
-    s::buffer<s::float4, 1> output_buf(output.data(), s::range<1>(args.problem_size*sizeof(s::float4)));
+  void run() {
     
     args.device_queue.submit(
         [&](cl::sycl::handler& cgh) {
@@ -93,7 +99,9 @@ public:
     });
   }
 
-  bool verify(VerificationSetting &ver) { 
+  bool verify(VerificationSetting &ver) {
+    auto output_acc = output_buf.get_access<s::access::mode::read>();
+
     bool pass = true;
     unsigned equal = 1;
     const float tolerance = 0.00001;
@@ -124,9 +132,10 @@ public:
             j++;
         }
 
-        if (fabs(f.x()-output[i].x()) > tolerance || fabs(f.y()-output[i].y()) > tolerance || fabs(f.z()-output[i].z()) > tolerance) {
-            pass = false;
-            break;
+        if(fabs(f.x() - output_acc[i].x()) > tolerance || fabs(f.y() - output_acc[i].y()) > tolerance ||
+            fabs(f.z() - output_acc[i].z()) > tolerance) {
+          pass = false;
+          break;
         }
     }
     return pass;

@@ -17,6 +17,12 @@ protected:
     std::vector<T> expected_output;
     BenchmarkArgs args;
 
+    PrefetchedBuffer<T, 1> input1_buf;
+    PrefetchedBuffer<T, 1> input2_buf;
+    PrefetchedBuffer<T, 1> alpha_buf;
+    PrefetchedBuffer<T, 1> beta_buf;
+    PrefetchedBuffer<T, 1> output_buf;
+
 public:
   LinearRegressionBench(const BenchmarkArgs &_args) : args(_args) {}
   
@@ -35,14 +41,15 @@ public:
       alpha[i] = static_cast <T> (rand()) / static_cast <T> (RAND_MAX);
       beta[i] = static_cast <T> (rand()) / static_cast <T> (RAND_MAX);
     }
+
+    input1_buf.initialize(args.device_queue, input1.data(), s::range<1>(args.problem_size));
+    input2_buf.initialize(args.device_queue, input2.data(), s::range<1>(args.problem_size));
+    alpha_buf. initialize(args.device_queue, alpha.data(), s::range<1>(args.problem_size));
+    beta_buf.  initialize(args.device_queue, beta.data(), s::range<1>(args.problem_size));
+    output_buf.initialize(args.device_queue, output.data(), s::range<1>(args.problem_size));
   }
 
   void run() {    
-    s::buffer<T, 1> input1_buf(input1.data(), s::range<1>(args.problem_size));
-    s::buffer<T, 1> input2_buf(input2.data(), s::range<1>(args.problem_size));
-    s::buffer<T, 1> alpha_buf(alpha.data(), s::range<1>(args.problem_size));
-    s::buffer<T, 1> beta_buf(beta.data(), s::range<1>(args.problem_size));
-    s::buffer<T, 1> output_buf(output.data(), s::range<1>(args.problem_size));
     
     args.device_queue.submit(
         [&](cl::sycl::handler& cgh) {
@@ -74,9 +81,11 @@ public:
     });
   }
 
-  bool compare(std::vector<T> expected_output, std::vector<T> output, const int length, const T epsilon) {
+  bool compare(const std::vector<T>& expected_output, const int length, const T epsilon) {
       T error = 0.0f;
       T ref = 0.0f;
+
+      auto output = output_buf.template get_access<s::access::mode::read>();
 
       for(size_t i = 0; i < length; ++i) {
           T diff = expected_output[i] - output[i];
@@ -98,7 +107,6 @@ public:
   }
 
   bool verify(VerificationSetting &ver) { 
-    bool pass = true;
 
     for (size_t i = 0; i < args.problem_size; i ++) {
       T error = 0.0;
@@ -109,12 +117,7 @@ public:
       expected_output[i] = error; 
     }
 
-    bool equal = compare(expected_output, output, args.problem_size, 0.000001);
-    
-    if(!equal) {
-      pass = false;
-    }
-    return pass;
+    return compare(expected_output, args.problem_size, 0.000001);
   }
   
   static std::string getBenchmarkName() {

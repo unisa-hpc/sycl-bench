@@ -15,6 +15,8 @@ protected:
     std::vector<DATA_TYPE> output;
     BenchmarkArgs args;
 
+    PrefetchedBuffer<DATA_TYPE, 1> input_buf;
+    PrefetchedBuffer<DATA_TYPE, 1> output_buf;
 public:
   MicroBenchLocalMemory(const BenchmarkArgs &_args) : args(_args) {}
 
@@ -22,12 +24,12 @@ public:
     // buffers initialized to a default value
     input. resize(args.problem_size, 10); 
     output.resize(args.problem_size, 42); 
+
+    input_buf.initialize(args.device_queue, input.data(), s::range<1>(args.problem_size));
+    output_buf.initialize(args.device_queue, output.data(), s::range<1>(args.problem_size));
   }
 
   void run(){
-    s::buffer<DATA_TYPE, 1>  input_buf (input.data(), s::range<1>(args.problem_size));
-    s::buffer<DATA_TYPE, 1> output_buf(output.data(), s::range<1>(args.problem_size));
-
     args.device_queue.submit(
         [&](cl::sycl::handler& cgh) {
       auto in  =  input_buf.template get_access<s::access::mode::read>(cgh);
@@ -50,7 +52,6 @@ public:
         }
       });
     }); // submit
-    args.device_queue.wait_and_throw();
   }
 
   static std::string getBenchmarkName() {

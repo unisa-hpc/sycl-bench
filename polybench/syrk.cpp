@@ -59,13 +59,13 @@ class Polybench_Syrk {
 		C.resize(size * size);
 
 		init_arrays(A.data(), C.data(), size);
+
+		A_buffer.initialize(args.device_queue, A.data(), cl::sycl::range<2>(size, size));
+		C_buffer.initialize(args.device_queue, C.data(), cl::sycl::range<2>(size, size));
 	}
 
 	void run() {
 		using namespace cl::sycl;
-
-		buffer<DATA_TYPE, 2> A_buffer{A.data(), range<2>(size, size)};
-		buffer<DATA_TYPE, 2> C_buffer{C.data(), range<2>(size, size)};
 
 		args.device_queue.submit([&](handler& cgh) {
 			auto A = A_buffer.get_access<access::mode::read>(cgh);
@@ -86,6 +86,9 @@ class Polybench_Syrk {
 
 	bool verify(VerificationSetting&) {
 		constexpr auto ERROR_THRESHOLD = 0.05;
+
+		// Trigger writeback
+		C_buffer.reset();
 
 		std::vector<DATA_TYPE> C_cpu(size * size);
 
@@ -111,6 +114,9 @@ class Polybench_Syrk {
 	const size_t size;
 	std::vector<DATA_TYPE> A;
 	std::vector<DATA_TYPE> C;
+
+	PrefetchedBuffer<DATA_TYPE, 2> A_buffer;
+	PrefetchedBuffer<DATA_TYPE, 2> C_buffer;
 };
 
 int main(int argc, char** argv) {
