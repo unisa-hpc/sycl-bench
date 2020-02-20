@@ -51,7 +51,7 @@ elseif(SYCL_IMPL STREQUAL "triSYCL")
 endif()
 
 set(benchmarks
-  micro/pattern_arith.cpp
+  micro/arith.cpp
   micro/DRAM.cpp
   micro/host_device_bandwidth.cpp
   micro/pattern_L2.cpp
