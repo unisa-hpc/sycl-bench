@@ -2,14 +2,25 @@
 #include <CL/sycl.hpp>
 #include <memory>
 
-class InitializationDummyKernel1;
+template<class AccType>
+class InitializationDummyKernel
+{
+public:
+  InitializationDummyKernel(AccType acc)
+  : acc{acc} {}
+
+  void operator()() {}
+private:
+  AccType acc;
+};
+
 class InitializationDummyKernel2;
 
 template <class BufferType>
 inline void forceDataTransfer(cl::sycl::queue& q, BufferType b) {
   q.submit([&](cl::sycl::handler& cgh) {
     auto acc = b.template get_access<cl::sycl::access::mode::read>(cgh);
-    cgh.single_task<InitializationDummyKernel1>([=]() {});
+    cgh.single_task(InitializationDummyKernel{acc});
   });
   q.wait_and_throw();
 }
@@ -18,7 +29,7 @@ template <class BufferType>
 inline void forceDataAllocation(cl::sycl::queue& q, BufferType b) {
   q.submit([&](cl::sycl::handler& cgh) {
     auto acc = b.template get_access<cl::sycl::access::mode::discard_write>(cgh);
-    cgh.single_task<InitializationDummyKernel2>([=]() {});
+    cgh.single_task(InitializationDummyKernel{acc});
   });
   q.wait_and_throw();
 }
