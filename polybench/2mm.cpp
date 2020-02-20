@@ -88,10 +88,10 @@ class Polybench_2mm {
 		E_buffer.initialize(args.device_queue, E.data(), cl::sycl::range<2>(size, size));
 	}
 
-	void run() {
+	void run(std::vector<cl::sycl::event>& events) {
 		using namespace cl::sycl;
 
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto A = A_buffer.get_access<access::mode::read>(cgh);
 			auto B = B_buffer.get_access<access::mode::read>(cgh);
 			auto C = C_buffer.get_access<access::mode::read_write>(cgh);
@@ -104,9 +104,9 @@ class Polybench_2mm {
 					C[item] += A[{i, k}] * B[{k, j}];
 				}
 			});
-		});
+		}));
 
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto C = C_buffer.get_access<access::mode::read>(cgh);
 			auto D = D_buffer.get_access<access::mode::read>(cgh);
 			auto E = E_buffer.get_access<access::mode::discard_write>(cgh);
@@ -120,7 +120,7 @@ class Polybench_2mm {
 					E[item] += C[{i, k}] * D[{k, j}];
 				}
 			});
-		});
+		}));
 	}
 
 	bool verify(VerificationSetting&) {

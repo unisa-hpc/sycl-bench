@@ -49,9 +49,9 @@ public:
     output_buf.initialize(args.device_queue, output.data(), s::range<1>(args.problem_size));
   }
 
-  void run() {    
+  void run(std::vector<cl::sycl::event>& events) {
     
-    args.device_queue.submit(
+    events.push_back(args.device_queue.submit(
         [&](cl::sycl::handler& cgh) {
       auto in1 = input1_buf.template get_access<s::access::mode::read>(cgh);
       auto in2 = input2_buf.template get_access<s::access::mode::read>(cgh);
@@ -78,7 +78,7 @@ public:
           }
           output[gid] = error;
         });
-    });
+    }));
   }
 
   bool compare(const std::vector<T>& expected_output, const int length, const T epsilon) {

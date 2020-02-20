@@ -69,11 +69,11 @@ class Polybench_Gramschmidt {
 		Q_buffer.initialize(args.device_queue, Q.data(), cl::sycl::range<2>(size, size));
 	}
 
-	void run() {
+	void run(std::vector<cl::sycl::event>& events) {
 		using namespace cl::sycl;
 
 		for(size_t k = 0; k < size; k++) {
-			args.device_queue.submit([&](handler& cgh) {
+			events.push_back(args.device_queue.submit([&](handler& cgh) {
 				auto A = A_buffer.get_access<access::mode::read>(cgh);
 				auto R = R_buffer.get_access<access::mode::write>(cgh);
 
@@ -84,17 +84,17 @@ class Polybench_Gramschmidt {
 					}
 					R[{k, k}] = cl::sycl::sqrt(nrm);
 				});
-			});
+			}));
 
-			args.device_queue.submit([&](handler& cgh) {
+			events.push_back(args.device_queue.submit([&](handler& cgh) {
 				auto A = A_buffer.get_access<access::mode::read>(cgh);
 				auto R = R_buffer.get_access<access::mode::read>(cgh);
 				auto Q = Q_buffer.get_access<access::mode::write>(cgh);
 
 				cgh.parallel_for<Gramschmidt2>(range<2>(size, 1), id<2>(0, k), [=](item<2> item) { Q[item] = A[item] / R[{k, k}]; });
-			});
+			}));
 
-			args.device_queue.submit([&](handler& cgh) {
+			events.push_back(args.device_queue.submit([&](handler& cgh) {
 				auto A = A_buffer.get_access<access::mode::read_write>(cgh);
 				auto R = R_buffer.get_access<access::mode::write>(cgh);
 				auto Q = Q_buffer.get_access<access::mode::read>(cgh);
@@ -113,7 +113,7 @@ class Polybench_Gramschmidt {
 						A[{i, j}] -= Q[{i, k}] * R[item];
 					}
 				});
-			});
+			}));
 		}
 	}
 

@@ -44,18 +44,18 @@ public:
   }
 
 
-  void submit_ndrange(){
-    this->submit([this](sycl::buffer<T, 1> *input, sycl::buffer<T, 1> *output,
+  void submit_ndrange(std::vector<cl::sycl::event>& events){
+    this->submit([this, &events](sycl::buffer<T, 1> *input, sycl::buffer<T, 1> *output,
                         const size_t reduction_size, const size_t num_groups) {
-      this->local_reduce_ndrange(input, output, reduction_size, num_groups);
+      events.push_back(this->local_reduce_ndrange(input, output, reduction_size, num_groups));
     });
   }
 
-  void submit_hierarchical(){
-    this->submit([this](sycl::buffer<T, 1> *input, sycl::buffer<T, 1> *output,
+  void submit_hierarchical(std::vector<cl::sycl::event>& events){
+    this->submit([this, &events](sycl::buffer<T, 1> *input, sycl::buffer<T, 1> *output,
                         const size_t reduction_size, const size_t num_groups) {
-      this->local_reduce_hierarchical(input, output, reduction_size,
-                                      num_groups);
+      events.push_back(this->local_reduce_hierarchical(input, output, reduction_size,
+                                      num_groups));
     });
   }
 
@@ -97,11 +97,11 @@ private:
     _final_output_buff = output_buff;
   }
 
-  void local_reduce_ndrange(
+  sycl::event local_reduce_ndrange(
     sycl::buffer<T,1>* input, sycl::buffer<T,1>* output,
     const size_t reduction_size, const std::size_t num_groups)
   {
-    _args.device_queue.submit([&](sycl::handler &cgh) {
+    return _args.device_queue.submit([&](sycl::handler &cgh) {
 
       sycl::nd_range<1> ndrange{num_groups * _args.local_size,
                                 _args.local_size};
@@ -137,11 +137,11 @@ private:
     }); // submit
   }
 
-  void local_reduce_hierarchical(
+  sycl::event local_reduce_hierarchical(
     sycl::buffer<T,1>* input, sycl::buffer<T,1>* output, 
     const size_t reduction_size, const std::size_t num_groups)
   {
-    _args.device_queue.submit(
+    return _args.device_queue.submit(
         [&](sycl::handler& cgh) {
 
       using namespace sycl::access;
@@ -197,8 +197,8 @@ public:
   : Reduction<T>{args}
   {}
 
-  void run(){
-    this->submit_ndrange();
+  void run(std::vector<cl::sycl::event>& events){
+    this->submit_ndrange(events);
   }
 
   static std::string getBenchmarkName() {
@@ -217,8 +217,8 @@ public:
   : Reduction<T>{args}
   {}
 
-  void run(){
-    this->submit_hierarchical();
+  void run(std::vector<cl::sycl::event>& events){
+    this->submit_hierarchical(events);
     // Waiting is not necessary as the BenchmarkManager will already call
     // wait_and_throw() here
   }

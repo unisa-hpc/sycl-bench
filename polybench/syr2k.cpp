@@ -67,10 +67,10 @@ class Polybench_Syr2k {
 		C_buffer.initialize(args.device_queue, C.data(), cl::sycl::range<2>(size, size));
 	}
 
-	void run() {
+	void run(std::vector<cl::sycl::event>& events) {
 		using namespace cl::sycl;
 
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto A = A_buffer.get_access<access::mode::read>(cgh);
 			auto B = B_buffer.get_access<access::mode::read>(cgh);
 			auto C = C_buffer.get_access<access::mode::read_write>(cgh);
@@ -85,7 +85,7 @@ class Polybench_Syr2k {
 					C[item] += ALPHA * A[{i, k}] * B[{j, k}] + ALPHA * B[{i, k}] * A[{j, k}];
 				}
 			});
-		});
+		}));
 	}
 
 	bool verify(VerificationSetting&) {

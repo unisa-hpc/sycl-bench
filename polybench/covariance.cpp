@@ -76,10 +76,10 @@ public:
 		mean_buffer.initialize(args.device_queue, mean.data(), cl::sycl::range<1>(size + 1));
   }
 
-	void run() {
+	void run(std::vector<cl::sycl::event>& events) {
 		using namespace cl::sycl;
 
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto data = data_buffer.get_access<access::mode::read>(cgh);
 			auto mean = mean_buffer.get_access<access::mode::discard_write>(cgh);
 
@@ -92,9 +92,9 @@ public:
 				}
 				mean[item] /= float_n;
 			});
-		});
+		}));
 
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto mean = mean_buffer.get_access<access::mode::read>(cgh);
 			auto data = data_buffer.get_access<access::mode::read_write>(cgh);
 
@@ -102,9 +102,9 @@ public:
 				const auto j = item[1];
 				data[item] -= mean[j];
 			});
-		});
+		}));
 
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto data = data_buffer.get_access<access::mode::read>(cgh);
 			auto symmat = symmat_buffer.get_access<access::mode::discard_write>(cgh);
 			auto symmat2 = symmat_buffer.get_access<access::mode::discard_write>(cgh);
@@ -123,7 +123,7 @@ public:
 					symmat2[{j2, j1}] = symmat[{j1, j2}];
 				}
 			});
-		});
+		}));
 	}
 
 	bool verify(VerificationSetting&) {

@@ -46,8 +46,8 @@ public:
     membership_buf.initialize(args.device_queue, membership.data(), s::range<1>(args.problem_size));
   }
 
-  void run() {
-    args.device_queue.submit([&](cl::sycl::handler& cgh) {
+  void run(std::vector<cl::sycl::event>& events) {
+    events.push_back(args.device_queue.submit([&](cl::sycl::handler& cgh) {
       auto features = features_buf.template get_access<s::access::mode::read>(cgh);
       auto clusters = clusters_buf.template get_access<s::access::mode::read>(cgh);
       auto membership = membership_buf.template get_access<s::access::mode::discard_write>(cgh);
@@ -78,7 +78,7 @@ public:
           membership[gid] = index;
         }
       });
-    });
+    }));
   }
 
   bool verify(VerificationSetting &ver) {
