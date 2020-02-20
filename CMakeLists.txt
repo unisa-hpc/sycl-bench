@@ -100,6 +100,10 @@ foreach(benchmark IN LISTS benchmarks)
     add_sycl_to_target(TARGET ${target} SOURCES ${benchmark})
   endif()
 
+  if(SYCL_IMPL STREQUAL "ComputeCpp" AND COMPUTECPP_BITCODE STREQUAL "ptx64")
+    target_compile_definitions(${target} PRIVATE SYCL_BENCH_ENABLE_QUEUE_PROFILING)
+  endif()
+
   if(SYCL_IMPL STREQUAL "LLVM")
     target_compile_definitions(${target} PRIVATE __LLVM_SYCL__)
   endif()

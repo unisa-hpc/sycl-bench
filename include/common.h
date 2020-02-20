@@ -9,6 +9,7 @@
 #include <algorithm> // for std::min
 #include <type_traits>
 #include <unordered_set>
+#include <optional>
 
 #include "command_line.h"
 #include "result_consumer.h"
@@ -17,8 +18,8 @@
   
 #include "benchmark_hook.h"
 #include "benchmark_traits.h"
-#include "time_meas.h"
 #include "prefetched_buffer.h"
+#include "time_metrics.h"
 
 #ifdef NV_ENERGY_MEAS    
   #include "nv_energy_meas.h"
@@ -52,6 +53,7 @@ public:
     args.result_consumer->consumeResult(
       "sycl-implementation", this->getSyclImplementation());
 
+    TimeMetricsProcessor<Benchmark> time_metrics(args);
 
     for(auto h : hooks) h->atInit();
 
@@ -69,12 +71,35 @@ public:
         args.device_queue.wait_and_throw();
         for(auto h : hooks) h->postSetup();
 
+        std::optional<cl::sycl::event> run_event;
+
+        // Performance critical measurement section starts here
         for(auto h : hooks) h->preKernel();
-
-        b.run();
-
+        const auto before = std::chrono::high_resolution_clock::now();
+        if constexpr(std::is_same_v<decltype(b.run()), cl::sycl::event>) {
+          run_event = b.run();
+        } else {
+          b.run();
+        }
         args.device_queue.wait_and_throw();
+        const auto after = std::chrono::high_resolution_clock::now();
         for(auto h : hooks) h->postKernel();
+        // Performance critical measurement section ends here
+
+        time_metrics.addTimingResult("run-time", std::chrono::duration_cast<std::chrono::nanoseconds>(after - before));
+
+        if(run_event.has_value()) {
+#if defined(SYCL_BENCH_ENABLE_QUEUE_PROFILING)
+          // TODO: We might also want to consider the "command_submit" time.
+          const auto start = run_event->get_profiling_info<cl::sycl::info::event_profiling::command_start>();
+          const auto end = run_event->template get_profiling_info<cl::sycl::info::event_profiling::command_end>();
+          time_metrics.addTimingResult("kernel-time", std::chrono::nanoseconds(end - start));
+#else
+          time_metrics.markAsUnavailable("kernel-time");
+#endif
+        } else {
+          time_metrics.markAsUnavailable("kernel-time");
+        }
 
         if constexpr(detail::BenchmarkTraits<Benchmark>::hasVerify) {
           if(args.verification.range.size() > 0) {
@@ -90,6 +115,8 @@ public:
       args.result_consumer->discard();
       std::rethrow_exception(std::current_exception());
     }
+
+    time_metrics.emitResults(*args.result_consumer);
 
     for (auto h : hooks) {
       // Extract results from the hooks
@@ -173,13 +200,6 @@ public:
       }
 
       BenchmarkManager<Benchmark> mgr(args);
-
-      // Add hooks to benchmark manager, perhaps depending on command line
-      // arguments?
-
-      TimeMeasurement<Benchmark> tm(args);
-      if (!args.cli.isFlagSet("--no-runtime-measurement"))
-        mgr.addHook(tm);
 
 #ifdef NV_ENERGY_MEAS
       NVEnergyMeasurement nvem;

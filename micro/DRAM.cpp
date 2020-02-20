@@ -51,8 +51,8 @@ public:
     return {copiedGiB * 2.0, "GiB"};
   }
 
-  void run() {
-    args.device_queue.submit([&](cl::sycl::handler& cgh) {
+  s::event run() {
+    return args.device_queue.submit([&](cl::sycl::handler& cgh) {
       auto in = input_buf.template get_access<s::access::mode::read>(cgh);
       auto out = output_buf.template get_access<s::access::mode::discard_write>(cgh);
       // We spawn one work item for each buffer element to be copied.
