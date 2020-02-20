@@ -49,15 +49,15 @@ class Polybench_2DConvolution {
 		B.resize(size * size);
 
 		init(A.data(), size);
+
+		A_buffer.initialize(args.device_queue, A.data(), cl::sycl::range<2>(size, size));
+		B_buffer.initialize(args.device_queue, B.data(), cl::sycl::range<2>(size, size));
 	}
 
-	void run() {
+	void run(std::vector<cl::sycl::event>& events) {
 		using namespace cl::sycl;
 
-		buffer<DATA_TYPE, 2> A_buffer(A.data(), range<2>(size, size));
-		buffer<DATA_TYPE, 2> B_buffer(B.data(), range<2>(size, size));
-
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto A = A_buffer.get_access<access::mode::read>(cgh);
 			auto B = B_buffer.get_access<access::mode::discard_write>(cgh);
 
@@ -75,11 +75,13 @@ class Polybench_2DConvolution {
 					          + c33 * A[{(i + 1), (j + 1)}];
 				}
 			});
-		});
+		}));
 	}
 
 	bool verify(VerificationSetting&) {
 		constexpr auto ERROR_THRESHOLD = 0.05;
+
+		auto B_acc = B_buffer.get_access<cl::sycl::access::mode::read>();
 
 		std::vector<DATA_TYPE> B_cpu(size * size);
 		conv2D(A.data(), B_cpu.data(), size);
@@ -87,7 +89,7 @@ class Polybench_2DConvolution {
 		for(size_t i = 0; i < size; i++) {
 			for(size_t j = 0; j < size; j++) {
 				if((i > 0) && (j > 0) && (i < size - 1) && (j < size - 1)) {
-					const auto diff = percentDiff(B_cpu[i * size + j], B[i * size + j]);
+					const auto diff = percentDiff(B_cpu[i * size + j], B_acc.get_pointer()[i * size + j]);
 					if(diff > ERROR_THRESHOLD) return false;
 				}
 			}
@@ -104,6 +106,9 @@ class Polybench_2DConvolution {
 	const size_t size;
 	std::vector<DATA_TYPE> A;
 	std::vector<DATA_TYPE> B;
+
+	PrefetchedBuffer<DATA_TYPE, 2> A_buffer;
+	PrefetchedBuffer<DATA_TYPE, 2> B_buffer;
 };
 
 int main(int argc, char** argv) {

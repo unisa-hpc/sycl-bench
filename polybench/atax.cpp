@@ -55,17 +55,17 @@ class Polybench_Atax {
 		tmp.resize(size);
 
 		init_array(x.data(), A.data(), size);
+
+		A_buffer.initialize(args.device_queue, A.data(), cl::sycl::range<2>{size, size});
+		x_buffer.initialize(args.device_queue, x.data(), cl::sycl::range<1>{size});
+		y_buffer.initialize(args.device_queue, y.data(), cl::sycl::range<1>{size});
+		tmp_buffer.initialize(args.device_queue, tmp.data(), cl::sycl::range<1>{size});
 	}
 
-	void run() {
+	void run(std::vector<cl::sycl::event>& events) {
 		using namespace cl::sycl;
 
-		buffer<DATA_TYPE, 2> A_buffer{A.data(), range<2>(size, size)};
-		buffer<DATA_TYPE, 1> x_buffer{x.data(), range<1>(size)};
-		buffer<DATA_TYPE, 1> y_buffer{y.data(), range<1>(size)};
-		buffer<DATA_TYPE, 1> tmp_buffer{tmp.data(), range<1>(size)};
-
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto A = A_buffer.get_access<access::mode::read>(cgh);
 			auto x = x_buffer.get_access<access::mode::read>(cgh);
 			auto tmp = tmp_buffer.get_access<access::mode::read_write>(cgh);
@@ -77,9 +77,9 @@ class Polybench_Atax {
 					tmp[item] += A[{i, j}] * x[j];
 				}
 			});
-		});
+		}));
 
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto A = A_buffer.get_access<access::mode::read>(cgh);
 			auto y = y_buffer.get_access<access::mode::read_write>(cgh);
 			auto tmp = tmp_buffer.get_access<access::mode::read>(cgh);
@@ -91,7 +91,7 @@ class Polybench_Atax {
 					y[item] += A[{i, j}] * tmp[i];
 				}
 			});
-		});
+		}));
 	}
 
 	bool verify(VerificationSetting&) {
@@ -104,8 +104,10 @@ class Polybench_Atax {
 
 		atax_cpu(A.data(), x.data(), y_cpu.data(), tmp_cpu.data(), size);
 
+		auto y_acc = y_buffer.get_access<cl::sycl::access::mode::read>();
+
 		for(size_t i = 0; i < size; i++) {
-			const auto diff = percentDiff(y_cpu[i], y[i]);
+			const auto diff = percentDiff(y_cpu[i], y_acc[i]);
 			if(diff > ERROR_THRESHOLD) return false;
 		}
 
@@ -122,6 +124,11 @@ class Polybench_Atax {
 	std::vector<DATA_TYPE> x;
 	std::vector<DATA_TYPE> y;
 	std::vector<DATA_TYPE> tmp;
+
+	PrefetchedBuffer<DATA_TYPE, 2> A_buffer;
+	PrefetchedBuffer<DATA_TYPE, 1> x_buffer;
+	PrefetchedBuffer<DATA_TYPE, 1> y_buffer;
+	PrefetchedBuffer<DATA_TYPE, 1> tmp_buffer;
 };
 
 int main(int argc, char** argv) {

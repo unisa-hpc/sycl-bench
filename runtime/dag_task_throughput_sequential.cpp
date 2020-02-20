@@ -16,18 +16,15 @@ class DagTaskThroughputKernelHierarchicalPF;
 // * other overheads
 class DagTaskThroughput
 {
-  sycl::buffer<int, 1> dummy_counter;
+  const int initial_value;
+  PrefetchedBuffer<int, 1> dummy_counter;
   BenchmarkArgs args;
 public:
   DagTaskThroughput(const BenchmarkArgs &_args) 
-  : args(_args), dummy_counter{sycl::range<1>{1}}
+  : initial_value{0}, args(_args)
   {}
-  
-  void setup() 
-  {
-    const int initial_value = 0;
-    dummy_counter = sycl::buffer<int, 1>{&initial_value, sycl::range<1>{1}};
-  }
+
+  void setup() { dummy_counter.initialize(args.device_queue, &initial_value, sycl::range<1>{1}); }
 
   void submit_single_task()
   {

@@ -60,15 +60,15 @@ class Polybench_3DConvolution {
 		B.resize(size * size * size);
 
 		init(A.data(), size);
+
+		A_buffer.initialize(args.device_queue, A.data(), cl::sycl::range<3>(size, size, size));
+		B_buffer.initialize(args.device_queue, B.data(), cl::sycl::range<3>(size, size, size));
 	}
 
-	void run() {
+	void run(std::vector<cl::sycl::event>& events) {
 		using namespace cl::sycl;
 
-		buffer<DATA_TYPE, 3> A_buffer(A.data(), range<3>(size, size, size));
-		buffer<DATA_TYPE, 3> B_buffer(B.data(), range<3>(size, size, size));
-
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto A = A_buffer.get_access<access::mode::read>(cgh);
 			auto B = B_buffer.get_access<access::mode::discard_write>(cgh);
 
@@ -89,7 +89,7 @@ class Polybench_3DConvolution {
 					          + c23 * A[{(i + 1), (j + 0), (k + 1)}] + c31 * A[{(i - 1), (j + 1), (k + 1)}] + c33 * A[{(i + 1), (j + 1), (k + 1)}];
 				}
 			});
-		});
+		}));
 	}
 
 
@@ -99,12 +99,16 @@ class Polybench_3DConvolution {
 		std::vector<DATA_TYPE> B_cpu(size * size * size);
 		conv3D(A.data(), B_cpu.data(), size);
 
+		auto B_acc = B_buffer.get_access<cl::sycl::access::mode::read>();
+
 		for(size_t i = 0; i < size; i++) {
 			for(size_t j = 0; j < size; j++) {
 				for(size_t k = 0; k < size; k++) {
 					if((i > 0) && (j > 0) && (k > 0) && (i < (size - 1)) && (j < (size - 1)) && (k < (size - 1))) {
-						const auto diff = percentDiff(B_cpu[i * (size * size) + j * size + k], B[i * (size * size) + j * size + k]);
-						if(diff > ERROR_THRESHOLD) return false;
+						const auto diff = percentDiff(B_cpu[i * (size * size) + j * size + k],
+								B_acc.get_pointer()[i * (size * size) + j * size + k]);
+						if(diff > ERROR_THRESHOLD)
+							return false;
 					}
 				}
 			}
@@ -121,6 +125,9 @@ class Polybench_3DConvolution {
 	const size_t size;
 	std::vector<DATA_TYPE> A;
 	std::vector<DATA_TYPE> B;
+
+	PrefetchedBuffer<DATA_TYPE, 3> A_buffer;
+	PrefetchedBuffer<DATA_TYPE, 3> B_buffer;
 };
 
 int main(int argc, char** argv) {

@@ -61,7 +61,7 @@ void covariance(DATA_TYPE* data, DATA_TYPE* symmat, DATA_TYPE* mean, size_t size
 }
 
 class Polybench_Covariance {
-  public:
+public:
 	Polybench_Covariance(const BenchmarkArgs& args) : args(args), size(args.problem_size) {}
 
 	void setup() {
@@ -70,16 +70,16 @@ class Polybench_Covariance {
 		mean.resize(size + 1);
 
 		init_arrays(data.data(), size);
-	}
 
-	void run() {
+		data_buffer.initialize(args.device_queue, data.data(), cl::sycl::range<2>(size + 1, size + 1));
+		symmat_buffer.initialize(args.device_queue, symmat.data(), cl::sycl::range<2>(size + 1, size + 1));
+		mean_buffer.initialize(args.device_queue, mean.data(), cl::sycl::range<1>(size + 1));
+  }
+
+	void run(std::vector<cl::sycl::event>& events) {
 		using namespace cl::sycl;
 
-		buffer<DATA_TYPE, 2> data_buffer{data.data(), range<2>(size + 1, size + 1)};
-		buffer<DATA_TYPE, 2> symmat_buffer{symmat.data(), range<2>(size + 1, size + 1)};
-		buffer<DATA_TYPE, 1> mean_buffer{mean.data(), range<1>(size + 1)};
-
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto data = data_buffer.get_access<access::mode::read>(cgh);
 			auto mean = mean_buffer.get_access<access::mode::discard_write>(cgh);
 
@@ -92,9 +92,9 @@ class Polybench_Covariance {
 				}
 				mean[item] /= float_n;
 			});
-		});
+		}));
 
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto mean = mean_buffer.get_access<access::mode::read>(cgh);
 			auto data = data_buffer.get_access<access::mode::read_write>(cgh);
 
@@ -102,9 +102,9 @@ class Polybench_Covariance {
 				const auto j = item[1];
 				data[item] -= mean[j];
 			});
-		});
+		}));
 
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto data = data_buffer.get_access<access::mode::read>(cgh);
 			auto symmat = symmat_buffer.get_access<access::mode::discard_write>(cgh);
 			auto symmat2 = symmat_buffer.get_access<access::mode::discard_write>(cgh);
@@ -123,7 +123,7 @@ class Polybench_Covariance {
 					symmat2[{j2, j1}] = symmat[{j1, j2}];
 				}
 			});
-		});
+		}));
 	}
 
 	bool verify(VerificationSetting&) {
@@ -132,6 +132,9 @@ class Polybench_Covariance {
 		std::vector<DATA_TYPE> data_cpu((size + 1) * (size + 1));
 		std::vector<DATA_TYPE> symmat_cpu((size + 1) * (size + 1));
 		std::vector<DATA_TYPE> mean_cpu(size + 1);
+
+		// Trigger writeback
+		symmat_buffer.reset();
 
 		init_arrays(data_cpu.data(), size);
 
@@ -149,13 +152,17 @@ class Polybench_Covariance {
 
 	static std::string getBenchmarkName() { return "Polybench_Covariance"; }
 
-  private:
+private:
 	BenchmarkArgs args;
 
 	const size_t size;
 	std::vector<DATA_TYPE> data;
 	std::vector<DATA_TYPE> symmat;
 	std::vector<DATA_TYPE> mean;
+
+	PrefetchedBuffer<DATA_TYPE, 2> data_buffer;
+	PrefetchedBuffer<DATA_TYPE, 2> symmat_buffer;
+	PrefetchedBuffer<DATA_TYPE, 1> mean_buffer;
 };
 
 int main(int argc, char** argv) {

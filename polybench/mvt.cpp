@@ -56,18 +56,18 @@ class Polybench_Mvt {
 		y2.resize(size);
 
 		init_arrays(a.data(), x1.data(), x2.data(), y1.data(), y2.data(), size);
+
+		a_buffer .initialize(args.device_queue, a.data(), cl::sycl::range<2>(size, size));
+		x1_buffer.initialize(args.device_queue, x1.data(), cl::sycl::range<1>(size));
+		x2_buffer.initialize(args.device_queue, x2.data(), cl::sycl::range<1>(size));
+		y1_buffer.initialize(args.device_queue, y1.data(), cl::sycl::range<1>(size));
+		y2_buffer.initialize(args.device_queue, y2.data(), cl::sycl::range<1>(size));
 	}
 
-	void run() {
+	void run(std::vector<cl::sycl::event>& events) {
 		using namespace cl::sycl;
 
-		buffer<DATA_TYPE, 2> a_buffer(a.data(), range<2>(size, size));
-		buffer<DATA_TYPE, 1> x1_buffer(x1.data(), range<1>(size));
-		buffer<DATA_TYPE, 1> x2_buffer(x2.data(), range<1>(size));
-		buffer<DATA_TYPE, 1> y1_buffer(y1.data(), range<1>(size));
-		buffer<DATA_TYPE, 1> y2_buffer(y2.data(), range<1>(size));
-
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto a = a_buffer.get_access<access::mode::read>(cgh);
 			auto y1 = y1_buffer.get_access<access::mode::read>(cgh);
 			auto x1 = x1_buffer.get_access<access::mode::read_write>(cgh);
@@ -79,9 +79,9 @@ class Polybench_Mvt {
 					x1[i] += a[{i, j}] * y1[j];
 				}
 			});
-		});
+		}));
 
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto a = a_buffer.get_access<access::mode::read>(cgh);
 			auto y2 = y2_buffer.get_access<access::mode::read>(cgh);
 			auto x2 = x2_buffer.get_access<access::mode::read_write>(cgh);
@@ -93,7 +93,7 @@ class Polybench_Mvt {
 					x2[k] += a[{k, l}] * y2[l];
 				}
 			});
-		});
+		}));
 	}
 
 	bool verify(VerificationSetting&) {
@@ -128,6 +128,12 @@ class Polybench_Mvt {
 	std::vector<DATA_TYPE> x2;
 	std::vector<DATA_TYPE> y1;
 	std::vector<DATA_TYPE> y2;
+
+	PrefetchedBuffer<DATA_TYPE, 2> a_buffer;
+	PrefetchedBuffer<DATA_TYPE, 1> x1_buffer;
+	PrefetchedBuffer<DATA_TYPE, 1> x2_buffer;
+	PrefetchedBuffer<DATA_TYPE, 1> y1_buffer;
+	PrefetchedBuffer<DATA_TYPE, 1> y2_buffer;
 };
 
 int main(int argc, char** argv) {

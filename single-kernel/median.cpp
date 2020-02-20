@@ -32,6 +32,9 @@ protected:
     size_t size; // user-defined size (input and output will be size x size)
     BenchmarkArgs args;
 
+    PrefetchedBuffer<cl::sycl::float4, 2>  input_buf;    
+    PrefetchedBuffer<cl::sycl::float4, 2> output_buf;
+
 public:
   MedianFilterBench(const BenchmarkArgs &_args) : args(_args) {}
 
@@ -40,13 +43,14 @@ public:
     input.resize(size * size); 
     load_bitmap_mirrored("../../share/Brommy.bmp", size, input);
     output.resize(size * size);
+
+    input_buf.initialize(args.device_queue, input.data(), s::range<2>(size, size));    
+    output_buf.initialize(args.device_queue, output.data(), s::range<2>(size, size));
   }
 
-  void run() {    
-    s::buffer<cl::sycl::float4, 2>  input_buf( input.data(), s::range<2>(size, size));    
-    s::buffer<cl::sycl::float4, 2> output_buf(output.data(), s::range<2>(size, size));
+  void run(std::vector<cl::sycl::event>& events) {
 
-    args.device_queue.submit(
+    events.push_back(args.device_queue.submit(
         [&](cl::sycl::handler& cgh) {
       auto in  = input_buf .get_access<s::access::mode::read>(cgh);
       auto out = output_buf.get_access<s::access::mode::discard_write>(cgh);
@@ -114,7 +118,7 @@ public:
 	  out[gid] = window[4];
        }
        );
-     });
+     }));
      
      args.device_queue.wait_and_throw();
    }
@@ -124,6 +128,8 @@ public:
     save_bitmap("median.bmp", size, output);
 
     bool pass = true;
+    auto output_acc = output_buf.get_access<s::access::mode::read>();
+
     for(size_t i=ver.begin[0]; i<ver.begin[0]+ver.range[0]; i++){
       int x = i % size;
       int y = i / size;
@@ -164,7 +170,7 @@ public:
       swap(window, 3, 5);
       swap(window, 3, 4);
       cl::sycl::float4 expected = window[4];
-      cl::sycl::float4 dif = fdim(output[i], expected);
+      cl::sycl::float4 dif = fdim(output_acc.get_pointer()[i], expected);
       float length = cl::sycl::length(dif);
       if(length > 0.01f)
       {

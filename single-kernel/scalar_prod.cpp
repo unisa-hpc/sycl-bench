@@ -26,6 +26,10 @@ protected:
     std::vector<T> output;
     BenchmarkArgs args;
 
+    PrefetchedBuffer<T, 1> input1_buf;
+    PrefetchedBuffer<T, 1> input2_buf;
+    PrefetchedBuffer<T, 1> output_buf;
+
 public:
   ScalarProdBench(const BenchmarkArgs &_args) : args(_args) {}
   
@@ -40,14 +44,15 @@ public:
       input2[i] = static_cast<T>(2);
       output[i] = static_cast<T>(0);
     }
+
+    input1_buf.initialize(args.device_queue, input1.data(), s::range<1>(args.problem_size));
+    input2_buf.initialize(args.device_queue, input2.data(), s::range<1>(args.problem_size));
+    output_buf.initialize(args.device_queue, output.data(), s::range<1>(args.problem_size));
   }
 
-  void run() {    
-    s::buffer<T, 1> input1_buf(input1.data(), s::range<1>(args.problem_size));
-    s::buffer<T, 1> input2_buf(input2.data(), s::range<1>(args.problem_size));
-    s::buffer<T, 1> output_buf(output.data(), s::range<1>(args.problem_size));
+  void run(std::vector<cl::sycl::event>& events) {
     
-    args.device_queue.submit(
+    events.push_back(args.device_queue.submit(
         [&](cl::sycl::handler& cgh) {
       auto in1 = input1_buf.template get_access<s::access::mode::read>(cgh);
       auto in2 = input2_buf.template get_access<s::access::mode::read>(cgh);
@@ -75,7 +80,7 @@ public:
             });
           });
       }
-    });
+    }));
 
     // std::cout << "Multiplication of vectors completed" << std::endl;
 
@@ -87,7 +92,7 @@ public:
     while (array_size!= 1) {
       auto n_wgroups = (array_size + wgroup_size*elements_per_thread - 1)/(wgroup_size*elements_per_thread); // two threads per work item
 
-      args.device_queue.submit(
+      events.push_back(args.device_queue.submit(
         [&](cl::sycl::handler& cgh) {
 
           auto global_mem = output_buf.template get_access<s::access::mode::read_write>(cgh);
@@ -162,7 +167,7 @@ public:
                 });
               });
           }
-        });
+        }));
 
       array_size = n_wgroups;
     }
@@ -172,16 +177,18 @@ public:
     bool pass = true;
     auto expected = static_cast <T>(0);
 
+    auto output_acc = output_buf.template get_access<s::access::mode::read>();
+
     for(size_t i = 0; i < args.problem_size; i++) {
         expected += input1[i] * input2[i];
     }
 
-    std::cout << "Scalar product on CPU =" << expected << std::endl;
-    std::cout << "Scalar product on Device =" << output[0] << std::endl;
+    //std::cout << "Scalar product on CPU =" << expected << std::endl;
+    //std::cout << "Scalar product on Device =" << output[0] << std::endl;
 
     // Todo: update to type-specific test (Template specialization?)
     const auto tolerance = 0.00001f;
-    if(std::fabs(expected - output[0]) > tolerance) {
+    if(std::fabs(expected - output_acc[0]) > tolerance) {
       pass = false;
     }
 
@@ -189,10 +196,11 @@ public:
   }
   
   static std::string getBenchmarkName() {
-    if(Use_ndrange)
-      return "ScalarProduct_NDRange";
-    else
-      return "ScalarProduct_Hierarchical";
+    std::stringstream name;
+    name << "ScalarProduct_";
+    name << (Use_ndrange ? "NDRange_" : "Hierarchical_");
+    name << ReadableTypename<T>::name;
+    return name.str();
   }
 };
 

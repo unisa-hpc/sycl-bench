@@ -65,16 +65,16 @@ class Polybench_Gemm {
 		C.resize(size * size);
 
 		init(A.data(), B.data(), C.data(), size);
+
+		A_buffer.initialize(args.device_queue, A.data(), cl::sycl::range<2>(size, size));
+		B_buffer.initialize(args.device_queue, B.data(), cl::sycl::range<2>(size, size));
+		C_buffer.initialize(args.device_queue, C.data(), cl::sycl::range<2>(size, size));
 	}
 
-	void run() {
+	void run(std::vector<cl::sycl::event>& events) {
 		using namespace cl::sycl;
 
-		buffer<DATA_TYPE, 2> A_buffer{A.data(), range<2>(size, size)};
-		buffer<DATA_TYPE, 2> B_buffer{B.data(), range<2>(size, size)};
-		buffer<DATA_TYPE, 2> C_buffer{C.data(), range<2>(size, size)};
-
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto A = A_buffer.get_access<access::mode::read>(cgh);
 			auto B = B_buffer.get_access<access::mode::read>(cgh);
 			auto C = C_buffer.get_access<access::mode::read_write>(cgh);
@@ -89,11 +89,14 @@ class Polybench_Gemm {
 					C[item] += ALPHA * A[{i, k}] * B[{k, j}];
 				}
 			});
-		});
+		}));
 	}
 
 	bool verify(VerificationSetting&) {
 		constexpr auto ERROR_THRESHOLD = 0.05;
+
+		// Trigger writeback
+		C_buffer.reset();
 
 		std::vector<DATA_TYPE> C_cpu(size * size);
 
@@ -113,13 +116,17 @@ class Polybench_Gemm {
 
 	static std::string getBenchmarkName() { return "Polybench_Gemm"; }
 
-  private:
+private:
 	BenchmarkArgs args;
 
 	const size_t size;
 	std::vector<DATA_TYPE> A;
 	std::vector<DATA_TYPE> B;
 	std::vector<DATA_TYPE> C;
+
+	PrefetchedBuffer<DATA_TYPE, 2> A_buffer;
+	PrefetchedBuffer<DATA_TYPE, 2> B_buffer;
+	PrefetchedBuffer<DATA_TYPE, 2> C_buffer;
 };
 
 int main(int argc, char** argv) {

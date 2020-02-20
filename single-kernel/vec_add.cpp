@@ -13,16 +13,19 @@ template <typename T>
 class VecAddBench
 {
 protected:    
-    std::vector<T> input1;
-    std::vector<T> input2;
-    std::vector<T> output;
-    BenchmarkArgs args;
+  std::vector<T> input1;
+  std::vector<T> input2;
+  std::vector<T> output;
+  BenchmarkArgs args;
+
+  PrefetchedBuffer<T, 1> input1_buf;
+  PrefetchedBuffer<T, 1> input2_buf;
+  PrefetchedBuffer<T, 1> output_buf;
 
 public:
   VecAddBench(const BenchmarkArgs &_args) : args(_args) {}
   
-  void setup() {      
-
+  void setup() {
     // host memory intilization
     input1.resize(args.problem_size);
     input2.resize(args.problem_size);
@@ -33,14 +36,14 @@ public:
       input2[i] = static_cast<T>(i);
       output[i] = static_cast<T>(0);
     }
+
+    input1_buf.initialize(args.device_queue, input1.data(), s::range<1>(args.problem_size));
+    input2_buf.initialize(args.device_queue, input2.data(), s::range<1>(args.problem_size));
+    output_buf.initialize(args.device_queue, output.data(), s::range<1>(args.problem_size));
   }
 
-  void run() {    
-    s::buffer<T, 1> input1_buf(input1.data(), s::range<1>(args.problem_size));
-    s::buffer<T, 1> input2_buf(input2.data(), s::range<1>(args.problem_size));
-    s::buffer<T, 1> output_buf(output.data(), s::range<1>(args.problem_size));
-
-    args.device_queue.submit(
+  void run(std::vector<cl::sycl::event>& events) {
+    events.push_back(args.device_queue.submit(
         [&](cl::sycl::handler& cgh) {
       auto in1 = input1_buf.template get_access<s::access::mode::read>(cgh);
       auto in2 = input2_buf.template get_access<s::access::mode::read>(cgh);
@@ -53,11 +56,14 @@ public:
         {
           out[gid] = in1[gid] + in2[gid];
         });
-    });
+    }));
 
   }
 
-  bool verify(VerificationSetting &ver) { 
+  bool verify(VerificationSetting &ver) {
+    //Triggers writeback
+    output_buf.reset();
+
     bool pass = true;
     for(size_t i=ver.begin[0]; i<ver.begin[0]+ver.range[0]; i++){
         auto expected = input1[i] + input2[i];
@@ -70,7 +76,10 @@ public:
   }
   
   static std::string getBenchmarkName() {
-    return "VectorAddition";
+    std::stringstream name;
+    name << "VectorAddition_";
+    name << ReadableTypename<T>::name;
+    return name.str();
   }
 };
 

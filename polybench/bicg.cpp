@@ -58,18 +58,18 @@ class Polybench_Bicg {
 		q.resize(size);
 
 		init_array(A.data(), p.data(), r.data(), size);
+
+		A_buffer.initialize(args.device_queue, A.data(), cl::sycl::range<2>(size, size));
+		r_buffer.initialize(args.device_queue, r.data(), cl::sycl::range<1>(size));
+	  s_buffer.initialize(args.device_queue, s.data(), cl::sycl::range<1>(size));
+		p_buffer.initialize(args.device_queue, p.data(), cl::sycl::range<1>(size));
+		q_buffer.initialize(args.device_queue, q.data(), cl::sycl::range<1>(size));
 	}
 
-	void run() {
+	void run(std::vector<cl::sycl::event>& events) {
 		using namespace cl::sycl;
 
-		buffer<DATA_TYPE, 2> A_buffer{A.data(), range<2>(size, size)};
-		buffer<DATA_TYPE, 1> r_buffer{r.data(), range<1>(size)};
-		buffer<DATA_TYPE, 1> s_buffer{s.data(), range<1>(size)};
-		buffer<DATA_TYPE, 1> p_buffer{p.data(), range<1>(size)};
-		buffer<DATA_TYPE, 1> q_buffer{q.data(), range<1>(size)};
-
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto A = A_buffer.get_access<access::mode::read>(cgh);
 			auto r = r_buffer.get_access<access::mode::read>(cgh);
 			auto s = s_buffer.get_access<access::mode::read_write>(cgh);
@@ -81,9 +81,9 @@ class Polybench_Bicg {
 					s[item] += A[{i, j}] * r[i];
 				}
 			});
-		});
+		}));
 
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto A = A_buffer.get_access<access::mode::read>(cgh);
 			auto p = p_buffer.get_access<access::mode::read>(cgh);
 			auto q = q_buffer.get_access<access::mode::read_write>(cgh);
@@ -95,11 +95,15 @@ class Polybench_Bicg {
 					q[item] += A[{i, j}] * p[j];
 				}
 			});
-		});
+		}));
 	}
 
 	bool verify(VerificationSetting&) {
 		constexpr auto ERROR_THRESHOLD = 0.05;
+
+		// Trigger writebacks
+		s_buffer.reset();
+		q_buffer.reset();
 
 		std::vector<DATA_TYPE> s_cpu(size);
 		std::vector<DATA_TYPE> q_cpu(size);
@@ -128,6 +132,12 @@ class Polybench_Bicg {
 	std::vector<DATA_TYPE> s;
 	std::vector<DATA_TYPE> p;
 	std::vector<DATA_TYPE> q;
+
+	PrefetchedBuffer<DATA_TYPE, 2> A_buffer;
+	PrefetchedBuffer<DATA_TYPE, 1> r_buffer;
+	PrefetchedBuffer<DATA_TYPE, 1> s_buffer;
+	PrefetchedBuffer<DATA_TYPE, 1> p_buffer;
+	PrefetchedBuffer<DATA_TYPE, 1> q_buffer;
 };
 
 int main(int argc, char** argv) {

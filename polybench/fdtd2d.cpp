@@ -73,18 +73,18 @@ class Polybench_Fdtd2d {
 		hz.resize(size * size);
 
 		init_arrays(fict.data(), ex.data(), ey.data(), hz.data(), size);
+
+		fict_buffer.initialize(args.device_queue, fict.data(), cl::sycl::range<1>(TMAX));
+		ex_buffer.initialize(args.device_queue, ex.data(), cl::sycl::range<2>(size, size + 1));
+		ey_buffer.initialize(args.device_queue, ey.data(), cl::sycl::range<2>(size + 1, size));
+		hz_buffer.initialize(args.device_queue, hz.data(), cl::sycl::range<2>(size, size));
 	}
 
-	void run() {
+	void run(std::vector<cl::sycl::event>& events) {
 		using namespace cl::sycl;
 
-		buffer<DATA_TYPE, 1> fict_buffer{fict.data(), range<1>(TMAX)};
-		buffer<DATA_TYPE, 2> ex_buffer{ex.data(), range<2>(size, size + 1)};
-		buffer<DATA_TYPE, 2> ey_buffer{ey.data(), range<2>(size + 1, size)};
-		buffer<DATA_TYPE, 2> hz_buffer{hz.data(), range<2>(size, size)};
-
 		for(size_t t = 0; t < TMAX; t++) {
-			args.device_queue.submit([&](handler& cgh) {
+			events.push_back(args.device_queue.submit([&](handler& cgh) {
 				auto fict = fict_buffer.get_access<access::mode::read>(cgh);
 				auto ey = ey_buffer.get_access<access::mode::read_write>(cgh);
 				auto hz = hz_buffer.get_access<access::mode::read>(cgh);
@@ -99,9 +99,9 @@ class Polybench_Fdtd2d {
 						ey[item] = ey[item] - 0.5 * (hz[item] - hz[{(i - 1), j}]);
 					}
 				});
-			});
+			}));
 
-			args.device_queue.submit([&](handler& cgh) {
+			events.push_back(args.device_queue.submit([&](handler& cgh) {
 				auto ex = ex_buffer.get_access<access::mode::read_write>(cgh);
 				auto hz = hz_buffer.get_access<access::mode::read>(cgh);
 
@@ -111,9 +111,9 @@ class Polybench_Fdtd2d {
 
 					if(j > 0) ex[item] = ex[item] - 0.5 * (hz[item] - hz[{i, (j - 1)}]);
 				});
-			});
+			}));
 
-			args.device_queue.submit([&](handler& cgh) {
+			events.push_back(args.device_queue.submit([&](handler& cgh) {
 				auto ex = ex_buffer.get_access<access::mode::read>(cgh);
 				auto ey = ey_buffer.get_access<access::mode::read>(cgh);
 				auto hz = hz_buffer.get_access<access::mode::read_write>(cgh);
@@ -124,7 +124,7 @@ class Polybench_Fdtd2d {
 
 					hz[item] = hz[item] - 0.7 * (ex[{i, (j + 1)}] - ex[item] + ey[{(i + 1), j}] - ey[item]);
 				});
-			});
+			}));
 		}
 	}
 
@@ -138,6 +138,9 @@ class Polybench_Fdtd2d {
 		std::vector<DATA_TYPE> ex_cpu(size * (size + 1));
 		std::vector<DATA_TYPE> ey_cpu((size + 1) * size);
 		std::vector<DATA_TYPE> hz_cpu(size * size);
+
+		// Trigger writebacks
+		hz_buffer.reset();
 
 		init_arrays(fict_cpu.data(), ex_cpu.data(), ey_cpu.data(), hz_cpu.data(), size);
 
@@ -186,6 +189,11 @@ class Polybench_Fdtd2d {
 	std::vector<DATA_TYPE> ex;
 	std::vector<DATA_TYPE> ey;
 	std::vector<DATA_TYPE> hz;
+
+	PrefetchedBuffer<DATA_TYPE, 1> fict_buffer;
+	PrefetchedBuffer<DATA_TYPE, 2> ex_buffer;
+	PrefetchedBuffer<DATA_TYPE, 2> ey_buffer;
+	PrefetchedBuffer<DATA_TYPE, 2> hz_buffer;
 };
 
 int main(int argc, char** argv) {

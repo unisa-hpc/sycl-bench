@@ -25,6 +25,8 @@ protected:
     size_t size; // user-defined size (input and output will be size x size)
     BenchmarkArgs args;
 
+    PrefetchedBuffer<cl::sycl::float4, 2> input_buf;
+    PrefetchedBuffer<cl::sycl::float4, 2> output_buf;
 public:
   Sobel5Bench(const BenchmarkArgs &_args) : args(_args) {}
 
@@ -33,13 +35,13 @@ public:
     input.resize(size * size);
     load_bitmap_mirrored("../../share/Brommy.bmp", size, input);
     output.resize(size * size);
+
+    input_buf.initialize(args.device_queue, input.data(), s::range<2>(size, size));
+    output_buf.initialize(args.device_queue, output.data(), s::range<2>(size, size));
   }
 
-  void run() {
-    s::buffer<cl::sycl::float4, 2> input_buf( input.data(), s::range<2>(size, size));
-    s::buffer<cl::sycl::float4, 2> output_buf(output.data(), s::range<2>(size, size));
-
-    args.device_queue.submit(
+  void run(std::vector<cl::sycl::event>& events) {
+    events.push_back(args.device_queue.submit(
         [&](cl::sycl::handler& cgh) {
       auto in  = input_buf .get_access<s::access::mode::read>(cgh);
       auto out = output_buf.get_access<s::access::mode::discard_write>(cgh);
@@ -99,12 +101,12 @@ public:
           out[gid] = clamp(color, minval, maxval);
       }
        );
-     });
-
-     args.device_queue.wait_and_throw();
+     }));
    }
       
   bool verify(VerificationSetting &ver) {
+    // Triggers writeback
+    output_buf.reset();
     save_bitmap("sobel5.bmp", size, output);
 
     const float kernel[] = { 1, 2, 0,  -2, -1,4,  8, 0,  -8, -4, 6, 12, 0, -12, -6, 4,  8, 0,  -8, -4, 1,  2, 0,  -2, -1 };

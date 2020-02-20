@@ -63,17 +63,17 @@ class Polybench_Gramschmidt {
 		Q.resize(size * size);
 
 		init_array(A.data(), size);
+
+		A_buffer.initialize(args.device_queue, A.data(), cl::sycl::range<2>(size, size));
+		R_buffer.initialize(args.device_queue, R.data(), cl::sycl::range<2>(size, size));
+		Q_buffer.initialize(args.device_queue, Q.data(), cl::sycl::range<2>(size, size));
 	}
 
-	void run() {
+	void run(std::vector<cl::sycl::event>& events) {
 		using namespace cl::sycl;
 
-		buffer<DATA_TYPE, 2> A_buffer{A.data(), range<2>(size, size)};
-		buffer<DATA_TYPE, 2> R_buffer{R.data(), range<2>(size, size)};
-		buffer<DATA_TYPE, 2> Q_buffer{Q.data(), range<2>(size, size)};
-
 		for(size_t k = 0; k < size; k++) {
-			args.device_queue.submit([&](handler& cgh) {
+			events.push_back(args.device_queue.submit([&](handler& cgh) {
 				auto A = A_buffer.get_access<access::mode::read>(cgh);
 				auto R = R_buffer.get_access<access::mode::write>(cgh);
 
@@ -84,17 +84,17 @@ class Polybench_Gramschmidt {
 					}
 					R[{k, k}] = cl::sycl::sqrt(nrm);
 				});
-			});
+			}));
 
-			args.device_queue.submit([&](handler& cgh) {
+			events.push_back(args.device_queue.submit([&](handler& cgh) {
 				auto A = A_buffer.get_access<access::mode::read>(cgh);
 				auto R = R_buffer.get_access<access::mode::read>(cgh);
 				auto Q = Q_buffer.get_access<access::mode::write>(cgh);
 
 				cgh.parallel_for<Gramschmidt2>(range<2>(size, 1), id<2>(0, k), [=](item<2> item) { Q[item] = A[item] / R[{k, k}]; });
-			});
+			}));
 
-			args.device_queue.submit([&](handler& cgh) {
+			events.push_back(args.device_queue.submit([&](handler& cgh) {
 				auto A = A_buffer.get_access<access::mode::read_write>(cgh);
 				auto R = R_buffer.get_access<access::mode::write>(cgh);
 				auto Q = Q_buffer.get_access<access::mode::read>(cgh);
@@ -113,7 +113,7 @@ class Polybench_Gramschmidt {
 						A[{i, j}] -= Q[{i, k}] * R[item];
 					}
 				});
-			});
+			}));
 		}
 	}
 
@@ -123,6 +123,9 @@ class Polybench_Gramschmidt {
 		std::vector<DATA_TYPE> A_cpu(size * size);
 		std::vector<DATA_TYPE> R_cpu(size * size);
 		std::vector<DATA_TYPE> Q_cpu(size * size);
+
+		// Trigger writeback
+		A_buffer.reset();
 
 		init_array(A_cpu.data(), size);
 
@@ -147,6 +150,10 @@ class Polybench_Gramschmidt {
 	std::vector<DATA_TYPE> A;
 	std::vector<DATA_TYPE> R;
 	std::vector<DATA_TYPE> Q;
+
+	PrefetchedBuffer<DATA_TYPE, 2> A_buffer;
+	PrefetchedBuffer<DATA_TYPE, 2> R_buffer;
+	PrefetchedBuffer<DATA_TYPE, 2> Q_buffer;
 };
 
 int main(int argc, char** argv) {
