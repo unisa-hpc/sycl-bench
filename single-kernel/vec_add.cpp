@@ -42,8 +42,8 @@ public:
     output_buf.initialize(args.device_queue, output.data(), s::range<1>(args.problem_size));
   }
 
-  void run() {
-    args.device_queue.submit(
+  void run(std::vector<cl::sycl::event>& events) {
+    events.push_back(args.device_queue.submit(
         [&](cl::sycl::handler& cgh) {
       auto in1 = input1_buf.template get_access<s::access::mode::read>(cgh);
       auto in2 = input2_buf.template get_access<s::access::mode::read>(cgh);
@@ -56,7 +56,7 @@ public:
         {
           out[gid] = in1[gid] + in2[gid];
         });
-    });
+    }));
 
   }
 

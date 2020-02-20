@@ -29,9 +29,9 @@ public:
     output_buf.initialize(args.device_queue, output.data(), s::range<1>(args.problem_size));
   }
 
-  void run(){
+  void run(std::vector<cl::sycl::event>& events){
 
-    args.device_queue.submit(
+    events.push_back(args.device_queue.submit(
         [&](cl::sycl::handler& cgh) {
       auto in  =  input_buf.template get_access<s::access::mode::read>(cgh);
       auto out = output_buf.template get_access<s::access::mode::discard_write>(cgh);
@@ -51,7 +51,7 @@ public:
         }
         out[gid] = r0;
       });
-    }); // submit
+    })); // submit
   }
 
   static std::string getBenchmarkName() {

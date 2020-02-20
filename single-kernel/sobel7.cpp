@@ -38,8 +38,8 @@ public:
     output_buf.initialize(args.device_queue, output.data(), s::range<2>(size, size));
   }
 
-  void run() {
-    args.device_queue.submit([&](cl::sycl::handler& cgh) {
+  void run(std::vector<cl::sycl::event>& events) {
+    events.push_back(args.device_queue.submit([&](cl::sycl::handler& cgh) {
       auto in = input_buf.get_access<s::access::mode::read>(cgh);
       auto out = output_buf.get_access<s::access::mode::discard_write>(cgh);
       cl::sycl::range<2> ndrange{size, size};
@@ -91,7 +91,7 @@ public:
         cl::sycl::float4 maxval = cl::sycl::float4(1.0, 1.0, 1.0, 1.0);
         out[gid] = clamp(color, minval, maxval);
       });
-    });
+    }));
   }
 
   bool verify(VerificationSetting& ver) {

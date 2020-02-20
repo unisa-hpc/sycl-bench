@@ -50,9 +50,9 @@ public:
     output_buf.initialize(args.device_queue, output.data(), s::range<1>(args.problem_size));
   }
 
-  void run() {    
+  void run(std::vector<cl::sycl::event>& events) {
     
-    args.device_queue.submit(
+    events.push_back(args.device_queue.submit(
         [&](cl::sycl::handler& cgh) {
       auto in1 = input1_buf.template get_access<s::access::mode::read>(cgh);
       auto in2 = input2_buf.template get_access<s::access::mode::read>(cgh);
@@ -80,7 +80,7 @@ public:
             });
           });
       }
-    });
+    }));
 
     // std::cout << "Multiplication of vectors completed" << std::endl;
 
@@ -92,7 +92,7 @@ public:
     while (array_size!= 1) {
       auto n_wgroups = (array_size + wgroup_size*elements_per_thread - 1)/(wgroup_size*elements_per_thread); // two threads per work item
 
-      args.device_queue.submit(
+      events.push_back(args.device_queue.submit(
         [&](cl::sycl::handler& cgh) {
 
           auto global_mem = output_buf.template get_access<s::access::mode::read_write>(cgh);
@@ -167,7 +167,7 @@ public:
                 });
               });
           }
-        });
+        }));
 
       array_size = n_wgroups;
     }

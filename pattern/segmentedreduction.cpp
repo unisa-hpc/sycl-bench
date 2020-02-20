@@ -37,9 +37,9 @@ public:
     _buff.initialize(_args.device_queue,_input.data(), sycl::range<1>(_args.problem_size));
   }
 
-  void submit_ndrange(){
+  void submit_ndrange(std::vector<cl::sycl::event>& events){
     
-    _args.device_queue.submit(
+    events.push_back(_args.device_queue.submit(
         [&](sycl::handler& cgh) {
 
       sycl::nd_range<1> ndrange {_args.problem_size, _args.local_size};
@@ -71,12 +71,12 @@ public:
           if(lid == 0) 
             acc[gid] = scratch[0];
         });
-    }); // submit
+    })); // submit
   }
 
-  void submit_hierarchical(){
+  void submit_hierarchical(std::vector<cl::sycl::event>& events){
 
-    _args.device_queue.submit(
+    events.push_back(_args.device_queue.submit(
         [&](sycl::handler& cgh) {
 
       using namespace sycl::access;
@@ -113,7 +113,7 @@ public:
               acc[idx.get_global_id()] = scratch[0];
           });
         });
-    }); // submit
+    })); // submit
   }
 
   bool verify(VerificationSetting &ver) {
@@ -156,8 +156,8 @@ public:
   : SegmentedReduction<T>{args}
   {}
 
-  void run(){
-    this->submit_ndrange();
+  void run(std::vector<cl::sycl::event>& events){
+    this->submit_ndrange(events);
     // Waiting is not necessary as the BenchmarkManager will already call
     // wait_and_throw() here
   }
@@ -178,8 +178,8 @@ public:
   : SegmentedReduction<T>{args}
   {}
 
-  void run(){
-    this->submit_hierarchical();
+  void run(std::vector<cl::sycl::event>& events){
+    this->submit_hierarchical(events);
     // Waiting is not necessary as the BenchmarkManager will already call
     // wait_and_throw() here
   }

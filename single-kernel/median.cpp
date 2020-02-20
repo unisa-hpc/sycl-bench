@@ -48,9 +48,9 @@ public:
     output_buf.initialize(args.device_queue, output.data(), s::range<2>(size, size));
   }
 
-  void run() {    
+  void run(std::vector<cl::sycl::event>& events) {
 
-    args.device_queue.submit(
+    events.push_back(args.device_queue.submit(
         [&](cl::sycl::handler& cgh) {
       auto in  = input_buf .get_access<s::access::mode::read>(cgh);
       auto out = output_buf.get_access<s::access::mode::discard_write>(cgh);
@@ -118,7 +118,7 @@ public:
 	  out[gid] = window[4];
        }
        );
-     });
+     }));
      
      args.device_queue.wait_and_throw();
    }

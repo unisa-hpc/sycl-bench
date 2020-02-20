@@ -62,10 +62,10 @@ class Polybench_Atax {
 		tmp_buffer.initialize(args.device_queue, tmp.data(), cl::sycl::range<1>{size});
 	}
 
-	void run() {
+	void run(std::vector<cl::sycl::event>& events) {
 		using namespace cl::sycl;
 
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto A = A_buffer.get_access<access::mode::read>(cgh);
 			auto x = x_buffer.get_access<access::mode::read>(cgh);
 			auto tmp = tmp_buffer.get_access<access::mode::read_write>(cgh);
@@ -77,9 +77,9 @@ class Polybench_Atax {
 					tmp[item] += A[{i, j}] * x[j];
 				}
 			});
-		});
+		}));
 
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto A = A_buffer.get_access<access::mode::read>(cgh);
 			auto y = y_buffer.get_access<access::mode::read_write>(cgh);
 			auto tmp = tmp_buffer.get_access<access::mode::read>(cgh);
@@ -91,7 +91,7 @@ class Polybench_Atax {
 					y[item] += A[{i, j}] * tmp[i];
 				}
 			});
-		});
+		}));
 	}
 
 	bool verify(VerificationSetting&) {

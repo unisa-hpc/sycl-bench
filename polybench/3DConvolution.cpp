@@ -65,10 +65,10 @@ class Polybench_3DConvolution {
 		B_buffer.initialize(args.device_queue, B.data(), cl::sycl::range<3>(size, size, size));
 	}
 
-	void run() {
+	void run(std::vector<cl::sycl::event>& events) {
 		using namespace cl::sycl;
 
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto A = A_buffer.get_access<access::mode::read>(cgh);
 			auto B = B_buffer.get_access<access::mode::discard_write>(cgh);
 
@@ -89,7 +89,7 @@ class Polybench_3DConvolution {
 					          + c23 * A[{(i + 1), (j + 0), (k + 1)}] + c31 * A[{(i - 1), (j + 1), (k + 1)}] + c33 * A[{(i + 1), (j + 1), (k + 1)}];
 				}
 			});
-		});
+		}));
 	}
 
 

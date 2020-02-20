@@ -106,10 +106,10 @@ class Polybench_Correlation {
 		symmat_buffer.initialize(args.device_queue, symmat.data(), cl::sycl::range<2>(size + 1, size + 1));
 	}
 
-	void run() {
+	void run(std::vector<cl::sycl::event>& events) {
 		using namespace cl::sycl;
 
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto data = data_buffer.get_access<access::mode::read>(cgh);
 			auto mean = mean_buffer.get_access<access::mode::read_write>(cgh);
 
@@ -121,9 +121,9 @@ class Polybench_Correlation {
 				}
 				mean[item] /= ((DATA_TYPE)FLOAT_N);
 			});
-		});
+		}));
 
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto data = data_buffer.get_access<access::mode::read>(cgh);
 			auto mean = mean_buffer.get_access<access::mode::read>(cgh);
 			auto stddev = stddev_buffer.get_access<access::mode::read_write>(cgh);
@@ -139,9 +139,9 @@ class Polybench_Correlation {
 				stddev[item] = cl::sycl::sqrt(stddev[item]);
 				stddev[item] = stddev[item] <= EPS ? 1.0 : stddev[item];
 			});
-		});
+		}));
 
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto data = data_buffer.get_access<access::mode::read_write>(cgh);
 			auto mean = mean_buffer.get_access<access::mode::read>(cgh);
 			auto stddev = stddev_buffer.get_access<access::mode::read>(cgh);
@@ -153,9 +153,9 @@ class Polybench_Correlation {
 				data[item] /= cl::sycl::sqrt(FLOAT_N);
 				data[item] /= stddev[j];
 			});
-		});
+		}));
 
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto data = data_buffer.get_access<access::mode::read>(cgh);
 			auto symmat = symmat_buffer.get_access<access::mode::read_write>(cgh);
 
@@ -176,12 +176,12 @@ class Polybench_Correlation {
 					symmat[{j2, j1}] = symmat[{j1, j2}];
 				}
 			});
-		});
+		}));
 
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto symmat = symmat_buffer.get_access<access::mode::discard_write>(cgh);
 			cgh.parallel_for<Correlation5>(range<2>(1, 1), id<2>(size, size), [=](item<2> item) { symmat[item] = 1.0; });
-		});
+		}));
 	}
 
 	bool verify(VerificationSetting&) {

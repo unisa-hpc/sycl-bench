@@ -66,10 +66,10 @@ class Polybench_Bicg {
 		q_buffer.initialize(args.device_queue, q.data(), cl::sycl::range<1>(size));
 	}
 
-	void run() {
+	void run(std::vector<cl::sycl::event>& events) {
 		using namespace cl::sycl;
 
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto A = A_buffer.get_access<access::mode::read>(cgh);
 			auto r = r_buffer.get_access<access::mode::read>(cgh);
 			auto s = s_buffer.get_access<access::mode::read_write>(cgh);
@@ -81,9 +81,9 @@ class Polybench_Bicg {
 					s[item] += A[{i, j}] * r[i];
 				}
 			});
-		});
+		}));
 
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto A = A_buffer.get_access<access::mode::read>(cgh);
 			auto p = p_buffer.get_access<access::mode::read>(cgh);
 			auto q = q_buffer.get_access<access::mode::read_write>(cgh);
@@ -95,7 +95,7 @@ class Polybench_Bicg {
 					q[item] += A[{i, j}] * p[j];
 				}
 			});
-		});
+		}));
 	}
 
 	bool verify(VerificationSetting&) {

@@ -74,10 +74,10 @@ public:
 		tmp_buffer.initialize(args.device_queue, tmp.data(), cl::sycl::range<1>(size));
 	}
 
-	void run() {
+	void run(std::vector<cl::sycl::event>& events) {
 		using namespace cl::sycl;
 
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto A = A_buffer.get_access<access::mode::read>(cgh);
 			auto B = B_buffer.get_access<access::mode::read>(cgh);
 			auto x = x_buffer.get_access<access::mode::read>(cgh);
@@ -94,7 +94,7 @@ public:
 
 				y[item] = ALPHA * tmp[item] + BETA * y[item];
 			});
-		});
+		}));
 	}
 
 	bool verify(VerificationSetting&) {

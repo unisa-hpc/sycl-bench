@@ -64,10 +64,10 @@ class Polybench_Mvt {
 		y2_buffer.initialize(args.device_queue, y2.data(), cl::sycl::range<1>(size));
 	}
 
-	void run() {
+	void run(std::vector<cl::sycl::event>& events) {
 		using namespace cl::sycl;
 
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto a = a_buffer.get_access<access::mode::read>(cgh);
 			auto y1 = y1_buffer.get_access<access::mode::read>(cgh);
 			auto x1 = x1_buffer.get_access<access::mode::read_write>(cgh);
@@ -79,9 +79,9 @@ class Polybench_Mvt {
 					x1[i] += a[{i, j}] * y1[j];
 				}
 			});
-		});
+		}));
 
-		args.device_queue.submit([&](handler& cgh) {
+		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto a = a_buffer.get_access<access::mode::read>(cgh);
 			auto y2 = y2_buffer.get_access<access::mode::read>(cgh);
 			auto x2 = x2_buffer.get_access<access::mode::read_write>(cgh);
@@ -93,7 +93,7 @@ class Polybench_Mvt {
 					x2[k] += a[{k, l}] * y2[l];
 				}
 			});
-		});
+		}));
 	}
 
 	bool verify(VerificationSetting&) {

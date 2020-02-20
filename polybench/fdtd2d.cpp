@@ -80,11 +80,11 @@ class Polybench_Fdtd2d {
 		hz_buffer.initialize(args.device_queue, hz.data(), cl::sycl::range<2>(size, size));
 	}
 
-	void run() {
+	void run(std::vector<cl::sycl::event>& events) {
 		using namespace cl::sycl;
 
 		for(size_t t = 0; t < TMAX; t++) {
-			args.device_queue.submit([&](handler& cgh) {
+			events.push_back(args.device_queue.submit([&](handler& cgh) {
 				auto fict = fict_buffer.get_access<access::mode::read>(cgh);
 				auto ey = ey_buffer.get_access<access::mode::read_write>(cgh);
 				auto hz = hz_buffer.get_access<access::mode::read>(cgh);
@@ -99,9 +99,9 @@ class Polybench_Fdtd2d {
 						ey[item] = ey[item] - 0.5 * (hz[item] - hz[{(i - 1), j}]);
 					}
 				});
-			});
+			}));
 
-			args.device_queue.submit([&](handler& cgh) {
+			events.push_back(args.device_queue.submit([&](handler& cgh) {
 				auto ex = ex_buffer.get_access<access::mode::read_write>(cgh);
 				auto hz = hz_buffer.get_access<access::mode::read>(cgh);
 
@@ -111,9 +111,9 @@ class Polybench_Fdtd2d {
 
 					if(j > 0) ex[item] = ex[item] - 0.5 * (hz[item] - hz[{i, (j - 1)}]);
 				});
-			});
+			}));
 
-			args.device_queue.submit([&](handler& cgh) {
+			events.push_back(args.device_queue.submit([&](handler& cgh) {
 				auto ex = ex_buffer.get_access<access::mode::read>(cgh);
 				auto ey = ey_buffer.get_access<access::mode::read>(cgh);
 				auto hz = hz_buffer.get_access<access::mode::read_write>(cgh);
@@ -124,7 +124,7 @@ class Polybench_Fdtd2d {
 
 					hz[item] = hz[item] - 0.7 * (ex[{i, (j + 1)}] - ex[item] + ey[{(i + 1), j}] - ey[item]);
 				});
-			});
+			}));
 		}
 	}
 
