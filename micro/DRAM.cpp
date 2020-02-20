@@ -51,14 +51,14 @@ public:
     return {copiedGiB * 2.0, "GiB"};
   }
 
-  s::event run() {
-    return args.device_queue.submit([&](cl::sycl::handler& cgh) {
+  void run(std::vector<s::event>& events) {
+    events.push_back(args.device_queue.submit([&](cl::sycl::handler& cgh) {
       auto in = input_buf.template get_access<s::access::mode::read>(cgh);
       auto out = output_buf.template get_access<s::access::mode::discard_write>(cgh);
       // We spawn one work item for each buffer element to be copied.
       const s::range<Dims> global_size{buffer_size};
       cgh.parallel_for<MicroBenchDRAMKernel<DataT, Dims>>(global_size, [=](s::id<Dims> gid) { out[gid] = in[gid]; });
-    });
+    }));
   }
 
   bool verify(VerificationSetting& ver) {
