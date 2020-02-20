@@ -55,7 +55,7 @@ set(benchmarks
   micro/DRAM.cpp
   micro/host_device_bandwidth.cpp
   micro/pattern_L2.cpp
-  micro/pattern_sf.cpp
+  micro/sf.cpp
   micro/pattern_shared.cpp
   single-kernel/median.cpp
   single-kernel/scalar_prod.cpp
