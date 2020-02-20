@@ -192,9 +192,8 @@ public:
     std::size_t local_size = cli_parser.getOrDefault<std::size_t>("--local", 256);
     std::size_t num_runs = cli_parser.getOrDefault<std::size_t>("--num-runs", 5);
 
-    std::string device_selector = 
-        cli_parser.getOrDefault<std::string>("--device", "default");
-    cl::sycl::queue q = getQueue(device_selector);
+    std::string device_type = cli_parser.getOrDefault<std::string>("--device", "default");
+    cl::sycl::queue q = getQueue(device_type);
 
     bool verification_enabled = true;
     if(cli_parser.isFlagSet("--no-verification"))
@@ -233,25 +232,30 @@ private:
       return std::shared_ptr<ResultConsumer>{new AppendingCsvResultConsumer{result_consumer_name}};
   }
 
-  cl::sycl::queue getQueue(const std::string& device_selector) const {
+  cl::sycl::queue getQueue(const std::string& device_type) const {
+    const auto getQueueProperties = [&]() -> cl::sycl::property_list {
+#if defined(SYCL_BENCH_ENABLE_QUEUE_PROFILING)
+      return cl::sycl::property::queue::enable_profiling{};
+#endif
+      return {};
+    };
+
 #if defined(__LLVM_SYCL_CUDA__)
     if(device_selector != "gpu") {
       throw std::invalid_argument{"Only the 'gpu' device is supported on LLVM CUDA"};
     }
-    return cl::sycl::queue{CUDASelector{}};
+    return cl::sycl::queue{CUDASelector{}, getQueueProperties()};
 #endif
 
-    if(device_selector == "cpu") {
-      return cl::sycl::queue{cl::sycl::cpu_selector{}};
+    if(device_type == "cpu") {
+      return cl::sycl::queue{cl::sycl::cpu_selector{}, getQueueProperties()};
+    } else if(device_type == "gpu") {
+      return cl::sycl::queue{cl::sycl::gpu_selector{}, getQueueProperties()};
+    } else if(device_type == "default") {
+      return cl::sycl::queue{getQueueProperties()};
+    } else {
+      throw std::invalid_argument{"unknown device type: " + device_type};
     }
-    else if(device_selector == "gpu") {
-      return cl::sycl::queue{cl::sycl::gpu_selector{}};
-    }
-    else if(device_selector == "default") {
-      return cl::sycl::queue{};
-    }
-    else throw std::invalid_argument{
-      "unknown device selector: "+device_selector};
   }
 
   CommandLine cli_parser;
