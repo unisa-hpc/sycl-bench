@@ -71,13 +71,14 @@ public:
         args.device_queue.wait_and_throw();
         for(auto h : hooks) h->postSetup();
 
-        std::optional<cl::sycl::event> run_event;
+        std::vector<cl::sycl::event> run_events;
+        run_events.reserve(1024); // Make sure we don't need to resize during benchmarking.
 
         // Performance critical measurement section starts here
         for(auto h : hooks) h->preKernel();
         const auto before = std::chrono::high_resolution_clock::now();
-        if constexpr(std::is_same_v<decltype(b.run()), cl::sycl::event>) {
-          run_event = b.run();
+        if constexpr(detail::BenchmarkTraits<Benchmark>::supportsQueueProfiling) {
+          b.run(run_events);
         } else {
           b.run();
         }
@@ -88,12 +89,16 @@ public:
 
         time_metrics.addTimingResult("run-time", std::chrono::duration_cast<std::chrono::nanoseconds>(after - before));
 
-        if(run_event.has_value()) {
+        if(detail::BenchmarkTraits<Benchmark>::supportsQueueProfiling) {
 #if defined(SYCL_BENCH_ENABLE_QUEUE_PROFILING)
           // TODO: We might also want to consider the "command_submit" time.
-          const auto start = run_event->get_profiling_info<cl::sycl::info::event_profiling::command_start>();
-          const auto end = run_event->template get_profiling_info<cl::sycl::info::event_profiling::command_end>();
-          time_metrics.addTimingResult("kernel-time", std::chrono::nanoseconds(end - start));
+          std::chrono::nanoseconds total_time{0};
+          for(auto& e : run_events) {
+            const auto start = e.get_profiling_info<cl::sycl::info::event_profiling::command_start>();
+            const auto end = e.get_profiling_info<cl::sycl::info::event_profiling::command_end>();
+            total_time += std::chrono::nanoseconds(end - start);
+          }
+          time_metrics.addTimingResult("kernel-time", total_time);
 #else
           time_metrics.markAsUnavailable("kernel-time");
 #endif
