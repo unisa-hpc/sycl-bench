@@ -25,13 +25,14 @@ protected:
   const float_type gravitational_softening;
   const float_type dt;
 
-  sycl::buffer<particle_type> output_particles;
-  sycl::buffer<vector_type> output_velocities;
+  PrefetchedBuffer<particle_type> output_particles;
+  PrefetchedBuffer<vector_type> output_velocities;
 
+  PrefetchedBuffer<particle_type> particles_buf;
+  PrefetchedBuffer<vector_type> velocities_buf;
 public:
   NBody(const BenchmarkArgs& _args)
-      : args(_args), gravitational_softening{1.e-5f}, dt{1.e-2f}, output_particles(sycl::range<1>{args.problem_size}),
-        output_velocities(sycl::range<1>{args.problem_size}) {
+      : args(_args), gravitational_softening{1.e-5f}, dt{1.e-2f} {
     assert(args.problem_size % args.local_size == 0);
   }
 
@@ -53,6 +54,12 @@ public:
       velocities[i].y() = 0;
       velocities[i].z() = 0;
     }
+
+    particles_buf. initialize(args.device_queue, this->particles.data(), sycl::range<1>{this->args.problem_size});
+    velocities_buf.initialize(args.device_queue, this->velocities.data(), sycl::range<1>{this->args.problem_size});
+
+    output_particles. initialize(args.device_queue, sycl::range<1>{args.problem_size});
+    output_velocities.initialize(args.device_queue, sycl::range<1>{args.problem_size});
   }
 
 
@@ -293,10 +300,7 @@ public:
 
 
   void run(){
-    sycl::buffer<particle_type> particles_buf(this->particles.data(), sycl::range<1>(this->args.problem_size));
-    sycl::buffer<vector_type> velocities_buf(this->velocities.data(), sycl::range<1>{this->args.problem_size});
-
-    this->submitNDRange(particles_buf, velocities_buf);
+    this->submitNDRange(this->particles_buf.get(), this->velocities_buf.get());
   }
 
   std::string getBenchmarkName() {
@@ -320,10 +324,7 @@ public:
 
 
   void run(){
-    sycl::buffer<particle_type> particles_buf(this->particles.data(), sycl::range<1>(this->args.problem_size));
-    sycl::buffer<vector_type> velocities_buf(this->velocities.data(), sycl::range<1>{this->args.problem_size});
-
-    this->submitHierarchical(particles_buf, velocities_buf);
+    this->submitHierarchical(this->particles_buf.get(), this->velocities_buf.get());
   }
 
   std::string getBenchmarkName() {
