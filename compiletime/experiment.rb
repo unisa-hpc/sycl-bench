@@ -16,9 +16,9 @@ REPEATS = 10
 MAX_POW = 11
 
 BASELINE_K = 100
-MIX_NUM = 100
+MIX_NUM = 25
 
-## Cehck directory requirements ------------------------------------
+## Check directory requirements ------------------------------------
 
 if File.exists?("compiletime.cpp") || (File.exists?("compiletime") && File.exists?("runtime") && File.exists?("micro"))
         puts "You probably don't want to run experiment.rb in the source path."
@@ -65,7 +65,7 @@ SINGLE_PARAM_EXPERIMENTS = [
         ["dimensions", "-k #{BASELINE_K} -d", [1,2,3]],
         ["loopnests", "-k #{BASELINE_K} -l", [1,2,3,4,5,6]],
         ["type", "-k #{BASELINE_K} -t", %i[int float double]],
-        ["mix", "-k #{BASELINE_K} -m", ["add:#{MIX_NUM*4}", "mad:#{MIX_NUM*4}", "cos:#{MIX_NUM*4}", "sqrt:#{MIX_NUM*4}", "mad:#{MIX_NUM*2},cos:#{MIX_NUM*2}", "add:#{MIX_NUM},mad:#{MIX_NUM},cos:#{MIX_NUM},sqrt:#{MIX_NUM}"]],
+        ["mix", "-k #{BASELINE_K/2} -m", ["add:#{MIX_NUM*4}", "mad:#{MIX_NUM*4}", "cos:#{MIX_NUM*4}", "sqrt:#{MIX_NUM*4}", "mad:#{MIX_NUM*2},cos:#{MIX_NUM*2}", "add:#{MIX_NUM},mad:#{MIX_NUM},cos:#{MIX_NUM},sqrt:#{MIX_NUM}"]],
 ]
 
 ENV['C_INCLUDE_PATH'] = "#{Dir.pwd}:"
@@ -80,8 +80,8 @@ SINGLE_PARAM_EXPERIMENTS.each do |exp_name, exp_arg, exp_values|
                         `ruby #{__dir__}/compiletime_gen.rb #{exp_arg} #{val}`
                         results[val] << build_and_get_result()
                         printf "."
+                        File.write("#{exp_name}.results", results.inspect) # write results as soon as available
                 end
         end
-        File.write("#{exp_name}.results", results.inspect)
         puts
 end
