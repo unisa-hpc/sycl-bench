@@ -4,6 +4,29 @@
 #include <iostream>
 #include <vector>
 #include <cassert>
+#include <cmath>
+
+#ifdef SYCL_BENCH_ALLOW_ROCPRIM
+#if defined(HIPSYCL_PLATFORM_HCC)
+#define ENABLE_ROCPRIM
+#endif
+#endif
+
+#ifdef ENABLE_ROCPRIM
+#include <rocprim/rocprim.hpp>
+
+template<class T, int blocksize>
+__host__ __device__
+T rocprim_local_reduction(T value)
+{
+  T output{};
+#ifdef SYCL_DEVICE_ONLY
+  rocprim::block_reduce<T,blocksize>{}.reduce(value, output);
+#endif
+  return output;
+}
+
+#endif
 
 using namespace cl;
 
@@ -47,6 +70,25 @@ public:
       using namespace cl::sycl::access;
 
       auto acc = _buff.template get_access<mode::read_write>(cgh);
+
+#ifdef ENABLE_ROCPRIM
+      cgh.parallel_for<ReductionKernelNDRange<T>>(
+		      ndrange, [=](sycl::nd_item<1> item){
+          T value = acc[item.get_global_id(0)];
+          
+	  const int blocksize = item.get_local_range(0);
+	  T result {};
+	  if     (blocksize==32)   result = rocprim_local_reduction<T,32>(value);
+	  else if(blocksize==64)   result = rocprim_local_reduction<T,64>(value);
+	  else if(blocksize==128)  result = rocprim_local_reduction<T,128>(value);
+	  else if(blocksize==256)  result = rocprim_local_reduction<T,256>(value);
+	  else if(blocksize==512)  result = rocprim_local_reduction<T,512>(value);
+	  else if(blocksize==1024) result = rocprim_local_reduction<T,1024>(value);
+          
+	  if(item.get_local_id(0)==0)
+	    acc[item.get_global_id(0)] = result;
+        });
+#else
       auto scratch = sycl::accessor<T, 1, mode::read_write, target::local>
         {_args.local_size, cgh};
 
@@ -71,6 +113,7 @@ public:
           if(lid == 0) 
             acc[gid] = scratch[0];
         });
+#endif
     })); // submit
   }
 
@@ -133,8 +176,10 @@ public:
       }
       for(size_t local_id = 0; local_id < _args.local_size; ++local_id) {
         if(local_id == 0) {
-          if(acc[group_offset + local_id] != sum)
-            return false;
+          double delta = std::abs(acc[group_offset+local_id]-sum);
+          if(delta > 1.e-4){
+            //return false;
+          }
         } else {
           if(acc[group_offset + local_id] != original_input[group_offset + local_id])
             return false;
