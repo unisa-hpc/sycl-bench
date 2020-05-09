@@ -11,3 +11,31 @@ Benchmarks support the following command line arguments:
 * `--verification-range=<x,y,z>` - Specify the size of the 3D range that should be used for verifying results. Note: Most benchmarks do not implement this feature. Default: `1,1,1`
 * `--no-verification` - disable verification entirely
 * `--no-ndrange-kernels` - do not run kernels based on ndrange parallel for
+
+If you use SYCL-Bench, please cite the following papers:
+
+@inproceedings{SYCL-Bench:Euro-Par:2020,
+author = {Lal, Sohan and Alpay, Aksel and Salzmann, Philip and Cosenza, Biagio and Hirsch, Alexander and Stawinoga, Nicolai and Thoman, Peter and Fahringer, Thomas and Heuveline, Vincent},
+title = {{SYCL-Bench: A Versatile Single-Source Benchmark Suite for Heterogeneous Computing}},
+year = {2020},
+publisher = {Springer International Publishing},
+booktitle = {Accepted for publication at Euro-Par 2020: 26th International European Conference on Parallel and Distributed Computing},
+series = {Euro-Par ’20}
+}
+
+@inproceedings{SYCL-Bench:IWOCL:2020,
+author = {Lal, Sohan and Alpay, Aksel and Salzmann, Philip and Cosenza, Biagio and Stawinoga, Nicolai and Thoman, Peter and Fahringer, Thomas and Heuveline, Vincent},
+title = {{SYCL-Bench: A Versatile Single-Source Benchmark Suite for Heterogeneous Computing}},
+year = {2020},
+isbn = {9781450375313},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3388333.3388669},
+doi = {10.1145/3388333.3388669},
+booktitle = {Proceedings of the International Workshop on OpenCL},
+articleno = {10},
+numpages = {1},
+keywords = {Heterogeneous Computing, SYCL Benchmarks &Runtime},
+location = {Munich, Germany},
+series = {IWOCL ’20}
+}
