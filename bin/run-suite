@@ -39,15 +39,76 @@ output_file = "./sycl-bench.csv"
 
 default_profile = {
   # Problem size will not be increased if this runtime is exceeded
-  'max-allowed-runtime' : 60.0, #seconds.
+  'max-allowed-runtime' : 10800.0, #seconds.
   'default-options' : {
-    '--size' : create_log_range(64, 2**32),
-    '--local' : create_log_range(64,1024),
+    '--size' : create_log_range(2**10, 2**10),
+    '--local' : create_log_range(256,256),
     '--num-runs' : 10,
     '--output' : output_file
   },
   'default-flags' : set([]),
-  'individual-benchmark-options' : {},
+  'individual-benchmark-options' : {
+    'pattern_L2' : {
+      '--size' : create_log_range(2**20, 2**20)
+    },
+    'pattern_arith' : {
+      '--size' : create_log_range(2**20, 2**20)
+    },
+    'pattern_sf' : {
+      '--size' : create_log_range(2**20, 2**20)
+    },
+    'pattern_shared' : {
+      '--size' : create_log_range(2**20, 2**20)
+    },
+    'kmeans' : {
+      '--size' : create_log_range(2**20, 2**20)
+    },
+    'lin_reg_coeff' : {
+      '--size' : create_log_range(2**20, 2**20)
+    },
+    'lin_reg_error' : {
+      '--size' : create_log_range(2**16, 2**16)
+    },
+    'mol_dyn' : {
+      '--size' : create_log_range(2**20, 2**20)
+    },
+    'scalar_prod' : {
+      '--size' : create_log_range(2**20, 2**20)
+    },
+    'vec_add' : {
+      '--size' : create_log_range(2**20, 2**20)
+    },
+    'blocked_transform' : {
+      '--size' : create_log_range(2**20, 2**20)
+    },
+    'dag_task_throughput_independent' : {
+      '--size' : create_log_range(2**10, 2**16)
+    },
+    'dag_task_throughput_sequential' : {
+      '--size' : create_log_range(2**10, 2**16)
+    },
+    'reduction' : {
+      '--size' : create_log_range(2**20, 2**20)
+    },
+    'segmentatedreduction' : {
+      '--size' : create_log_range(2**20, 2**20)
+    },
+    '2DConvolution' : {
+      '--size' : create_log_range(2**12, 2**12)
+    },
+    'atax' : {
+      '--size' : create_log_range(2**12, 2**12)
+    },
+    'bicg' : {
+      '--size' : create_log_range(2**14, 2**14)
+    },
+    'gesummv' : {
+      '--size' : create_log_range(2**14, 2**14)
+    },
+    'mvt' : {
+      '--size' : create_log_range(2**14, 2**14)
+    },                                                                             
+  },
   'individual-benchmark-flags' : set([])
 }
 
