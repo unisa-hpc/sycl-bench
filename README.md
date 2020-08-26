@@ -17,10 +17,10 @@ If you use SYCL-Bench, please cite the following papers:
 ```
 @inproceedings{SYCL-Bench:Euro-Par:2020,
 author = {Lal, Sohan and Alpay, Aksel and Salzmann, Philip and Cosenza, Biagio and Hirsch, Alexander and Stawinoga, Nicolai and Thoman, Peter and Fahringer, Thomas and Heuveline, Vincent},
-title = {{SYCL-Bench: A Versatile Single-Source Benchmark Suite for Heterogeneous Computing}},
+title = {{SYCL-Bench: A Versatile Cross-Platform Benchmark Suite for Heterogeneous Computing}},
 year = {2020},
 publisher = {Springer International Publishing},
-booktitle = {Accepted for publication at Euro-Par 2020: 26th International European Conference on Parallel and Distributed Computing},
+booktitle = {Euro-Par 2020: 26th International European Conference on Parallel and Distributed Computing},
 series = {Euro-Par ’20}
 }
 ```
