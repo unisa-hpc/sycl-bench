@@ -17,6 +17,8 @@ class ScalarProdReduction;
 template<typename T, bool>
 class ScalarProdReductionHierarchical;
 
+class ScalarProdGatherKernel;
+
 template<typename T, bool Use_ndrange = true>
 class ScalarProdBench
 {
@@ -111,24 +113,27 @@ public:
                 // initialize local memory to 0
                 local_mem[lid] = 0; 
 
-                if ((elements_per_thread * gid) < array_size) {
-                    local_mem[lid] = global_mem[elements_per_thread*gid] + global_mem[elements_per_thread*gid + 1];
+                for(int i = 0; i < elements_per_thread; ++i) {
+                  int input_element = gid + i * n_wgroups * wgroup_size;
+                  
+                  if(input_element < array_size)
+                    local_mem[lid] += global_mem[input_element];
                 }
 
                 item.barrier(s::access::fence_space::local_space);
 
-                for (size_t stride = 1; stride < wgroup_size; stride *= elements_per_thread) {
-                  auto local_mem_index = elements_per_thread * stride * lid;
-                  if (local_mem_index < wgroup_size) {
-                      local_mem[local_mem_index] = local_mem[local_mem_index] + local_mem[local_mem_index + stride];
+                for(size_t stride = wgroup_size/elements_per_thread; stride >= 1; stride /= elements_per_thread) {
+                  if(lid < stride) {
+                    for(int i = 0; i < elements_per_thread-1; ++i){
+                      local_mem[lid] += local_mem[lid + stride + i];
+                    }
                   }
-
                   item.barrier(s::access::fence_space::local_space);
                 }
-
+                
                 // Only one work-item per work group writes to global memory 
                 if (lid == 0) {
-                  global_mem[item.get_group_linear_id()] = local_mem[0];
+                  global_mem[item.get_global_id()] = local_mem[0];
                 }
               });
           }
@@ -136,6 +141,7 @@ public:
             cgh.parallel_for_work_group<class ScalarProdReductionHierarchical<T, Use_ndrange>>(
               cl::sycl::range<1>{n_wgroups}, cl::sycl::range<1>{wgroup_size},
               [=](cl::sycl::group<1> grp){
+                
                 grp.parallel_for_work_item([&](cl::sycl::h_item<1> idx){
                   const size_t gid = idx.get_global_id(0);
                   const size_t lid = idx.get_local_id(0);
@@ -143,32 +149,45 @@ public:
                   // initialize local memory to 0
                   local_mem[lid] = 0; 
 
-                  if ((elements_per_thread * gid) < array_size) {
-                    local_mem[lid] = global_mem[elements_per_thread * gid] +
-                                     global_mem[elements_per_thread * gid + 1];
+                  for(int i = 0; i < elements_per_thread; ++i) {
+                    int input_element = gid + i * n_wgroups * wgroup_size;
+                  
+                    if(input_element < array_size)
+                      local_mem[lid] += global_mem[input_element];
                   }
                 });
-                for (size_t stride = 1; stride < wgroup_size; stride *= elements_per_thread) {
+
+                for(size_t stride = wgroup_size/elements_per_thread; stride >= 1; stride /= elements_per_thread) {
                   grp.parallel_for_work_item([&](cl::sycl::h_item<1> idx){
                   
                     const size_t lid = idx.get_local_id(0);
-                    auto local_mem_index = elements_per_thread * stride * lid;
-
-                    if (local_mem_index < wgroup_size) {
-                      local_mem[local_mem_index] =
-                          local_mem[local_mem_index] +
-                          local_mem[local_mem_index + stride];
+                    
+                    if(lid < stride) {
+                      for(int i = 0; i < elements_per_thread-1; ++i){
+                        local_mem[lid] += local_mem[lid + stride + i];
+                      }
                     }
                   });
                 }
                 grp.parallel_for_work_item([&](cl::sycl::h_item<1> idx){
                   const size_t lid = idx.get_local_id(0);
-                  global_mem[grp.get_id(0)] = local_mem[0];
+                  if(lid == 0)
+                    global_mem[grp.get_id(0) * grp.get_local_range(0)] = local_mem[0];
                 });
               });
           }
         }));
+      
+      events.push_back(args.device_queue.submit(
+        [&](cl::sycl::handler& cgh) {
 
+          auto global_mem = output_buf.template get_access<s::access::mode::read_write>(cgh);
+      
+          cgh.parallel_for<ScalarProdGatherKernel>(cl::sycl::range<1>{n_wgroups},
+                                                   [=](cl::sycl::id<1> idx){
+            global_mem[idx] = global_mem[idx * wgroup_size];
+          });
+        }));
       array_size = n_wgroups;
     }
   }
