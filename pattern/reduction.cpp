@@ -1,6 +1,7 @@
 
 #include "common.h"
 
+#include <algorithm>
 #include <iostream>
 #include <numeric>
 #include <vector>
@@ -62,8 +63,16 @@ public:
   bool verify(VerificationSetting &ver) {
     T result = _final_output_buff->template get_access<sycl::access::mode::read>(
         sycl::range<1>{0}, sycl::id<1>{1})[0];
+
+    // Calculate CPU result in fp64 to avoid obtaining a wrong verification result
+    std::vector<double> input_fp64(_input.size());
+    for(std::size_t i = 0; i < _input.size(); ++i)
+      input_fp64[i] = static_cast<double>(_input[i]);
+
+    double delta =
+        static_cast<double>(result) - std::accumulate(input_fp64.begin(), input_fp64.end(), T{});
     
-    return result == std::accumulate(_input.begin(), _input.end(), T{});
+    return std::abs(delta) < 1.e-5;
   }
 private:
   template<class Kernel_invocation_function>
