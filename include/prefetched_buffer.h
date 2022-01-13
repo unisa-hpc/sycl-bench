@@ -9,7 +9,7 @@ public:
   InitializationDummyKernel(AccType acc)
   : acc{acc} {}
 
-  void operator()() {}
+  void operator()() const {}
 private:
   AccType acc;
 };
