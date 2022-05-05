@@ -16,7 +16,7 @@ template<typename T, bool>
 class ScalarProdReduction;
 template<typename T, bool>
 class ScalarProdReductionHierarchical;
-
+template<typename T, bool>
 class ScalarProdGatherKernel;
 
 template<typename T, bool Use_ndrange = true>
@@ -183,7 +183,7 @@ public:
 
           auto global_mem = output_buf.template get_access<s::access::mode::read_write>(cgh);
       
-          cgh.parallel_for<ScalarProdGatherKernel>(cl::sycl::range<1>{n_wgroups},
+          cgh.parallel_for<ScalarProdGatherKernel<T, Use_ndrange>>(cl::sycl::range<1>{n_wgroups},
                                                    [=](cl::sycl::id<1> idx){
             global_mem[idx] = global_mem[idx * wgroup_size];
           });
