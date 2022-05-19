@@ -18,7 +18,7 @@ Clone sycl-bench repo
 $ git clone https://github.com/bcosenza/sycl-bench.git
 ```
 
-Naviagte into repo and create build folder
+Navigate into repo and create build folder
 ```
 $ cd bench
 $ mkdir build && cd build
@@ -35,7 +35,7 @@ $ cmake -DSYCL_IMPL=LLVM -DCMAKE_CXX_COMPILER=/path/to/llvm/build/bin/clang++ ..
 ```
 
 Each test should now have an executable in the build folder
-Run indivisual tests as such:
+Run individual tests as such:
 ```
 $ ./arith --device=cpu --output=output.csv
 ```
