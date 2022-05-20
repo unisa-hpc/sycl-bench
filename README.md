@@ -27,6 +27,7 @@ $ mkdir build && cd build
 Compile with CMake
 ```
 $ cmake -DSYCL_IMPL=[target SYCL implementation] [other compiler arguments] ..
+$ cmake --build .
 $ sudo make install
 ```
 Example compiling with CMake for DPC++:
