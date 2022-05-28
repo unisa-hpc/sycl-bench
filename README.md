@@ -12,6 +12,36 @@ Benchmarks support the following command line arguments:
 * `--no-verification` - disable verification entirely
 * `--no-ndrange-kernels` - do not run kernels based on ndrange parallel for
 
+## Usage
+Clone sycl-bench repo 
+```
+$ git clone https://github.com/bcosenza/sycl-bench.git
+```
+
+Navigate into repo and create build folder
+```
+$ cd bench
+$ mkdir build && cd build
+```
+
+Compile with CMake
+```
+$ cmake -DSYCL_IMPL=[target SYCL implementation] [other compiler arguments] ..
+$ cmake --build .
+$ sudo make install
+```
+Example compiling with CMake for DPC++:
+```
+$ cmake -DSYCL_IMPL=LLVM -DCMAKE_CXX_COMPILER=/path/to/llvm/build/bin/clang++ ..
+```
+
+Each test should now have an executable in the build folder
+Run individual tests as such:
+```
+$ ./arith --device=cpu --output=output.csv
+```
+
+## Attribution
 If you use SYCL-Bench, please cite the following papers:
 
 ```
