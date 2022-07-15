@@ -44,11 +44,13 @@ public:
 
   void initialize(cl::sycl::queue& q, T* data, cl::sycl::range<Dimensions> r) {
     buff = std::make_shared<cl::sycl::buffer<T, Dimensions>>(data, r);
+    buff->set_write_back(false);
     forceDataTransfer(q, *buff);
   }
 
   void initialize(cl::sycl::queue& q, const T* data, cl::sycl::range<Dimensions> r) {
     buff = std::make_shared<cl::sycl::buffer<T, Dimensions>>(data, r);
+    buff->set_write_back(false);
     forceDataTransfer(q, *buff);
   }
 
