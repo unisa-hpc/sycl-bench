@@ -51,12 +51,12 @@ elseif(SYCL_IMPL STREQUAL "triSYCL")
 endif()
 
 set(benchmarks
-  # micro/arith.cpp
-  # micro/DRAM.cpp
-  # micro/host_device_bandwidth.cpp
-  # micro/pattern_L2.cpp
-  # micro/sf.cpp
-  # micro/local_mem.cpp
+  micro/arith.cpp
+  micro/DRAM.cpp
+  micro/host_device_bandwidth.cpp
+  micro/pattern_L2.cpp
+  micro/sf.cpp
+  micro/local_mem.cpp
   single-kernel/median.cpp
   single-kernel/scalar_prod.cpp
   single-kernel/sobel.cpp
@@ -79,39 +79,28 @@ set(benchmarks
   single-kernel/spmv.cpp
   single-kernel/sinewave.cpp
   single-kernel/perlin.cpp
-
-
-
-
-
-
-
-
-
-
-
-  # pattern/segmentedreduction.cpp
-  # pattern/reduction.cpp
-  # runtime/dag_task_throughput_sequential.cpp
-  # runtime/dag_task_throughput_independent.cpp
-  # runtime/blocked_transform.cpp
-  # runtime/matmulchain.cpp
-  # polybench/2DConvolution.cpp
-  # polybench/2mm.cpp
-  # polybench/3DConvolution.cpp
-  # polybench/3mm.cpp
-  # polybench/atax.cpp
-  # polybench/bicg.cpp
-  # polybench/correlation.cpp
-  # polybench/covariance.cpp
-  # polybench/fdtd2d.cpp
-  # polybench/gemm.cpp
-  # polybench/gesummv.cpp
-  # polybench/gramschmidt.cpp
-  # polybench/mvt.cpp
-  # polybench/syr2k.cpp
-  # polybench/syrk.cpp
-  #compiletime/compiletime.cpp
+  pattern/segmentedreduction.cpp
+  pattern/reduction.cpp
+  runtime/dag_task_throughput_sequential.cpp
+  runtime/dag_task_throughput_independent.cpp
+  runtime/blocked_transform.cpp
+  runtime/matmulchain.cpp
+  polybench/2DConvolution.cpp
+  polybench/2mm.cpp
+  polybench/3DConvolution.cpp
+  polybench/3mm.cpp
+  polybench/atax.cpp
+  polybench/bicg.cpp
+  polybench/correlation.cpp
+  polybench/covariance.cpp
+  polybench/fdtd2d.cpp
+  polybench/gemm.cpp
+  polybench/gesummv.cpp
+  polybench/gramschmidt.cpp
+  polybench/mvt.cpp
+  polybench/syr2k.cpp
+  polybench/syrk.cpp
+  compiletime/compiletime.cpp
 )
 
 foreach(benchmark IN LISTS benchmarks)
