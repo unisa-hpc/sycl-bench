@@ -68,9 +68,9 @@ public:
       args.device_queue.submit([&](sycl::handler& cgh) {
         auto acc = buff.get_access<sycl::access::mode::read_write>(cgh, current_batch_size, begin);
 
-        cgh.parallel_for<MandelbrotKernel<Num_iterations>>(current_batch_size, begin, [=](sycl::id<1> idx) {
+        cgh.parallel_for<MandelbrotKernel<Num_iterations>>(current_batch_size, [=](sycl::id<1> idx) {
           const complex z0{0.0f, 0.0f};
-          acc[idx] = mandelbrot_sequence<Num_iterations>(z0, acc[idx]);
+          acc[idx + begin] = mandelbrot_sequence<Num_iterations>(z0, acc[idx + begin]);
         });
       });
     }

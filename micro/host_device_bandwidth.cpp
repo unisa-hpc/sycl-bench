@@ -117,8 +117,10 @@ public:
         // Initialize buffer on device
         args.device_queue.submit([&](s::handler& cgh) {
           auto acc = buffer->template get_access<s::access::mode::discard_write>(cgh);
-          cgh.parallel_for<D2HInitKernel<Dims, Strided>>(
-              copy_size, getStridedCopyOffset<Dims, true>(), [=](s::id<Dims> gid) { acc[gid] = TEST_VALUE; });
+          cgh.parallel_for<D2HInitKernel<Dims, Strided>>(copy_size, [=](s::id<Dims> gid) {
+            auto offset = getStridedCopyOffset<Dims, true>();
+            acc[gid + offset] = TEST_VALUE;
+          });
         });
       }
     }
