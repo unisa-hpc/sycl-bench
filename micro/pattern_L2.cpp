@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-namespace s = cl::sycl;
+namespace s = sycl;
 
 template <typename DATA_TYPE, int COMP_ITERS> class MicroBenchL2Kernel;
 
@@ -27,16 +27,16 @@ public:
     output_buf.initialize(args.device_queue, s::range<1>(args.problem_size));
   }
 
-  void run(std::vector<cl::sycl::event>& events){
+  void run(std::vector<sycl::event>& events){
 
     events.push_back(args.device_queue.submit(
-        [&](cl::sycl::handler& cgh) {
+        [&](sycl::handler& cgh) {
       auto in  =  input_buf.template get_access<s::access::mode::read>(cgh);
       auto out = output_buf.template get_access<s::access::mode::discard_write>(cgh);
-      cl::sycl::range<1> ndrange {args.problem_size};
+      sycl::range<1> ndrange {args.problem_size};
 
       cgh.parallel_for<MicroBenchL2Kernel<DATA_TYPE,COMP_ITERS>>(ndrange,
-        [=](cl::sycl::id<1> gid)
+        [=](sycl::id<1> gid)
       {
         DATA_TYPE r0;
         for (int i=0;i<COMP_ITERS;i++) {

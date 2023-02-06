@@ -3,7 +3,7 @@
 
 #include <cstdlib>
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include "common.h"
 #include "polybenchUtilFuncts.h"
@@ -56,14 +56,14 @@ class Polybench_Atax {
 
 		init_array(x.data(), A.data(), size);
 
-		A_buffer.initialize(args.device_queue, A.data(), cl::sycl::range<2>{size, size});
-		x_buffer.initialize(args.device_queue, x.data(), cl::sycl::range<1>{size});
-		y_buffer.initialize(args.device_queue, y.data(), cl::sycl::range<1>{size});
-		tmp_buffer.initialize(args.device_queue, tmp.data(), cl::sycl::range<1>{size});
+		A_buffer.initialize(args.device_queue, A.data(), sycl::range<2>{size, size});
+		x_buffer.initialize(args.device_queue, x.data(), sycl::range<1>{size});
+		y_buffer.initialize(args.device_queue, y.data(), sycl::range<1>{size});
+		tmp_buffer.initialize(args.device_queue, tmp.data(), sycl::range<1>{size});
 	}
 
-	void run(std::vector<cl::sycl::event>& events) {
-		using namespace cl::sycl;
+	void run(std::vector<sycl::event>& events) {
+		using namespace sycl;
 
 		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto A = A_buffer.get_access<access::mode::read>(cgh);
@@ -104,7 +104,7 @@ class Polybench_Atax {
 
 		atax_cpu(A.data(), x.data(), y_cpu.data(), tmp_cpu.data(), size);
 
-		auto y_acc = y_buffer.get_access<cl::sycl::access::mode::read>();
+		auto y_acc = y_buffer.get_access<sycl::access::mode::read>();
 
 		for(size_t i = 0; i < size; i++) {
 			const auto diff = percentDiff(y_cpu[i], y_acc[i]);

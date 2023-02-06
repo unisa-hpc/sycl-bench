@@ -3,7 +3,7 @@
 
 #include <cstdlib>
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include "common.h"
 #include "polybenchUtilFuncts.h"
@@ -60,12 +60,12 @@ class Polybench_Syrk {
 
 		init_arrays(A.data(), C.data(), size);
 
-		A_buffer.initialize(args.device_queue, A.data(), cl::sycl::range<2>(size, size));
-		C_buffer.initialize(args.device_queue, C.data(), cl::sycl::range<2>(size, size));
+		A_buffer.initialize(args.device_queue, A.data(), sycl::range<2>(size, size));
+		C_buffer.initialize(args.device_queue, C.data(), sycl::range<2>(size, size));
 	}
 
-	void run(std::vector<cl::sycl::event>& events) {
-		using namespace cl::sycl;
+	void run(std::vector<sycl::event>& events) {
+		using namespace sycl;
 
 		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto A = A_buffer.get_access<access::mode::read>(cgh);

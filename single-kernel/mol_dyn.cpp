@@ -1,8 +1,8 @@
 #include "common.h"
 #include <iostream>
 
-//using namespace cl::sycl;
-namespace s = cl::sycl;
+//using namespace sycl;
+namespace s = sycl;
 class MolecularDynamicsKernel;
 
 class MolecularDynamicsBench
@@ -50,20 +50,20 @@ public:
     output_buf.initialize(args.device_queue, output.data(), s::range<1>(args.problem_size * sizeof(s::float4)));
   }
 
-  void run(std::vector<cl::sycl::event>& events) {
+  void run(std::vector<sycl::event>& events) {
     
     events.push_back(args.device_queue.submit(
-        [&](cl::sycl::handler& cgh) {
+        [&](sycl::handler& cgh) {
       auto in = input_buf.get_access<s::access::mode::read>(cgh);
       auto neigh = neighbour_buf.get_access<s::access::mode::read>(cgh);
       auto out = output_buf.get_access<s::access::mode::discard_write>(cgh);
 
-      cl::sycl::range<1> ndrange (args.problem_size);
+      sycl::range<1> ndrange (args.problem_size);
 
       cgh.parallel_for<class MolecularDynamicsKernel>(ndrange,
         [=, problem_size = args.problem_size, neighCount_ = neighCount,
          inum_ = inum, cutsq_ = cutsq, lj1_ = lj1, lj2_ = lj2]
-        (cl::sycl::id<1> idx)
+        (sycl::id<1> idx)
         {
             size_t gid= idx[0];
 

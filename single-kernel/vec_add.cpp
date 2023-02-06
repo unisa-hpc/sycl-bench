@@ -2,11 +2,11 @@
 
 #include <iostream>
 
-// Opening cl::sycl namespace is unsupported on hipSYCL 
+// Opening sycl namespace is unsupported on hipSYCL 
 // (mainly due to CUDA/HIP design issues), better 
 // avoid it
-//using namespace cl::sycl;
-namespace s = cl::sycl;
+//using namespace sycl;
+namespace s = sycl;
 template <typename T> class VecAddKernel;
 
 template <typename T>
@@ -42,17 +42,17 @@ public:
     output_buf.initialize(args.device_queue, output.data(), s::range<1>(args.problem_size));
   }
 
-  void run(std::vector<cl::sycl::event>& events) {
+  void run(std::vector<sycl::event>& events) {
     events.push_back(args.device_queue.submit(
-        [&](cl::sycl::handler& cgh) {
+        [&](sycl::handler& cgh) {
       auto in1 = input1_buf.template get_access<s::access::mode::read>(cgh);
       auto in2 = input2_buf.template get_access<s::access::mode::read>(cgh);
       // Use discard_write here, otherwise the content of the host buffer must first be copied to device
       auto out = output_buf.template get_access<s::access::mode::discard_write>(cgh);
-      cl::sycl::range<1> ndrange {args.problem_size};
+      sycl::range<1> ndrange {args.problem_size};
 
       cgh.parallel_for<class VecAddKernel<T>>(ndrange,
-        [=](cl::sycl::id<1> gid) 
+        [=](sycl::id<1> gid) 
         {
           out[gid] = in1[gid] + in2[gid];
         });

@@ -3,7 +3,7 @@
 
 #include <cstdlib>
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include "common.h"
 #include "polybenchUtilFuncts.h"
@@ -61,12 +61,12 @@ class Polybench_3DConvolution {
 
 		init(A.data(), size);
 
-		A_buffer.initialize(args.device_queue, A.data(), cl::sycl::range<3>(size, size, size));
-		B_buffer.initialize(args.device_queue, B.data(), cl::sycl::range<3>(size, size, size));
+		A_buffer.initialize(args.device_queue, A.data(), sycl::range<3>(size, size, size));
+		B_buffer.initialize(args.device_queue, B.data(), sycl::range<3>(size, size, size));
 	}
 
-	void run(std::vector<cl::sycl::event>& events) {
-		using namespace cl::sycl;
+	void run(std::vector<sycl::event>& events) {
+		using namespace sycl;
 
 		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto A = A_buffer.get_access<access::mode::read>(cgh);
@@ -99,7 +99,7 @@ class Polybench_3DConvolution {
 		std::vector<DATA_TYPE> B_cpu(size * size * size);
 		conv3D(A.data(), B_cpu.data(), size);
 
-		auto B_acc = B_buffer.get_access<cl::sycl::access::mode::read>();
+		auto B_acc = B_buffer.get_access<sycl::access::mode::read>();
 
 		for(size_t i = 0; i < size; i++) {
 			for(size_t j = 0; j < size; j++) {

@@ -11,9 +11,9 @@ RT_SIZE = "rt_size"
 # operations available for generation
 
 OP_MAPPING = {
-        "sin" => "OUT = cl::sycl::sin(IN1);",
-        "cos" => "OUT = cl::sycl::cos(IN1);",
-        "sqrt" => "OUT = cl::sycl::sqrt(IN1);",
+        "sin" => "OUT = sycl::sin(IN1);",
+        "cos" => "OUT = sycl::cos(IN1);",
+        "sqrt" => "OUT = sycl::sqrt(IN1);",
         "add" => "OUT = IN1 + IN2;",
         "mad" => "OUT = IN1 * IN2 + IN1;",
 }
@@ -129,17 +129,17 @@ File.open(KERNEL_INC_FILE, "w+") do |f|
         f.puts
 
         kernel_names.each do |kn|
-                fwr.call "device_queue.submit([&](cl::sycl::handler& cgh) {"
+                fwr.call "device_queue.submit([&](sycl::handler& cgh) {"
 
                 buffers.each do |bn, an|
                         fwr.call "auto #{an} = #{bn}.get_access<s::access::mode::read_write>(cgh);"
                 end
 
-                fwr.call "cl::sycl::range<#{options.dimensions}> ndrange{#{ndrange}};"
+                fwr.call "sycl::range<#{options.dimensions}> ndrange{#{ndrange}};"
 
                 full_kernel_name = kn
                 full_kernel_name += "<#{options.type}, #{otions.dimensions}>" if options.templated
-                fwr.call "cgh.parallel_for<#{full_kernel_name}>(ndrange, [=](cl::sycl::id<#{options.dimensions}> gid) {"
+                fwr.call "cgh.parallel_for<#{full_kernel_name}>(ndrange, [=](sycl::id<#{options.dimensions}> gid) {"
                 fwr.call "#{acc_names[0]}[gid] += #{capture_names.join(" + ")};" # use each capture
                 fwr.call "#{acc_names[0]}[gid] += #{acc_names.join("[gid] + ")}[gid];" # use each buffer
 

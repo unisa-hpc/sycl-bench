@@ -1,14 +1,14 @@
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 #include <iostream>
 
 #include "common.h"
 #include "bitmap.h"
 
 
-namespace s = cl::sycl;
+namespace s = sycl;
 class MedianFilterBenchKernel; // kernel forward declaration
 
-void swap(cl::sycl::float4 A[], int i, int j) {
+void swap(sycl::float4 A[], int i, int j) {
   /*if(A[i] > A[j]) {
     float temp = A[i];
     A[i] = A[j];
@@ -25,15 +25,15 @@ void swap(cl::sycl::float4 A[], int i, int j) {
 class MedianFilterBench
 {
 protected:
-    std::vector<cl::sycl::float4> input;
-    std::vector<cl::sycl::float4> output;
+    std::vector<sycl::float4> input;
+    std::vector<sycl::float4> output;
 
     size_t w, h; // size of the input picture
     size_t size; // user-defined size (input and output will be size x size)
     BenchmarkArgs args;
 
-    PrefetchedBuffer<cl::sycl::float4, 2>  input_buf;    
-    PrefetchedBuffer<cl::sycl::float4, 2> output_buf;
+    PrefetchedBuffer<sycl::float4, 2>  input_buf;    
+    PrefetchedBuffer<sycl::float4, 2> output_buf;
 
 public:
   MedianFilterBench(const BenchmarkArgs &_args) : args(_args) {}
@@ -48,22 +48,22 @@ public:
     output_buf.initialize(args.device_queue, output.data(), s::range<2>(size, size));
   }
 
-  void run(std::vector<cl::sycl::event>& events) {
+  void run(std::vector<sycl::event>& events) {
 
     events.push_back(args.device_queue.submit(
-        [&](cl::sycl::handler& cgh) {
+        [&](sycl::handler& cgh) {
       auto in  = input_buf .get_access<s::access::mode::read>(cgh);
       auto out = output_buf.get_access<s::access::mode::discard_write>(cgh);
-      cl::sycl::range<2> ndrange {size, size};
+      sycl::range<2> ndrange {size, size};
 
       cgh.parallel_for<class MedianFilterBenchKernel>(ndrange,
-        [in, out, size_ = size](cl::sycl::id<2> gid)
+        [in, out, size_ = size](sycl::id<2> gid)
         {
           int x = gid[0];
           int y = gid[1];
 
           // Optimization note: this array can be prefetched in local memory, TODO
-	  cl::sycl::float4 window[9];
+	  sycl::float4 window[9];
           int k = 0;
           for(int i = -1; i<2; i++)
             for(int j = -1; j<2; j++) {
@@ -133,7 +133,7 @@ public:
     for(size_t i=ver.begin[0]; i<ver.begin[0]+ver.range[0]; i++){
       int x = i % size;
       int y = i / size;
-      cl::sycl::float4 window[9];
+      sycl::float4 window[9];
       int k = 0;
       for(int i = -1; i<2; i++)
         for(int j = -1; j<2; j++) {
@@ -169,9 +169,9 @@ public:
       swap(window, 3, 6);
       swap(window, 3, 5);
       swap(window, 3, 4);
-      cl::sycl::float4 expected = window[4];
-      cl::sycl::float4 dif = fdim(output_acc.get_pointer()[i], expected);
-      float length = cl::sycl::length(dif);
+      sycl::float4 expected = window[4];
+      sycl::float4 dif = fdim(output_acc.get_pointer()[i], expected);
+      float length = sycl::length(dif);
       if(length > 0.01f)
       {
         pass = false;

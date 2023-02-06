@@ -4,7 +4,7 @@
 #include <cmath>
 #include <cstdlib>
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include "common.h"
 #include "polybenchUtilFuncts.h"
@@ -100,14 +100,14 @@ class Polybench_Correlation {
 
 		init_arrays(data.data(), size);
 
-		data_buffer.initialize(args.device_queue, data.data(), cl::sycl::range<2>(size + 1, size + 1));
-		mean_buffer.initialize(args.device_queue, mean.data(), cl::sycl::range<1>(size + 1));
-		stddev_buffer.initialize(args.device_queue, stddev.data(), cl::sycl::range<1>(size + 1));
-		symmat_buffer.initialize(args.device_queue, symmat.data(), cl::sycl::range<2>(size + 1, size + 1));
+		data_buffer.initialize(args.device_queue, data.data(), sycl::range<2>(size + 1, size + 1));
+		mean_buffer.initialize(args.device_queue, mean.data(), sycl::range<1>(size + 1));
+		stddev_buffer.initialize(args.device_queue, stddev.data(), sycl::range<1>(size + 1));
+		symmat_buffer.initialize(args.device_queue, symmat.data(), sycl::range<2>(size + 1, size + 1));
 	}
 
-	void run(std::vector<cl::sycl::event>& events) {
-		using namespace cl::sycl;
+	void run(std::vector<sycl::event>& events) {
+		using namespace sycl;
 
 		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto data = data_buffer.get_access<access::mode::read>(cgh);
@@ -136,7 +136,7 @@ class Polybench_Correlation {
 				}
 
 				stddev[item] /= FLOAT_N;
-				stddev[item] = cl::sycl::sqrt(stddev[item]);
+				stddev[item] = sycl::sqrt(stddev[item]);
 				stddev[item] = stddev[item] <= EPS ? 1.0 : stddev[item];
 			});
 		}));
@@ -150,7 +150,7 @@ class Polybench_Correlation {
 				const auto j = item[1];
 
 				data[item] -= mean[j];
-				data[item] /= cl::sycl::sqrt(FLOAT_N);
+				data[item] /= sycl::sqrt(FLOAT_N);
 				data[item] /= stddev[j];
 			});
 		}));

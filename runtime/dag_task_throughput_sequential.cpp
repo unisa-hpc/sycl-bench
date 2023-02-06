@@ -1,6 +1,5 @@
 #include "common.h"
 
-using namespace cl;
 
 class DagTaskThroughputKernelSingleTask;
 class DagTaskThroughputKernelBasicPF;
@@ -32,7 +31,7 @@ public:
     for(std::size_t i = 0; i < args.problem_size; ++i) {
       
       args.device_queue.submit(
-          [&](cl::sycl::handler& cgh) {
+          [&](sycl::handler& cgh) {
         auto acc = dummy_counter.get_access<sycl::access::mode::read_write>(cgh);
         
         cgh.single_task<DagTaskThroughputKernelSingleTask>(
@@ -48,7 +47,7 @@ public:
   {
     for(std::size_t i = 0; i < args.problem_size; ++i) {
       args.device_queue.submit(
-          [&](cl::sycl::handler& cgh) {
+          [&](sycl::handler& cgh) {
         auto acc = dummy_counter.get_access<sycl::access::mode::read_write>(cgh);
         
         cgh.parallel_for<DagTaskThroughputKernelBasicPF>(
@@ -68,7 +67,7 @@ public:
   {
     for(std::size_t i = 0; i < args.problem_size; ++i) {
       args.device_queue.submit(
-          [&](cl::sycl::handler& cgh) {
+          [&](sycl::handler& cgh) {
         auto acc = dummy_counter.get_access<sycl::access::mode::read_write>(cgh);
         
         cgh.parallel_for<DagTaskThroughputKernelNdrangePF>(
@@ -88,7 +87,7 @@ public:
   {
     for(std::size_t i = 0; i < args.problem_size; ++i) {
       args.device_queue.submit(
-          [&](cl::sycl::handler& cgh) {
+          [&](sycl::handler& cgh) {
         auto acc = dummy_counter.get_access<sycl::access::mode::read_write>(cgh);
         
         cgh.parallel_for_work_group<DagTaskThroughputKernelHierarchicalPF>(

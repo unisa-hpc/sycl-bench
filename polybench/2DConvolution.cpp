@@ -3,7 +3,7 @@
 
 #include <cstdlib>
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include "common.h"
 #include "polybenchUtilFuncts.h"
@@ -50,12 +50,12 @@ class Polybench_2DConvolution {
 
 		init(A.data(), size);
 
-		A_buffer.initialize(args.device_queue, A.data(), cl::sycl::range<2>(size, size));
-		B_buffer.initialize(args.device_queue, B.data(), cl::sycl::range<2>(size, size));
+		A_buffer.initialize(args.device_queue, A.data(), sycl::range<2>(size, size));
+		B_buffer.initialize(args.device_queue, B.data(), sycl::range<2>(size, size));
 	}
 
-	void run(std::vector<cl::sycl::event>& events) {
-		using namespace cl::sycl;
+	void run(std::vector<sycl::event>& events) {
+		using namespace sycl;
 
 		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto A = A_buffer.get_access<access::mode::read>(cgh);
@@ -81,7 +81,7 @@ class Polybench_2DConvolution {
 	bool verify(VerificationSetting&) {
 		constexpr auto ERROR_THRESHOLD = 0.05;
 
-		auto B_acc = B_buffer.get_access<cl::sycl::access::mode::read>();
+		auto B_acc = B_buffer.get_access<sycl::access::mode::read>();
 
 		std::vector<DATA_TYPE> B_cpu(size * size);
 		conv2D(A.data(), B_cpu.data(), size);

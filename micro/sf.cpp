@@ -1,6 +1,6 @@
 #include "common.h"
 
-namespace s = cl::sycl;
+namespace s = sycl;
 
 template <typename DataT, int N>
 class MicroBenchSpecialFuncKernel;
@@ -32,7 +32,7 @@ public:
     return {OP / 1024.0 / 1024.0 / 1024.0, "GOP"};
   }
 
-  void run(std::vector<cl::sycl::event>& events) {
+  void run(std::vector<sycl::event>& events) {
     events.push_back(args.device_queue.submit([&](s::handler& cgh) {
       auto in = input_buf.template get_access<s::access::mode::read>(cgh);
       auto out = output_buf.template get_access<s::access::mode::discard_write>(cgh);

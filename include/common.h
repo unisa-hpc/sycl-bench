@@ -1,5 +1,5 @@
 #pragma once 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include <string>
 #include <iostream>
@@ -49,7 +49,7 @@ public:
       "local-size", std::to_string(args.local_size));
     args.result_consumer->consumeResult(
       "device-name", args.device_queue.get_device()
-                           .template get_info<cl::sycl::info::device::name>());
+                           .template get_info<sycl::info::device::name>());
     args.result_consumer->consumeResult(
       "sycl-implementation", this->getSyclImplementation());
 
@@ -71,7 +71,7 @@ public:
         args.device_queue.wait_and_throw();
         for(auto h : hooks) h->postSetup();
 
-        std::vector<cl::sycl::event> run_events;
+        std::vector<sycl::event> run_events;
         run_events.reserve(1024); // Make sure we don't need to resize during benchmarking.
 
         // Performance critical measurement section starts here
@@ -94,8 +94,8 @@ public:
           // TODO: We might also want to consider the "command_submit" time.
           std::chrono::nanoseconds total_time{0};
           for(auto& e : run_events) {
-            const auto start = e.get_profiling_info<cl::sycl::info::event_profiling::command_start>();
-            const auto end = e.get_profiling_info<cl::sycl::info::event_profiling::command_end>();
+            const auto start = e.get_profiling_info<sycl::info::event_profiling::command_start>();
+            const auto end = e.get_profiling_info<sycl::info::event_profiling::command_end>();
             total_time += std::chrono::nanoseconds(end - start);
           }
           time_metrics.addTimingResult("kernel-time", total_time);
@@ -170,7 +170,7 @@ private:
 class BenchmarkApp
 {
   BenchmarkArgs args;  
-  cl::sycl::queue device_queue;
+  sycl::queue device_queue;
   std::unordered_set<std::string> benchmark_names;
   
 public:  
@@ -213,7 +213,7 @@ public:
 
       mgr.run(additional_args...);
     }
-    catch(cl::sycl::exception& e){
+    catch(sycl::exception& e){
       std::cerr << "SYCL error: " << e.what() << std::endl;
     }
     catch(std::exception& e){

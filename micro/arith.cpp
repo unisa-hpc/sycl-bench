@@ -1,6 +1,6 @@
 #include "common.h"
 
-namespace s = cl::sycl;
+namespace s = sycl;
 
 template <typename DataT, int Iterations>
 class MicroBenchArithmeticKernel;
@@ -46,13 +46,13 @@ public:
     return {};
   }
 
-  void run(std::vector<cl::sycl::event>& events) {
-    events.push_back(args.device_queue.submit([&](cl::sycl::handler& cgh) {
+  void run(std::vector<sycl::event>& events) {
+    events.push_back(args.device_queue.submit([&](sycl::handler& cgh) {
       auto in = input_buf.template get_access<s::access::mode::read>(cgh);
       auto out = output_buf.template get_access<s::access::mode::discard_write>(cgh);
 
       cgh.parallel_for<MicroBenchArithmeticKernel<DataT, Iterations>>(
-          s::range<1>{args.problem_size}, [=](cl::sycl::id<1> gid) {
+          s::range<1>{args.problem_size}, [=](sycl::id<1> gid) {
             DataT a1 = in[gid];
             const DataT a2 = a1;
 

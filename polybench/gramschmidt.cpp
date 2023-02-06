@@ -4,7 +4,7 @@
 #include <cmath>
 #include <cstdlib>
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include "common.h"
 #include "polybenchUtilFuncts.h"
@@ -64,13 +64,13 @@ class Polybench_Gramschmidt {
 
 		init_array(A.data(), size);
 
-		A_buffer.initialize(args.device_queue, A.data(), cl::sycl::range<2>(size, size));
-		R_buffer.initialize(args.device_queue, R.data(), cl::sycl::range<2>(size, size));
-		Q_buffer.initialize(args.device_queue, Q.data(), cl::sycl::range<2>(size, size));
+		A_buffer.initialize(args.device_queue, A.data(), sycl::range<2>(size, size));
+		R_buffer.initialize(args.device_queue, R.data(), sycl::range<2>(size, size));
+		Q_buffer.initialize(args.device_queue, Q.data(), sycl::range<2>(size, size));
 	}
 
-	void run(std::vector<cl::sycl::event>& events) {
-		using namespace cl::sycl;
+	void run(std::vector<sycl::event>& events) {
+		using namespace sycl;
 
 		for(size_t k = 0; k < size; k++) {
 			events.push_back(args.device_queue.submit([&](handler& cgh) {
@@ -82,7 +82,7 @@ class Polybench_Gramschmidt {
 					for(size_t i = 0; i < M_; i++) {
 						nrm += A[{i, k}] * A[{i, k}];
 					}
-					R[{k, k}] = cl::sycl::sqrt(nrm);
+					R[{k, k}] = sycl::sqrt(nrm);
 				});
 			}));
 

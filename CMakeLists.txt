@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.5)
+cmake_minimum_required(VERSION 3.5)
 project(sycl-bench)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
@@ -24,8 +24,9 @@ endif()
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/polybench/common)
 
+set(SYCL_IMPL "" CACHE STRING "Select SYCL implementation [hipSYCL | LLVM | LLVM-CUDA | triSYCL]")
+
 set(supported_implementations
-  ComputeCpp
   hipSYCL
   LLVM
   LLVM-CUDA
@@ -33,19 +34,18 @@ set(supported_implementations
 )
 
 list(FIND supported_implementations ${SYCL_IMPL} impl_idx)
+
 if(NOT SYCL_IMPL OR impl_idx EQUAL -1)
   message(FATAL_ERROR "Please specify SYCL_IMPL (one of: ${supported_implementations})")
 endif()
 
-if(SYCL_IMPL STREQUAL "ComputeCpp")
-  find_package(ComputeCpp MODULE REQUIRED)
-elseif(SYCL_IMPL STREQUAL "hipSYCL")
+if(SYCL_IMPL STREQUAL "hipSYCL")
   find_package(hipSYCL CONFIG REQUIRED)
 elseif(SYCL_IMPL STREQUAL "LLVM")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl")
 elseif(SYCL_IMPL STREQUAL "LLVM-CUDA")
   set(CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -fsycl -fsycl-targets=nvptx64-nvidia-cuda-sycldevice")
+    "${CMAKE_CXX_FLAGS} -fsycl -fsycl-targets=nvptx64-nvidia-cuda")
 elseif(SYCL_IMPL STREQUAL "triSYCL")
   find_package(TriSYCL MODULE REQUIRED)
 endif()
@@ -108,12 +108,8 @@ foreach(benchmark IN LISTS benchmarks)
 
   add_executable(${target} ${benchmark})
 
-  if(SYCL_IMPL STREQUAL "ComputeCpp" OR SYCL_IMPL STREQUAL "hipSYCL")
+  if(SYCL_IMPL STREQUAL "hipSYCL")
     add_sycl_to_target(TARGET ${target} SOURCES ${benchmark})
-  endif()
-
-  if(SYCL_IMPL STREQUAL "ComputeCpp" AND COMPUTECPP_BITCODE STREQUAL "ptx64")
-    target_compile_definitions(${target} PRIVATE SYCL_BENCH_ENABLE_QUEUE_PROFILING)
   endif()
 
   if(SYCL_IMPL STREQUAL "LLVM")
@@ -135,7 +131,7 @@ foreach(benchmark IN LISTS benchmarks)
 endforeach(benchmark)
 
 # The "compiletime" target should only be used in the context of the compile time evaluation script
-#set_target_properties(compiletime PROPERTIES EXCLUDE_FROM_ALL 1)
+set_target_properties(compiletime PROPERTIES EXCLUDE_FROM_ALL 1)
 
 install(PROGRAMS bin/run-suite DESTINATION bin/)
 install(FILES ${PROJECT_SOURCE_DIR}/Brommy.bmp DESTINATION share/)
