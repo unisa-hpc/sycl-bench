@@ -1,6 +1,3 @@
-
-
-
 #include "common.h"
 
 #include <cassert>
