@@ -62,7 +62,7 @@ public:
   }
 
   bool verify(VerificationSetting& ver) {
-    auto result = output_buf.template get_access<s::access::mode::read>();
+    auto result = output_buf.get_host_access();
     for(size_t i = 0; i < buffer_size[0]; ++i) {
       for(size_t j = 0; j < (Dims < 2 ? 1 : buffer_size[1]); ++j) {
         for(size_t k = 0; k < (Dims < 3 ? 1 : buffer_size[2]); ++k) {

@@ -168,7 +168,7 @@ class Polybench_3mm {
 
 		mm3_cpu(A.data(), B.data(), C.data(), D.data(), E_cpu.data(), F_cpu.data(), G_cpu.data(), size);
 
-		auto G_acc = G_buffer.get_access<sycl::access::mode::read>();
+		auto G_acc = G_buffer.get_host_access();
 
 		for(size_t i = 0; i < size; i++) {
 			for(size_t j = 0; j < size; j++) {

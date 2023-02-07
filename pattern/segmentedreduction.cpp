@@ -98,7 +98,7 @@ public:
     std::vector<T> original_input;
     generate_input(original_input);
 
-    auto acc = _buff.template get_access<sycl::access::mode::read>();
+    auto acc = _buff.get_host_access();
     size_t num_groups = _args.problem_size / _args.local_size;
 
     for(size_t group = 0; group < num_groups; ++group) {

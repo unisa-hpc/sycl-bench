@@ -131,7 +131,7 @@ class Polybench_2mm {
 		std::vector<DATA_TYPE> E_cpu(size * size);
 		mm2_cpu(A.data(), B.data(), C.data(), D.data(), E_cpu.data(), size);
 
-		auto E_acc = E_buffer.get_access<sycl::access::mode::read>();
+		auto E_acc = E_buffer.get_host_access();
 
 		for(size_t i = 0; i < size; i++) {
 			for(size_t j = 0; j < size; j++) {

@@ -56,7 +56,7 @@ public:
   }
 
   bool verify(VerificationSetting& ver) {
-    T result = _final_output_buff->template get_access<sycl::access::mode::read>(sycl::range<1>{0}, sycl::id<1>{1})[0];
+    T result = _final_output_buff->template get_host_access(sycl::range<1>{0}, sycl::id<1>{1})[0];
 
     // Calculate CPU result in fp64 to avoid obtaining a wrong verification result
     std::vector<double> input_fp64(_input.size());

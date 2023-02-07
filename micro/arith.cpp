@@ -68,7 +68,7 @@ public:
   }
 
   bool verify(VerificationSetting& ver) {
-    auto result = output_buf.template get_access<s::access::mode::read>();
+    auto result = output_buf.get_host_access();
     for(size_t i = 0; i < args.problem_size; ++i) {
       if(result[i] != DataT{1}) {
         return false;

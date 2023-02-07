@@ -62,8 +62,8 @@ public:
 
 
   bool verify(VerificationSetting& ver) {
-    auto resulting_particles = output_particles.template get_access<sycl::access::mode::read>();
-    auto resulting_velocities = output_velocities.template get_access<sycl::access::mode::read>();
+    auto resulting_particles = output_particles.get_host_access();
+    auto resulting_velocities = output_velocities.get_host_access();
 
     std::vector<particle_type> host_resulting_particles(particles.size());
     std::vector<vector_type> host_resulting_velocities(particles.size());

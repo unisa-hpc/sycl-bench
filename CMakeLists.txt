@@ -100,7 +100,7 @@ set(benchmarks
   polybench/mvt.cpp
   polybench/syr2k.cpp
   polybench/syrk.cpp
-  compiletime/compiletime.cpp
+  # compiletime/compiletime.cpp
 )
 
 foreach(benchmark IN LISTS benchmarks)
@@ -131,7 +131,7 @@ foreach(benchmark IN LISTS benchmarks)
 endforeach(benchmark)
 
 # The "compiletime" target should only be used in the context of the compile time evaluation script
-set_target_properties(compiletime PROPERTIES EXCLUDE_FROM_ALL 1)
+# set_target_properties(compiletime PROPERTIES EXCLUDE_FROM_ALL 1)
 
 install(PROGRAMS bin/run-suite DESTINATION bin/)
 install(FILES ${PROJECT_SOURCE_DIR}/Brommy.bmp DESTINATION share/)
