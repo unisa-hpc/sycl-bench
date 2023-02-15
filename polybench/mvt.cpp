@@ -3,7 +3,7 @@
 
 #include <cstdlib>
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include "common.h"
 #include "polybenchUtilFuncts.h"
@@ -57,15 +57,15 @@ class Polybench_Mvt {
 
 		init_arrays(a.data(), x1.data(), x2.data(), y1.data(), y2.data(), size);
 
-		a_buffer .initialize(args.device_queue, a.data(), cl::sycl::range<2>(size, size));
-		x1_buffer.initialize(args.device_queue, x1.data(), cl::sycl::range<1>(size));
-		x2_buffer.initialize(args.device_queue, x2.data(), cl::sycl::range<1>(size));
-		y1_buffer.initialize(args.device_queue, y1.data(), cl::sycl::range<1>(size));
-		y2_buffer.initialize(args.device_queue, y2.data(), cl::sycl::range<1>(size));
+		a_buffer .initialize(args.device_queue, a.data(), sycl::range<2>(size, size));
+		x1_buffer.initialize(args.device_queue, x1.data(), sycl::range<1>(size));
+		x2_buffer.initialize(args.device_queue, x2.data(), sycl::range<1>(size));
+		y1_buffer.initialize(args.device_queue, y1.data(), sycl::range<1>(size));
+		y2_buffer.initialize(args.device_queue, y2.data(), sycl::range<1>(size));
 	}
 
-	void run(std::vector<cl::sycl::event>& events) {
-		using namespace cl::sycl;
+	void run(std::vector<sycl::event>& events) {
+		using namespace sycl;
 
 		events.push_back(args.device_queue.submit([&](handler& cgh) {
 			auto a = a_buffer.get_access<access::mode::read>(cgh);

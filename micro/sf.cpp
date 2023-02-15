@@ -1,6 +1,6 @@
 #include "common.h"
 
-namespace s = cl::sycl;
+namespace s = sycl;
 
 template <typename DataT, int N>
 class MicroBenchSpecialFuncKernel;
@@ -32,7 +32,7 @@ public:
     return {OP / 1024.0 / 1024.0 / 1024.0, "GOP"};
   }
 
-  void run(std::vector<cl::sycl::event>& events) {
+  void run(std::vector<sycl::event>& events) {
     events.push_back(args.device_queue.submit([&](s::handler& cgh) {
       auto in = input_buf.template get_access<s::access::mode::read>(cgh);
       auto out = output_buf.template get_access<s::access::mode::discard_write>(cgh);
@@ -62,7 +62,7 @@ public:
       v2 = s::tan(v0);
     }
     const DataT expected = v2;
-    auto result = output_buf.template get_access<s::access::mode::read>();
+    auto result = output_buf.get_host_access();
     for(size_t i = 0; i < args.problem_size; ++i) {
       constexpr DataT EPSILON = 1e-5;
       if(std::abs(result[i] - expected) > EPSILON) {

@@ -5,8 +5,8 @@
 #define FLT_MAX 500000.0
 #endif
 
-//using namespace cl::sycl;
-namespace s = cl::sycl;
+//using namespace sycl;
+namespace s = sycl;
 template <typename T> class KmeansKernel;
 
 template <typename T>
@@ -46,18 +46,18 @@ public:
     membership_buf.initialize(args.device_queue, membership.data(), s::range<1>(args.problem_size));
   }
 
-  void run(std::vector<cl::sycl::event>& events) {
-    events.push_back(args.device_queue.submit([&](cl::sycl::handler& cgh) {
+  void run(std::vector<sycl::event>& events) {
+    events.push_back(args.device_queue.submit([&](sycl::handler& cgh) {
       auto features = features_buf.template get_access<s::access::mode::read>(cgh);
       auto clusters = clusters_buf.template get_access<s::access::mode::read>(cgh);
       auto membership = membership_buf.template get_access<s::access::mode::discard_write>(cgh);
 
-      cl::sycl::range<1> ndrange(args.problem_size);
+      sycl::range<1> ndrange(args.problem_size);
 
       cgh.parallel_for<class KmeansKernel<T>>(ndrange,
         [features, clusters, membership, problem_size = args.problem_size,
          nclusters_ = nclusters, nfeatures_ = nfeatures]
-        (cl::sycl::id<1> idx){
+        (sycl::id<1> idx){
 
         size_t gid = idx[0];
 
@@ -82,7 +82,7 @@ public:
   }
 
   bool verify(VerificationSetting &ver) {
-    auto membership_acc = membership_buf.template get_access<s::access::mode::read>();
+    auto membership_acc = membership_buf.get_host_access();
 
     bool pass = true;
     unsigned int equal = 1;

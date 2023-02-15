@@ -10,14 +10,14 @@ template <typename T>
 class MatmulChain;
 
 template <typename T>
-void multiply(cl::sycl::queue& queue, cl::sycl::buffer<T, 2>& mat_a, cl::sycl::buffer<T, 2>& mat_b,
-    cl::sycl::buffer<T, 2>& mat_c, const size_t mat_size) {
-  queue.submit([&](cl::sycl::handler& cgh) {
-    auto a = mat_a.template get_access<cl::sycl::access::mode::read>(cgh);
-    auto b = mat_b.template get_access<cl::sycl::access::mode::read>(cgh);
-    auto c = mat_c.template get_access<cl::sycl::access::mode::discard_write>(cgh);
+void multiply(sycl::queue& queue, sycl::buffer<T, 2>& mat_a, sycl::buffer<T, 2>& mat_b,
+    sycl::buffer<T, 2>& mat_c, const size_t mat_size) {
+  queue.submit([&](sycl::handler& cgh) {
+    auto a = mat_a.template get_access<sycl::access::mode::read>(cgh);
+    auto b = mat_b.template get_access<sycl::access::mode::read>(cgh);
+    auto c = mat_c.template get_access<sycl::access::mode::discard_write>(cgh);
 
-		cgh.parallel_for<class MatmulChain<T>>(cl::sycl::range<2>(mat_size, mat_size), [=](cl::sycl::item<2> item) {
+		cgh.parallel_for<class MatmulChain<T>>(sycl::range<2>(mat_size, mat_size), [=](sycl::item<2> item) {
 			auto sum = 0;
 			for(size_t k = 0; k < mat_size; ++k) {
 				const auto a_ik = a[{item[0], k}];
@@ -71,13 +71,13 @@ public:
 			}
 		}
 
-		mat_a_buf.initialize(args.device_queue, mat_a.data(), cl::sycl::range<2>(mat_size, mat_size));
-		mat_b_buf.initialize(args.device_queue, mat_b.data(), cl::sycl::range<2>(mat_size, mat_size));
-		mat_c_buf.initialize(args.device_queue, mat_c.data(), cl::sycl::range<2>(mat_size, mat_size));
-		mat_d_buf.initialize(args.device_queue, mat_d.data(), cl::sycl::range<2>(mat_size, mat_size));
-		mat_res_buf.initialize(args.device_queue, mat_res.data(), cl::sycl::range<2>(mat_size, mat_size));
-		mat_p_buf.initialize(args.device_queue, cl::sycl::range<2>(mat_size, mat_size));
-		mat_q_buf.initialize(args.device_queue, cl::sycl::range<2>(mat_size, mat_size));
+		mat_a_buf.initialize(args.device_queue, mat_a.data(), sycl::range<2>(mat_size, mat_size));
+		mat_b_buf.initialize(args.device_queue, mat_b.data(), sycl::range<2>(mat_size, mat_size));
+		mat_c_buf.initialize(args.device_queue, mat_c.data(), sycl::range<2>(mat_size, mat_size));
+		mat_d_buf.initialize(args.device_queue, mat_d.data(), sycl::range<2>(mat_size, mat_size));
+		mat_res_buf.initialize(args.device_queue, mat_res.data(), sycl::range<2>(mat_size, mat_size));
+		mat_p_buf.initialize(args.device_queue, sycl::range<2>(mat_size, mat_size));
+		mat_q_buf.initialize(args.device_queue, sycl::range<2>(mat_size, mat_size));
 	}
 
 	void run() {

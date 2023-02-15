@@ -1,8 +1,8 @@
 #include "common.h"
 #include <iostream>
 
-//using namespace cl::sycl;
-namespace s = cl::sycl;
+//using namespace sycl;
+namespace s = sycl;
 template <typename T> class LinearRegressionKernel;
 
 template <typename T>
@@ -49,10 +49,10 @@ public:
     output_buf.initialize(args.device_queue, output.data(), s::range<1>(args.problem_size));
   }
 
-  void run(std::vector<cl::sycl::event>& events) {
+  void run(std::vector<sycl::event>& events) {
     
     events.push_back(args.device_queue.submit(
-        [&](cl::sycl::handler& cgh) {
+        [&](sycl::handler& cgh) {
       auto in1 = input1_buf.template get_access<s::access::mode::read>(cgh);
       auto in2 = input2_buf.template get_access<s::access::mode::read>(cgh);
       auto alpha = alpha_buf.template get_access<s::access::mode::read>(cgh);
@@ -60,10 +60,10 @@ public:
       // Use discard_write here, otherwise the content of the host buffer must first be copied to device
       auto output = output_buf.template get_access<s::access::mode::discard_write>(cgh);
 
-      cl::sycl::range<1> ndrange (args.problem_size);
+      sycl::range<1> ndrange (args.problem_size);
 
       cgh.parallel_for<class LinearRegressionKernel<T>>(ndrange,
-        [=, problem_size = args.problem_size](cl::sycl::id<1> idx)
+        [=, problem_size = args.problem_size](sycl::id<1> idx)
         {
           size_t gid= idx[0];
           T a = alpha[gid];
@@ -85,7 +85,7 @@ public:
       T error = 0.0f;
       T ref = 0.0f;
 
-      auto output = output_buf.template get_access<s::access::mode::read>();
+      auto output = output_buf.get_host_access();
 
       for(size_t i = 0; i < length; ++i) {
           T diff = expected_output[i] - output[i];

@@ -41,7 +41,7 @@ default_profile = {
   # Problem size will not be increased if this runtime is exceeded
   'max-allowed-runtime' : 10800.0, #seconds.
   'default-options' : {
-    '--size' : create_log_range(2**10, 2**10),
+    '--size' : create_log_range(2**9, 2**9),
     '--local' : create_log_range(256,256),
     '--num-runs' : 10,
     '--output' : output_file

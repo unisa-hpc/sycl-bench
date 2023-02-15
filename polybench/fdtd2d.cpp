@@ -3,7 +3,7 @@
 
 #include <cstdlib>
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include "common.h"
 #include "polybenchUtilFuncts.h"
@@ -74,14 +74,14 @@ class Polybench_Fdtd2d {
 
 		init_arrays(fict.data(), ex.data(), ey.data(), hz.data(), size);
 
-		fict_buffer.initialize(args.device_queue, fict.data(), cl::sycl::range<1>(TMAX));
-		ex_buffer.initialize(args.device_queue, ex.data(), cl::sycl::range<2>(size, size + 1));
-		ey_buffer.initialize(args.device_queue, ey.data(), cl::sycl::range<2>(size + 1, size));
-		hz_buffer.initialize(args.device_queue, hz.data(), cl::sycl::range<2>(size, size));
+		fict_buffer.initialize(args.device_queue, fict.data(), sycl::range<1>(TMAX));
+		ex_buffer.initialize(args.device_queue, ex.data(), sycl::range<2>(size, size + 1));
+		ey_buffer.initialize(args.device_queue, ey.data(), sycl::range<2>(size + 1, size));
+		hz_buffer.initialize(args.device_queue, hz.data(), sycl::range<2>(size, size));
 	}
 
-	void run(std::vector<cl::sycl::event>& events) {
-		using namespace cl::sycl;
+	void run(std::vector<sycl::event>& events) {
+		using namespace sycl;
 
 		for(size_t t = 0; t < TMAX; t++) {
 			events.push_back(args.device_queue.submit([&](handler& cgh) {
