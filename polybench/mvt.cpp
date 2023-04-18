@@ -19,8 +19,8 @@ void init_arrays(DATA_TYPE* a, DATA_TYPE* x1, DATA_TYPE* x2, DATA_TYPE* y_1, DAT
 	for(size_t i = 0; i < N; i++) {
 		x1[i] = 0.0;
 		x2[i] = 0.0;
-		y_1[i] = 0.0;
-		y_2[i] = 0.0;
+		y_1[i] = 1.0;
+		y_2[i] = 1.0;
 
 		for(size_t j = 0; j < N; j++) {
 			a[i * N + j] = (DATA_TYPE)(i + j + 1.0) / N;
@@ -101,6 +101,10 @@ class Polybench_Mvt {
 
 		std::vector<DATA_TYPE> x1_cpu(size);
 		std::vector<DATA_TYPE> x2_cpu(size);
+
+		// Trigger writeback
+		x1_buffer.reset();
+		x2_buffer.reset();
 
 		init_arrays(a.data(), x1_cpu.data(), x2_cpu.data(), y1.data(), y2.data(), size);
 
