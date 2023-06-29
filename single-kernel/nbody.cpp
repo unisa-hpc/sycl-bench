@@ -107,10 +107,10 @@ public:
     }
 
     constexpr float_type maxErr = 10.f * std::numeric_limits<float_type>::epsilon();
-    return checkResults(
-               host_resulting_particles.begin(), host_resulting_particles.end(), resulting_particles.begin(), maxErr) &&
+    return checkResults(host_resulting_particles.begin(), host_resulting_particles.end(),
+               resulting_particles.get_pointer(), maxErr) &&
            checkResults(host_resulting_velocities.begin(), host_resulting_velocities.end(),
-               resulting_velocities.begin(), maxErr);
+               resulting_velocities.get_pointer(), maxErr);
   }
 
 protected:
