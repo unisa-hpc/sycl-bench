@@ -48,24 +48,15 @@ public:
   void submit_ndrange(std::vector<cl::sycl::event>& events){
     this->submit([this, &events](sycl::buffer<T, 1> *input, sycl::buffer<T, 1> *output,
                         const size_t reduction_size, const size_t num_groups) {
-      auto ev = this->local_reduce_ndrange(input, output, reduction_size,
-                                            num_groups);
-      // We need to wait for the event here to make sure the kernel finished
-      // execution before swapping the buffers.
-      ev.wait();
-      events.push_back(ev);
+      events.push_back(this->local_reduce_ndrange(input, output, reduction_size, num_groups));
     });
   }
 
   void submit_hierarchical(std::vector<cl::sycl::event>& events){
     this->submit([this, &events](sycl::buffer<T, 1> *input, sycl::buffer<T, 1> *output,
                         const size_t reduction_size, const size_t num_groups) {
-      auto ev = this->local_reduce_hierarchical(input, output, reduction_size,
-                                                  num_groups);
-      // We need to wait for the event here to make sure the kernel finished
-      // execution before swapping the buffers.
-      ev.wait();
-      events.push_back(ev);
+      events.push_back(this->local_reduce_hierarchical(input, output, reduction_size,
+                                      num_groups));
     });
   }
 
@@ -73,14 +64,9 @@ public:
     T result = _final_output_buff->get_host_access()[0];
 
     // Calculate CPU result in fp64 to avoid obtaining a wrong verification result
-    std::vector<T> initial_input(_input.size());
     std::vector<double> input_fp64(_input.size());
-    // _input_buff will be re-used as output buffer in the multi-step reduction,
-    // overriding the content of _input. Initialize again with the original
-    // input values.
-    generate_input(initial_input);
-    for(std::size_t i = 0; i < initial_input.size(); ++i)
-      input_fp64[i] = static_cast<double>(initial_input[i]);
+    for(std::size_t i = 0; i < _input.size(); ++i)
+      input_fp64[i] = static_cast<double>(_input[i]);
 
     double delta =
         static_cast<double>(result) - std::accumulate(input_fp64.begin(), input_fp64.end(), T{});
