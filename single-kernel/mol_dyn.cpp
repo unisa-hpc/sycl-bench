@@ -104,7 +104,7 @@ public:
 
     bool pass = true;
     unsigned equal = 1;
-    const float tolerance = 0.00001;
+    constexpr float maxErr = 10.f * std::numeric_limits<float>::epsilon();
     for(unsigned int i = 0; i < args.problem_size; ++i) {
         s::float4 ipos = input[i];
         s::float4 f = {0.0f, 0.0f, 0.0f, 0.0f};
@@ -132,8 +132,7 @@ public:
             j++;
         }
 
-        if(fabs(f.x() - output_acc[i].x()) > tolerance || fabs(f.y() - output_acc[i].y()) > tolerance ||
-            fabs(f.z() - output_acc[i].z()) > tolerance) {
+        if(sycl::distance(f, output_acc[i]) / sycl::length(f) > maxErr) {
           pass = false;
           break;
         }
