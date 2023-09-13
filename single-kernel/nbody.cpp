@@ -321,11 +321,13 @@ int main(int argc, char** argv)
   BenchmarkApp app(argc, argv);
 
   app.run< NBodyHierarchical<float> >();
-  app.run< NBodyHierarchical<double> >();
+  if(app.deviceSupportsFP64())
+    app.run<NBodyHierarchical<double>>();
 
   if(app.shouldRunNDRangeKernels()) {
     app.run< NBodyNDRange<float> >();
-    app.run< NBodyNDRange<double> >();
+    if(app.deviceSupportsFP64())
+      app.run<NBodyNDRange<double>>();
   }
 
   return 0;
