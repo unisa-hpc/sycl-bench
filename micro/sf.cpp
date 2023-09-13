@@ -85,7 +85,8 @@ int main(int argc, char** argv) {
   BenchmarkApp app(argc, argv);
 
   app.run<MicroBenchSpecialFunc<float>>();
-  app.run<MicroBenchSpecialFunc<double>>();
+  if(app.deviceSupportsFP64())
+    app.run<MicroBenchSpecialFunc<double>>();
 
   return 0;
 }

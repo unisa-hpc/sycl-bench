@@ -132,6 +132,7 @@ int main(int argc, char** argv)
 {
   BenchmarkApp app(argc, argv);
   app.run<LinearRegressionBench<float>>();
-  app.run<LinearRegressionBench<double>>();   
+  if(app.deviceSupportsFP64())
+    app.run<LinearRegressionBench<double>>();
   return 0;
 }
