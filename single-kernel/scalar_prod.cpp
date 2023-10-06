@@ -16,7 +16,7 @@ template<typename T, bool>
 class ScalarProdReduction;
 template<typename T, bool>
 class ScalarProdReductionHierarchical;
-
+template<typename T, bool>
 class ScalarProdGatherKernel;
 
 template<typename T, bool Use_ndrange = true>
@@ -183,7 +183,7 @@ public:
 
           auto global_mem = output_buf.template get_access<s::access::mode::read_write>(cgh);
       
-          cgh.parallel_for<ScalarProdGatherKernel>(cl::sycl::range<1>{n_wgroups},
+          cgh.parallel_for<ScalarProdGatherKernel<T, Use_ndrange>>(cl::sycl::range<1>{n_wgroups},
                                                    [=](cl::sycl::id<1> idx){
             global_mem[idx] = global_mem[idx * wgroup_size];
           });
@@ -230,13 +230,15 @@ int main(int argc, char** argv)
     app.run<ScalarProdBench<int, true>>();
     app.run<ScalarProdBench<long long, true>>();
     app.run<ScalarProdBench<float, true>>();
-    app.run<ScalarProdBench<double, true>>();
+    if(app.deviceSupportsFP64())
+      app.run<ScalarProdBench<double, true>>();
   }
 
   app.run<ScalarProdBench<int, false>>();
   app.run<ScalarProdBench<long long, false>>();
   app.run<ScalarProdBench<float, false>>();
-  app.run<ScalarProdBench<double, false>>();  
+  if(app.deviceSupportsFP64())
+    app.run<ScalarProdBench<double, false>>();
 
   return 0;
 }

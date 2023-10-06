@@ -99,7 +99,8 @@ int main(int argc, char** argv) {
   app.run<MicroBenchLocalMemory<float, compute_iters>>();
 
   // double precision
-  app.run<MicroBenchLocalMemory<double, compute_iters>>();
+  if(app.deviceSupportsFP64())
+    app.run<MicroBenchLocalMemory<double, compute_iters>>();
 
   return 0;
 }

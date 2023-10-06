@@ -201,14 +201,16 @@ int main(int argc, char** argv)
     app.run< SegmentedReductionNDRange<int>>();
     app.run< SegmentedReductionNDRange<long long>>();
     app.run< SegmentedReductionNDRange<float>>();
-    app.run< SegmentedReductionNDRange<double>>();
+    if(app.deviceSupportsFP64())
+      app.run<SegmentedReductionNDRange<double>>();
   }
 
   app.run< SegmentedReductionHierarchical<short>>();
   app.run< SegmentedReductionHierarchical<int>>();
   app.run< SegmentedReductionHierarchical<long long>>();
   app.run< SegmentedReductionHierarchical<float>>();
-  app.run< SegmentedReductionHierarchical<double>>();
+  if(app.deviceSupportsFP64())
+    app.run<SegmentedReductionHierarchical<double>>();
 
   return 0;
 }

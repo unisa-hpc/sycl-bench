@@ -61,8 +61,7 @@ public:
   }
 
   bool verify(VerificationSetting &ver) {
-    T result = _final_output_buff->template get_access<sycl::access::mode::read>(
-        sycl::range<1>{0}, sycl::id<1>{1})[0];
+    T result = _final_output_buff->get_host_access()[0];
 
     // Calculate CPU result in fp64 to avoid obtaining a wrong verification result
     std::vector<double> input_fp64(_input.size());
@@ -71,7 +70,7 @@ public:
 
     double delta =
         static_cast<double>(result) - std::accumulate(input_fp64.begin(), input_fp64.end(), T{});
-    
+
     return std::abs(delta) < 1.e-5;
   }
 private:
@@ -251,13 +250,15 @@ int main(int argc, char** argv)
     app.run< ReductionNDRange<int>>();
     app.run< ReductionNDRange<long long>>();
     app.run< ReductionNDRange<float>>();
-    app.run< ReductionNDRange<double>>();
+    if(app.deviceSupportsFP64())
+      app.run<ReductionNDRange<double>>();
   }
   //app.run< ReductionHierarchical<short>>();
   app.run< ReductionHierarchical<int>>();
   app.run< ReductionHierarchical<long long>>();
   app.run< ReductionHierarchical<float>>();
-  app.run< ReductionHierarchical<double>>();
+  if(app.deviceSupportsFP64())
+    app.run<ReductionHierarchical<double>>();
 
   return 0;
 }
