@@ -1,2 +1,8 @@
 /build*
 
+# Clangd
+.cache/
+.clangd
+
+# Vscode
+.vscode/
