@@ -90,6 +90,8 @@ set(benchmarks
   polybench/syr2k.cpp
   polybench/syrk.cpp
   #compiletime/compiletime.cpp
+  #### SYCL 2020 ####
+  sycl2020/usm_accessors_latency.cpp
 )
 
 foreach(benchmark IN LISTS benchmarks)
