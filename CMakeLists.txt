@@ -100,7 +100,7 @@ set(benchmarks
   polybench/mvt.cpp
   polybench/syr2k.cpp
   polybench/syrk.cpp
-  compiletime/compiletime.cpp
+  # compiletime/compiletime.cpp
 )
 
 foreach(benchmark IN LISTS benchmarks)
