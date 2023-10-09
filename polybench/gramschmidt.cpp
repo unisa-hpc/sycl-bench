@@ -16,8 +16,8 @@ class Gramschmidt2;
 class Gramschmidt3;
 
 void init_array(DATA_TYPE* A, size_t size) {
-  const auto M = 0;
-  const auto N = 0;
+	const auto M = size;
+	const auto N = size;
 
   for(size_t i = 0; i < M; i++) {
     for(size_t j = 0; j < N; j++) {
@@ -27,8 +27,8 @@ void init_array(DATA_TYPE* A, size_t size) {
 }
 
 void gramschmidt(DATA_TYPE* A, DATA_TYPE* R, DATA_TYPE* Q, size_t size) {
-  const auto M = 0;
-  const auto N = 0;
+	const auto M = size;
+	const auto N = size;
 
   for(size_t k = 0; k < N; k++) {
     DATA_TYPE nrm = 0;

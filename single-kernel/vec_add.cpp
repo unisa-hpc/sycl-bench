@@ -89,6 +89,7 @@ int main(int argc, char** argv)
   app.run<VecAddBench<int>>();
   app.run<VecAddBench<long long>>();  
   app.run<VecAddBench<float>>();
-  app.run<VecAddBench<double>>();
+  if(app.deviceSupportsFP64())
+    app.run<VecAddBench<double>>();
   return 0;
 }

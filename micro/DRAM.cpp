@@ -102,9 +102,11 @@ int main(int argc, char** argv) {
   app.run<MicroBenchDRAM<float, 1>>();
   app.run<MicroBenchDRAM<float, 2>>();
   app.run<MicroBenchDRAM<float, 3>>();
-  app.run<MicroBenchDRAM<double, 1>>();
-  app.run<MicroBenchDRAM<double, 2>>();
-  app.run<MicroBenchDRAM<double, 3>>();
+  if(app.deviceSupportsFP64()) {
+    app.run<MicroBenchDRAM<double, 1>>();
+    app.run<MicroBenchDRAM<double, 2>>();
+    app.run<MicroBenchDRAM<double, 3>>();
+  }
 
   return 0;
 }

@@ -211,13 +211,15 @@ int main(int argc, char** argv) {
     app.run<ScalarProdBench<int, true>>();
     app.run<ScalarProdBench<long long, true>>();
     app.run<ScalarProdBench<float, true>>();
-    app.run<ScalarProdBench<double, true>>();
+    if(app.deviceSupportsFP64())
+      app.run<ScalarProdBench<double, true>>();
   }
 
   app.run<ScalarProdBench<int, false>>();
   app.run<ScalarProdBench<long long, false>>();
   app.run<ScalarProdBench<float, false>>();
-  app.run<ScalarProdBench<double, false>>();
+  if(app.deviceSupportsFP64())
+    app.run<ScalarProdBench<double, false>>();
 
   return 0;
 }

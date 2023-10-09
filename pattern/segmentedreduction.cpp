@@ -165,18 +165,20 @@ int main(int argc, char** argv) {
   BenchmarkApp app(argc, argv);
 
   if(app.shouldRunNDRangeKernels()) {
-    app.run<SegmentedReductionNDRange<short>>();
-    app.run<SegmentedReductionNDRange<int>>();
-    app.run<SegmentedReductionNDRange<long long>>();
-    app.run<SegmentedReductionNDRange<float>>();
-    app.run<SegmentedReductionNDRange<double>>();
+    app.run< SegmentedReductionNDRange<short>>();
+    app.run< SegmentedReductionNDRange<int>>();
+    app.run< SegmentedReductionNDRange<long long>>();
+    app.run< SegmentedReductionNDRange<float>>();
+    if(app.deviceSupportsFP64())
+      app.run<SegmentedReductionNDRange<double>>();
   }
 
-  app.run<SegmentedReductionHierarchical<short>>();
-  app.run<SegmentedReductionHierarchical<int>>();
-  app.run<SegmentedReductionHierarchical<long long>>();
-  app.run<SegmentedReductionHierarchical<float>>();
-  app.run<SegmentedReductionHierarchical<double>>();
+  app.run< SegmentedReductionHierarchical<short>>();
+  app.run< SegmentedReductionHierarchical<int>>();
+  app.run< SegmentedReductionHierarchical<long long>>();
+  app.run< SegmentedReductionHierarchical<float>>();
+  if(app.deviceSupportsFP64())
+    app.run<SegmentedReductionHierarchical<double>>();
 
   return 0;
 }

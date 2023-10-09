@@ -76,11 +76,13 @@ int main(int argc, char** argv)
   app.run< MicroBenchL2<float,16> >();
 
   // double precision
-  app.run< MicroBenchL2<double,1> >();
-  app.run< MicroBenchL2<double,2> >();
-  app.run< MicroBenchL2<double,4> >();
-  app.run< MicroBenchL2<double,8> >();
-  app.run< MicroBenchL2<double,16> >();
+  if(app.deviceSupportsFP64()) {
+    app.run<MicroBenchL2<double, 1>>();
+    app.run<MicroBenchL2<double, 2>>();
+    app.run<MicroBenchL2<double, 4>>();
+    app.run<MicroBenchL2<double, 8>>();
+    app.run<MicroBenchL2<double, 16>>();
+  }
 
   return 0;
 }

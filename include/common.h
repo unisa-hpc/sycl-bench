@@ -170,8 +170,13 @@ public:
 
   bool shouldRunNDRangeKernels() const { return !args.cli.isFlagSet("--no-ndrange-kernels"); }
 
-  template <class Benchmark, typename... AdditionalArgs>
-  void run(AdditionalArgs&&... additional_args) {
+  bool deviceHasAspect(cl::sycl::aspect asp) const { return device_queue.get_device().has(asp); }
+
+  bool deviceSupportsFP64() const { return deviceHasAspect(cl::sycl::aspect::fp64); }
+
+  template<class Benchmark, typename... AdditionalArgs>
+  void run(AdditionalArgs&&... additional_args)
+  {
     try {
       const auto name = Benchmark{args, additional_args...}.getBenchmarkName();
       if(benchmark_names.count(name) == 0) {

@@ -55,14 +55,17 @@ public:
     });
   }
 
-  bool verify(VerificationSetting& ver) {
-    T result = _final_output_buff->template get_host_access(sycl::range<1>{0}, sycl::id<1>{1})[0];
+  bool verify(VerificationSetting &ver) {
+    T result = _final_output_buff->get_host_access()[0];
 
     // Calculate CPU result in fp64 to avoid obtaining a wrong verification result
     std::vector<double> input_fp64(_input.size());
     for(std::size_t i = 0; i < _input.size(); ++i) input_fp64[i] = static_cast<double>(_input[i]);
 
     double delta = static_cast<double>(result) - std::accumulate(input_fp64.begin(), input_fp64.end(), T{});
+
+    double delta =
+        static_cast<double>(result) - std::accumulate(input_fp64.begin(), input_fp64.end(), T{});
 
     return std::abs(delta) < 1.e-5;
   }
@@ -207,18 +210,20 @@ int main(int argc, char** argv) {
 
   // Using short will lead to overflow even for
   // small problem sizes
-  // app.run< ReductionNDRange<short>>();
-  if(app.shouldRunNDRangeKernels()) {
-    app.run<ReductionNDRange<int>>();
-    app.run<ReductionNDRange<long long>>();
-    app.run<ReductionNDRange<float>>();
-    app.run<ReductionNDRange<double>>();
+  //app.run< ReductionNDRange<short>>();
+  if(app.shouldRunNDRangeKernels()){
+    app.run< ReductionNDRange<int>>();
+    app.run< ReductionNDRange<long long>>();
+    app.run< ReductionNDRange<float>>();
+    if(app.deviceSupportsFP64())
+      app.run<ReductionNDRange<double>>();
   }
-  // app.run< ReductionHierarchical<short>>();
-  app.run<ReductionHierarchical<int>>();
-  app.run<ReductionHierarchical<long long>>();
-  app.run<ReductionHierarchical<float>>();
-  app.run<ReductionHierarchical<double>>();
+  //app.run< ReductionHierarchical<short>>();
+  app.run< ReductionHierarchical<int>>();
+  app.run< ReductionHierarchical<long long>>();
+  app.run< ReductionHierarchical<float>>();
+  if(app.deviceSupportsFP64())
+    app.run<ReductionHierarchical<double>>();
 
   return 0;
 }

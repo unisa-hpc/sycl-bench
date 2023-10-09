@@ -198,6 +198,7 @@ class Polybench_Fdtd2d {
 
 int main(int argc, char** argv) {
 	BenchmarkApp app(argc, argv);
-	app.run<Polybench_Fdtd2d>();
-	return 0;
+        if(app.deviceSupportsFP64())
+          app.run<Polybench_Fdtd2d>();
+        return 0;
 }
