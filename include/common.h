@@ -18,7 +18,7 @@
   
 #include "benchmark_hook.h"
 #include "benchmark_traits.h"
-#include "prefetched_buffer.h"
+#include "memory_wrappers.h"
 #include "time_metrics.h"
 
 #ifdef NV_ENERGY_MEAS    
