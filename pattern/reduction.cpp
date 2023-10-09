@@ -64,9 +64,6 @@ public:
 
     double delta = static_cast<double>(result) - std::accumulate(input_fp64.begin(), input_fp64.end(), T{});
 
-    double delta =
-        static_cast<double>(result) - std::accumulate(input_fp64.begin(), input_fp64.end(), T{});
-
     return std::abs(delta) < 1.e-5;
   }
 

@@ -4,7 +4,7 @@
 #include <iostream>
 #include <limits>
 
-using namespace cl;
+using namespace sycl;
 
 template<class float_type> class NDRangeNBodyKernel;
 template<class float_type> class HierarchicalNBodyKernel;
