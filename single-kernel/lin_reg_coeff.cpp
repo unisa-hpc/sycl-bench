@@ -195,7 +195,8 @@ int main(int argc, char** argv)
   BenchmarkApp app(argc, argv);
   if(app.shouldRunNDRangeKernels()){
     app.run<LinearRegressionCoeffBench<float>>();
-    app.run<LinearRegressionCoeffBench<double>>();   
+    if(app.deviceSupportsFP64())
+      app.run<LinearRegressionCoeffBench<double>>();
   }
   return 0;
 }

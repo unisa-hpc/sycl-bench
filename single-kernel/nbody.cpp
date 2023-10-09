@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <cassert>
+#include <limits>
 
 using namespace cl;
 
@@ -105,41 +106,19 @@ public:
       host_resulting_velocities[i] = new_v;
     }
 
-    double deviation = std::sqrt(
-        calculateSquaredDifference(host_resulting_particles.data(), resulting_particles.get_pointer(), particles.size()) +
-        calculateSquaredDifference(host_resulting_velocities.data(), resulting_velocities.get_pointer(), particles.size()));
-
-    return deviation < 1.e-6;
+    constexpr float_type maxErr = 10.f * std::numeric_limits<float_type>::epsilon();
+    return checkResults(host_resulting_particles.begin(), host_resulting_particles.end(),
+               resulting_particles.get_pointer(), maxErr) &&
+           checkResults(host_resulting_velocities.begin(), host_resulting_velocities.end(),
+               resulting_velocities.get_pointer(), maxErr);
   }
 
 protected:
-
-  template<class T>
-  double calculateSquaredDifference(sycl::vec<T,3> a, sycl::vec<T,3> b) {
-    auto diff = a - b;
-    diff *= diff;
-
-    return static_cast<float_type>(diff.x()+diff.y()+diff.z());
-  }
-
-  template<class T>
-  double calculateSquaredDifference(sycl::vec<T,4> a, sycl::vec<T,4> b) {
-    auto diff = a - b;
-    diff *= diff;
-
-    return static_cast<float_type>(diff.x()+diff.y()+diff.z()+diff.w());
-  }
-
-  template<class T>
-  double calculateSquaredDifference(const T* a, const T* b, std::size_t size) {
-
-    double result = 0.0;
-
-    for(std::size_t i = 0; i < size; ++i) {
-      result += calculateSquaredDifference(a[i], b[i]);
-    }
-
-    return result;
+  template <class InputIter0, class InputIter1>
+  static bool checkResults(InputIter0 expectedBegin, InputIter0 expectedEnd, InputIter1 gotBegin, float_type maxErr) {
+    return std::equal(expectedBegin, expectedEnd, gotBegin, [=](const auto& expected, const auto& got) {
+      return sycl::distance(expected, got) / sycl::length(expected) < maxErr;
+    });
   }
 
   void submitNDRange(sycl::buffer<particle_type>& particles, sycl::buffer<vector_type>& velocities) {
@@ -342,11 +321,13 @@ int main(int argc, char** argv)
   BenchmarkApp app(argc, argv);
 
   app.run< NBodyHierarchical<float> >();
-  app.run< NBodyHierarchical<double> >();
+  if(app.deviceSupportsFP64())
+    app.run<NBodyHierarchical<double>>();
 
   if(app.shouldRunNDRangeKernels()) {
     app.run< NBodyNDRange<float> >();
-    app.run< NBodyNDRange<double> >();
+    if(app.deviceSupportsFP64())
+      app.run<NBodyNDRange<double>>();
   }
 
   return 0;
