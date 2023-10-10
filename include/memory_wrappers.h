@@ -2,6 +2,8 @@
 #include <CL/sycl.hpp>
 #include <memory>
 
+#include "utils.h"
+
 template <class AccType>
 class InitializationDummyKernel {
 public:
@@ -84,28 +86,45 @@ private:
   std::shared_ptr<cl::sycl::buffer<T, Dimensions>> buff;
 };
 
+namespace detail {
+template <typename T, typename U, size_t val, size_t expected>
+struct has_dim_impl {
+  static constexpr bool value = val == expected;
+};
 
-// namespace usm_mode = cl::sycl::access::mode;
+template <typename T, size_t val, size_t expected>
+static constexpr bool has_dim_v = has_dim_impl<T, T, val, expected>::value;
 
-template <typename T, cl::sycl::usm::alloc type = cl::sycl::usm::alloc::device>
+template <typename T, size_t val, size_t expected>
+using has_dim_t = std::enable_if_t<has_dim_v<T, val, expected> == true, void>;
+} // namespace detail
+
+
+template <typename T, std::size_t dim, cl::sycl::usm::alloc type = cl::sycl::usm::alloc::device>
 class USMBuffer {
 protected:
   T* _data;
-  size_t _count;
+  cl::sycl::range<dim> _count;
+  std::size_t total_size;
 
 public:
-  USMBuffer() : _data(nullptr), _count(0) {}
+  USMBuffer() : _data(nullptr), _count(), total_size(0) {}
 
+  template <typename U = T, typename = detail::has_dim_t<U, dim, 1>>
   void initialize(cl::sycl::queue& q, size_t count) {
-   allocate(q, count);
+    allocate(q, count);
   }
 
-  void initialize(cl::sycl::queue& q, T* data, size_t count) {
+  void initialize(cl::sycl::queue& q, cl::sycl::range<dim> count) { 
+      allocate(q, count);
+    }
+
+  void initialize(cl::sycl::queue& q, const T* data, size_t count) {
     allocate(q, count);
     copy(q, data, _data, count);
   }
 
-  void initialize(cl::sycl::queue& q, const T* data, size_t count) {
+  void initialize(cl::sycl::queue& q, const T* data, cl::sycl::range<dim> count) {
     allocate(q, count);
     copy(q, data, _data, count);
   }
@@ -125,15 +144,46 @@ private:
       throw std::runtime_error("Malloc invoked with unkown allocation type!");
   }
 
+  std::size_t inline getSize(const cl::sycl::range<dim>& count){
+    std::size_t total_size = 0;
+    loop<dim>([&](std::size_t val) { total_size += count[val]; });
+    return total_size;
+  }
+
+  template <typename U = T, typename = detail::has_dim_t<U, dim, 1>>
   void allocate(cl::sycl::queue& Q, size_t count) {
     assert(count >= 0 && "Cannot allocate negative num bytes");
     _data = malloc<type>(Q, count);
+    this->_count = cl::sycl::range<dim>{count};
+    total_size = count;
+  }
+
+  void allocate(cl::sycl::queue& Q, const cl::sycl::range<dim>& count) {
+    loop<dim>([&](std::size_t idx){
+      assert(count[idx] >= 0 && "Cannot allocate negative num bytes");
+    });
+
+    const size_t total_size = getSize(count);
+    _data = malloc<type>(Q, total_size);
+    
     this->_count = count;
+    this->total_size = total_size;
   }
 
   void copy(cl::sycl::queue& Q, const T* src, T* dst, std::size_t count) const {
-    assert(count <= _count && "Cannot copy negative num bytes");
-    assert(_data != nullptr && "Called copy on initialized USM buffer");
+    // assert(count <= _count[0] && "Cannot copy negative num bytes");
+    // assert(_data != nullptr && "Called copy on initialized USM buffer");
     Q.copy(src, dst, count).wait_and_throw();
   }
+
+  void copy(cl::sycl::queue& Q, const T* src, T* dst, cl::sycl::range<dim> count) const {
+    loop<dim>([&](std::size_t idx){
+      assert(count[idx] >= 0 && "Cannot allocate negative num bytes");
+    });
+
+    const size_t total_size = getSize(count);
+    Q.copy(src, dst, count).wait_and_throw();
+  }
+
+
 };
