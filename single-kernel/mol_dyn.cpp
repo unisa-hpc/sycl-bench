@@ -132,7 +132,7 @@ public:
             j++;
         }
 
-        if(sycl::distance(f, output_acc[i]) / sycl::length(f) > maxErr) {
+        if(s::distance(f, output_acc[i]) / s::length(f) > maxErr) {
           pass = false;
           break;
         }
