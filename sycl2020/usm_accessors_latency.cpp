@@ -17,8 +17,6 @@ template <typename DATA_TYPE, std::size_t dim>
 class LatencyBenchmark {
 protected:
   BenchmarkArgs args;
-  size_t dimensions = dim;
-
 
   LatencyBenchmark(const BenchmarkArgs& args) : args(args) {}
 
@@ -100,6 +98,9 @@ public:
     name << "SYCL2020_Accessors_Latency_";
     name << ReadableTypename<DATA_TYPE>::name << "_";
     name << dim << "dim_";
+    if constexpr (!use_id){
+      name << "no_id_index_";
+    }
     name << NUM_KERNELS;
     return name.str();
   }
@@ -173,13 +174,13 @@ void launchAccessorBenchmarks(BenchmarkApp& app) {
       app.run<AccessorLatency<double, 3, false>>();
     }
   } else {
-    app.run<AccessorLatency<float, 1, false>>();
-    app.run<AccessorLatency<float, 2, false>>();
-    app.run<AccessorLatency<float, 3, false>>();
+    app.run<AccessorLatency<float, 1, true>>();
+    app.run<AccessorLatency<float, 2, true>>();
+    app.run<AccessorLatency<float, 3, true>>();
     if(app.deviceSupportsFP64()) {
-      app.run<AccessorLatency<double, 1, false>>();
-      app.run<AccessorLatency<double, 2, false>>();
-      app.run<AccessorLatency<double, 3, false>>();
+      app.run<AccessorLatency<double, 1, true>>();
+      app.run<AccessorLatency<double, 2, true>>();
+      app.run<AccessorLatency<double, 3, true>>();
     }
   }
 }
