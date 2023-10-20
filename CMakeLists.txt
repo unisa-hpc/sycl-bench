@@ -68,6 +68,17 @@ set(benchmarks
   single-kernel/kmeans.cpp
   single-kernel/mol_dyn.cpp
   single-kernel/nbody.cpp
+  single-kernel/black_scholes.cpp
+  single-kernel/bit_compression.cpp
+  single-kernel/aes_encrypt.cpp
+  single-kernel/geometric_mean.cpp
+  single-kernel/flowmap.cpp
+  single-kernel/ftle.cpp
+  single-kernel/knn.cpp
+  single-kernel/merse_twister.cpp
+  single-kernel/spmv.cpp
+  single-kernel/sinewave.cpp
+  single-kernel/perlin.cpp
   pattern/segmentedreduction.cpp
   pattern/reduction.cpp
   runtime/dag_task_throughput_sequential.cpp
@@ -89,7 +100,7 @@ set(benchmarks
   polybench/mvt.cpp
   polybench/syr2k.cpp
   polybench/syrk.cpp
-  #compiletime/compiletime.cpp
+  # compiletime/compiletime.cpp
 )
 
 foreach(benchmark IN LISTS benchmarks)
