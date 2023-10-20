@@ -159,7 +159,7 @@ public:
                 grp.parallel_for_work_item([&](sycl::h_item<1> idx) {
                   const size_t lid = idx.get_local_id(0);
                   if(lid == 0)
-                    global_mem[grp.get_id(0) * grp.get_local_range(0)] = local_mem[0];
+                    global_mem[grp.get_group_id(0) * grp.get_local_range(0)] = local_mem[0];
                 });
               });
         }

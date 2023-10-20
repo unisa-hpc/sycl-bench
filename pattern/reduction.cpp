@@ -161,7 +161,7 @@ private:
             // hierarchical parallel for
             grp.parallel_for_work_item([&](sycl::h_item<1> idx) {
               if(idx.get_local_id(0) == 0)
-                acc_out[grp.get_id(0)] = scratch[0];
+                acc_out[grp.get_group_id(0)] = scratch[0];
             });
           });
     }); // submit
