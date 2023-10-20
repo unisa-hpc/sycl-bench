@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.5)
+cmake_minimum_required(VERSION 3.5)
 project(sycl-bench)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
@@ -25,27 +25,49 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/polybench/common)
 
 set(supported_implementations
-  ComputeCpp
-  hipSYCL
-  LLVM
-  LLVM-CUDA
+  AdaptiveCpp
+  DPC++
   triSYCL
 )
 
 list(FIND supported_implementations ${SYCL_IMPL} impl_idx)
+
 if(NOT SYCL_IMPL OR impl_idx EQUAL -1)
   message(FATAL_ERROR "Please specify SYCL_IMPL (one of: ${supported_implementations})")
 endif()
 
-if(SYCL_IMPL STREQUAL "ComputeCpp")
-  find_package(ComputeCpp MODULE REQUIRED)
-elseif(SYCL_IMPL STREQUAL "hipSYCL")
-  find_package(hipSYCL CONFIG REQUIRED)
-elseif(SYCL_IMPL STREQUAL "LLVM")
+if(SYCL_IMPL STREQUAL "AdaptiveCpp")
+  find_package(AdaptiveCpp CONFIG REQUIRED)
+elseif(SYCL_IMPL STREQUAL "DPC++")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl")
-elseif(SYCL_IMPL STREQUAL "LLVM-CUDA")
-  set(CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -fsycl -fsycl-targets=nvptx64-nvidia-cuda-sycldevice")
+
+  if(SYCL_BENCH_CUDA_SUPPORT)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=nvptx64-nvidia-cuda")
+
+    set(SYCL_BENCH_CUDA_ARCH "" CACHE STRING "CUDA device architecture e.g. sm_70")
+
+    if(NOT SYCL_BENCH_CUDA_ARCH STREQUAL "")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xsycl-target-backend --cuda-gpu-arch=${SYCL_BENCH_CUDA_ARCH}")
+    endif()
+  endif()
+
+  if(SYCL_BENCH_ROCM_SUPPORT)
+    set(SYCL_BENCH_ROCM_ARCH "" CACHE STRING "ROCm device architecture e.g. gfx908")
+
+    if(NOT SYCL_BENCH_ROCM_ARCH STREQUAL "")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=amd_gpu_${SYCL_BENCH_ROCM_ARCH}")
+    endif()
+  endif()
+
+  if(SYCL_BENCH_LZ_SUPPORT)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=spir64_gen")
+
+    set(SYCL_BENCH_LZ_ARCH "" CACHE STRING "Level Zero device architecture e.g. acm-g10")
+
+    if(NOT SYCL_BENCH_LZ_ARCH STREQUAL "")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xsycl-target-backend \"-device ${SYCL_BENCH_LZ_ARCH}\"")
+    endif()
+  endif()
 elseif(SYCL_IMPL STREQUAL "triSYCL")
   find_package(TriSYCL MODULE REQUIRED)
 endif()
@@ -68,17 +90,6 @@ set(benchmarks
   single-kernel/kmeans.cpp
   single-kernel/mol_dyn.cpp
   single-kernel/nbody.cpp
-  single-kernel/black_scholes.cpp
-  single-kernel/bit_compression.cpp
-  single-kernel/aes_encrypt.cpp
-  single-kernel/geometric_mean.cpp
-  single-kernel/flowmap.cpp
-  single-kernel/ftle.cpp
-  single-kernel/knn.cpp
-  single-kernel/merse_twister.cpp
-  single-kernel/spmv.cpp
-  single-kernel/sinewave.cpp
-  single-kernel/perlin.cpp
   pattern/segmentedreduction.cpp
   pattern/reduction.cpp
   runtime/dag_task_throughput_sequential.cpp
@@ -100,6 +111,7 @@ set(benchmarks
   polybench/mvt.cpp
   polybench/syr2k.cpp
   polybench/syrk.cpp
+
   # compiletime/compiletime.cpp
 )
 
@@ -135,7 +147,6 @@ foreach(benchmark IN LISTS benchmarks)
 endforeach(benchmark)
 
 # The "compiletime" target should only be used in the context of the compile time evaluation script
-#set_target_properties(compiletime PROPERTIES EXCLUDE_FROM_ALL 1)
-
+# set_target_properties(compiletime PROPERTIES EXCLUDE_FROM_ALL 1)
 install(PROGRAMS bin/run-suite DESTINATION bin/)
 install(FILES ${PROJECT_SOURCE_DIR}/Brommy.bmp DESTINATION share/)
