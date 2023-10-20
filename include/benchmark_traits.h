@@ -2,7 +2,7 @@
 
 #include <utility>
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 namespace detail {
 
@@ -13,7 +13,7 @@ struct SupportsQueueProfiling {
 
 template <typename T>
 struct SupportsQueueProfiling<T,
-    std::void_t<decltype(std::declval<T>().run(std::declval<std::vector<cl::sycl::event>&>()))>> {
+    std::void_t<decltype(std::declval<T>().run(std::declval<std::vector<sycl::event>&>()))>> {
   static constexpr bool value = true;
 };
 

@@ -1,6 +1,6 @@
 #include "common.h"
 
-namespace s = cl::sycl;
+namespace s = sycl;
 
 // The data type to be copied. This was originally a single byte (char), however
 // this causes device-side initialization kernels to quickly reach the
