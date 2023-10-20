@@ -123,8 +123,7 @@ protected:
       auto output_particles_access = output_particles.template get_access<sycl::access::mode::discard_write>(cgh);
       auto output_velocities_access = output_velocities.template get_access<sycl::access::mode::discard_write>(cgh);
 
-      auto scratch = sycl::accessor<particle_type, 1, sycl::access::mode::read_write, sycl::access::target::local>{
-          sycl::range<1>{args.local_size}, cgh};
+      auto scratch = sycl::local_accessor<particle_type, 1>{sycl::range<1>{args.local_size}, cgh};
 
       cgh.parallel_for<NDRangeNBodyKernel<float_type>>(execution_range,
           [=, dt = this->dt, gravitational_softening = this->gravitational_softening](sycl::nd_item<1> tid) {
@@ -190,8 +189,7 @@ protected:
       auto output_particles_access = output_particles.template get_access<sycl::access::mode::discard_write>(cgh);
       auto output_velocities_access = output_velocities.template get_access<sycl::access::mode::discard_write>(cgh);
 
-      auto scratch = sycl::accessor<particle_type, 1, sycl::access::mode::read_write, sycl::access::target::local>{
-          sycl::range<1>{args.local_size}, cgh};
+      auto scratch = sycl::local_accessor<particle_type, 1>{sycl::range<1>{args.local_size}, cgh};
 
 
       const size_t local_size = args.local_size;

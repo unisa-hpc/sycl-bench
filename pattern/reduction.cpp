@@ -106,8 +106,7 @@ private:
 
       auto acc = input->template get_access<mode::read>(cgh);
       auto acc_out = output->template get_access<mode::discard_write>(cgh);
-      auto scratch = sycl::accessor<T, 1, mode::read_write, target::local>{_args.local_size, cgh};
-
+      auto scratch = sycl::local_accessor<T, 1>{_args.local_size, cgh};
       const int group_size = _args.local_size;
 
       cgh.parallel_for<ReductionKernelNDRange<T>>(ndrange, [=](sycl::nd_item<1> item) {
@@ -135,7 +134,7 @@ private:
       auto acc = input->template get_access<mode::read>(cgh);
       auto acc_out = output->template get_access<mode::discard_write>(cgh);
 
-      auto scratch = sycl::accessor<T, 1, mode::read_write, target::local>{_args.local_size, cgh};
+      auto scratch = sycl::local_accessor<T, 1>{_args.local_size, cgh};
 
       const int group_size = _args.local_size;
 

@@ -39,7 +39,7 @@ public:
       using namespace sycl::access;
 
       auto acc = _buff.template get_access<mode::read_write>(cgh);
-      auto scratch = sycl::accessor<T, 1, mode::read_write, target::local>{_args.local_size, cgh};
+      auto scratch = sycl::local_accessor<T, 1>{_args.local_size, cgh};
 
       const int group_size = _args.local_size;
 
@@ -65,7 +65,7 @@ public:
       using namespace sycl::access;
 
       auto acc = _buff.template get_access<mode::read_write>(cgh);
-      auto scratch = sycl::accessor<T, 1, mode::read_write, target::local>{_args.local_size, cgh};
+      auto scratch = sycl::local_accessor<T, 1>{_args.local_size, cgh};
 
       const int group_size = _args.local_size;
 
