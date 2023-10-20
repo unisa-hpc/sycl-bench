@@ -35,7 +35,7 @@ public:
       auto in = input_buf.template get_access<s::access::mode::read>(cgh);
       auto out = output_buf.template get_access<s::access::mode::discard_write>(cgh);
       // local memory definition
-      s::accessor<DATA_TYPE, 1, s::access::mode::read_write, s::access::target::local> local_mem(args.local_size, cgh);
+      s::local_accessor<DATA_TYPE, 1> local_mem(args.local_size, cgh);
 
       s::nd_range<1> ndrange{{args.problem_size}, {args.local_size}};
 

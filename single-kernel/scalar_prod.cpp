@@ -92,8 +92,8 @@ public:
         auto global_mem = output_buf.template get_access<s::access::mode::read_write>(cgh);
 
         // local memory for reduction
-        auto local_mem =
-            s::accessor<T, 1, s::access::mode::read_write, s::access::target::local>{s::range<1>(wgroup_size), cgh};
+        auto local_mem = s::local_accessor<T, 1>{s::range<1>(wgroup_size), cgh};
+
         sycl::nd_range<1> ndrange(n_wgroups * wgroup_size, wgroup_size);
 
         if(Use_ndrange) {
