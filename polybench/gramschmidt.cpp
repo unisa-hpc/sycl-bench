@@ -91,8 +91,9 @@ public:
         auto R = R_buffer.get_access<access::mode::read>(cgh);
         auto Q = Q_buffer.get_access<access::mode::write>(cgh);
 
-        cgh.parallel_for<Gramschmidt2>(range<2>(size, 1), id<2>(0, k), [=](item<2> item) {
-          Q[item] = A[item] / R[{k, k}];
+        cgh.parallel_for<Gramschmidt2>(range<2>(size, 1), [=](item<2> gid) {
+          const id<2> offset(0, k);
+          Q[gid + offset] = A[gid + offset] / R[{k, k}];
         });
       }));
 

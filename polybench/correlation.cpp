@@ -113,13 +113,14 @@ public:
       auto data = data_buffer.get_access<access::mode::read>(cgh);
       auto mean = mean_buffer.get_access<access::mode::read_write>(cgh);
 
-      cgh.parallel_for<CorrelationMean>(range<1>(size), id<1>(1), [=, N_ = size](item<1> item) {
-        const auto j = item[0];
+      cgh.parallel_for<CorrelationMean>(range<1>(size), [=, N_ = size](id<1> gid) {
+        const id<1> offset(1);
+        const auto j = gid[0] + offset[0];
 
         for(size_t i = 1; i <= N_; i++) {
-          mean[item] += data[{i, j}];
+          mean[gid + offset] += data[{i, j}];
         }
-        mean[item] /= ((DATA_TYPE)FLOAT_N);
+        mean[gid + offset] /= ((DATA_TYPE)FLOAT_N);
       });
     }));
 
@@ -128,16 +129,18 @@ public:
       auto mean = mean_buffer.get_access<access::mode::read>(cgh);
       auto stddev = stddev_buffer.get_access<access::mode::read_write>(cgh);
 
-      cgh.parallel_for<CorrelationStd>(range<1>(size), id<1>(1), [=, N_ = size](item<1> item) {
-        const auto j = item[0];
+      cgh.parallel_for<CorrelationStd>(range<1>(size), [=, N_ = size](id<1> gid) {
+        const id<1> offset(1);
+        const auto adj_id = gid + offset;
+        const auto j = gid[0] + offset[0];
 
         for(size_t i = 1; i <= N_; i++) {
-          stddev[item] += (data[{i, j}] - mean[item]) * (data[{i, j}] - mean[item]);
+          stddev[adj_id] += (data[{i, j}] - mean[adj_id]) * (data[{i, j}] - mean[adj_id]);
         }
 
-        stddev[item] /= FLOAT_N;
-        stddev[item] = sycl::sqrt(stddev[item]);
-        stddev[item] = stddev[item] <= EPS ? 1.0 : stddev[item];
+        stddev[adj_id] /= FLOAT_N;
+        stddev[adj_id] = sycl::sqrt(stddev[adj_id]);
+        stddev[adj_id] = stddev[adj_id] <= EPS ? 1.0 : stddev[adj_id];
       });
     }));
 
@@ -146,12 +149,14 @@ public:
       auto mean = mean_buffer.get_access<access::mode::read>(cgh);
       auto stddev = stddev_buffer.get_access<access::mode::read>(cgh);
 
-      cgh.parallel_for<CorrelationReduce>(range<2>(size, size), id<2>(1, 1), [=](item<2> item) {
-        const auto j = item[1];
+      cgh.parallel_for<CorrelationReduce>(range<2>(size, size), [=](id<2> gid) {
+        const id<2> offset(1, 1);
+        const auto adj_id = gid + offset;
+        const auto j = gid[1] + offset[1];
 
-        data[item] -= mean[j];
-        data[item] /= sycl::sqrt(FLOAT_N);
-        data[item] /= stddev[j];
+        data[adj_id] -= mean[j];
+        data[adj_id] /= sycl::sqrt(FLOAT_N);
+        data[adj_id] /= stddev[j];
       });
     }));
 
@@ -159,10 +164,10 @@ public:
       auto data = data_buffer.get_access<access::mode::read>(cgh);
       auto symmat = symmat_buffer.get_access<access::mode::read_write>(cgh);
 
-      cgh.parallel_for<CorrelationCorr>(range<1>(size), id<1>(1), [=, M_ = size, N_ = size](item<1> item) {
+      cgh.parallel_for<CorrelationCorr>(range<1>(size), [=, M_ = size, N_ = size](id<1> gid) {
         // if(item[0] >= M_ - 1) return;
-
-        const auto j1 = item[0];
+        const id<1> offset(1);
+        const auto j1 = gid[0] + offset[0];
 
         symmat[{j1, j1}] = 1.0;
 
@@ -180,7 +185,10 @@ public:
 
     events.push_back(args.device_queue.submit([&](handler& cgh) {
       auto symmat = symmat_buffer.get_access<access::mode::discard_write>(cgh);
-      cgh.parallel_for<Correlation5>(range<2>(1, 1), id<2>(size, size), [=](item<2> item) { symmat[item] = 1.0; });
+      cgh.parallel_for<Correlation5>(range<2>(1, 1), [=, M_ = size](id<2> gid) {
+        const id<2> offset(M_, M_);
+        symmat[gid + offset] = 1.0;
+      });
     }));
   }
 

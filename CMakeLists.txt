@@ -36,9 +36,9 @@ if(NOT SYCL_IMPL OR impl_idx EQUAL -1)
   message(FATAL_ERROR "Please specify SYCL_IMPL (one of: ${supported_implementations})")
 endif()
 
-if(SYCL_IMPL STREQUAL "AdaptiveCpp")
+if(SYCL_IMPL STREQUAL "acpp")
   find_package(AdaptiveCpp CONFIG REQUIRED)
-elseif(SYCL_IMPL STREQUAL "DPC++")
+elseif(SYCL_IMPL STREQUAL "dpcpp")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl")
 
   if(SYCL_BENCH_CUDA_SUPPORT)

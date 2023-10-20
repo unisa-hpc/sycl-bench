@@ -83,14 +83,15 @@ public:
       auto data = data_buffer.get_access<access::mode::read>(cgh);
       auto mean = mean_buffer.get_access<access::mode::discard_write>(cgh);
 
-      cgh.parallel_for<CovarianceMean>(range<1>(size), id<1>(1), [=, N_ = size](item<1> item) {
-        const auto j = item[0];
+      cgh.parallel_for<CovarianceMean>(range<1>(size), [=, N_ = size](id<1> gid) {
+        const id<1> offset(1);
+        const auto j = gid[0] + offset[0];
 
-        mean[item] = 0;
+        mean[gid + offset] = 0;
         for(size_t i = 1; i <= N_; i++) {
-          mean[item] += data[{i, j}];
+          mean[gid + offset] += data[{i, j}];
         }
-        mean[item] /= float_n;
+        mean[gid + offset] /= float_n;
       });
     }));
 
@@ -98,9 +99,10 @@ public:
       auto mean = mean_buffer.get_access<access::mode::read>(cgh);
       auto data = data_buffer.get_access<access::mode::read_write>(cgh);
 
-      cgh.parallel_for<CovarianceReduce>(range<2>(size, size), id<2>(1, 1), [=](item<2> item) {
-        const auto j = item[1];
-        data[item] -= mean[j];
+      cgh.parallel_for<CovarianceReduce>(range<2>(size, size), [=](id<2> gid) {
+        const id<2> offset(1, 1);
+        const auto j = gid[1] + offset[1];
+        data[gid + offset] -= mean[j];
       });
     }));
 
@@ -109,8 +111,9 @@ public:
       auto symmat = symmat_buffer.get_access<access::mode::discard_write>(cgh);
       auto symmat2 = symmat_buffer.get_access<access::mode::discard_write>(cgh);
 
-      cgh.parallel_for<CovarianceCovar>(range<1>(size), id<1>(1), [=, M_ = size, N_ = size](item<1> item) {
-        const auto j1 = item[0];
+      cgh.parallel_for<CovarianceCovar>(range<1>(size), [=, M_ = size, N_ = size](id<1> gid) {
+        const id<1> offset(1);
+        const auto j1 = gid[0] + offset[0];
 
         symmat[{j1, j1}] = 1.0;
 
