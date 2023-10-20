@@ -77,6 +77,20 @@ public:
         std::vector<double> resultsSeconds;
         std::transform(timingResults.at(name).begin(), timingResults.at(name).end(), std::back_inserter(resultsSeconds),
             [](auto r) { return r.count() / 1.0e9; });
+
+        // Emit individual samples as well
+        // do this before sorting, since sometimes there might be a noteworthy pattern in the temporal order
+        std::stringstream samples;
+        samples << "\"";
+        for(int i = 0; i < resultsSeconds.size(); ++i) {
+          samples << std::to_string(resultsSeconds[i]);
+          if(i != resultsSeconds.size() - 1) {
+            samples << " ";
+          }
+        }
+        samples << "\"";
+        consumer.consumeResult(name + "-samples", samples.str());
+
         std::sort(resultsSeconds.begin(), resultsSeconds.end());
 
         double mean = std::accumulate(resultsSeconds.begin(), resultsSeconds.end(), 0.0) /
@@ -100,18 +114,6 @@ public:
         consumer.consumeResult(name + "-stddev", std::to_string(stddev), "s");
         consumer.consumeResult(name + "-median", std::to_string(median), "s");
         consumer.consumeResult(name + "-min", std::to_string(resultsSeconds[0]), "s");
-
-        // Emit individual samples as well
-        std::stringstream samples;
-        samples << "\"";
-        for(int i = 0; i < resultsSeconds.size(); ++i) {
-          samples << std::to_string(resultsSeconds[i]);
-          if(i != resultsSeconds.size() - 1) {
-            samples << " ";
-          }
-        }
-        samples << "\"";
-        consumer.consumeResult(name + "-samples", samples.str());
 
         double throughputMetric = 0.0;
         double throughput = 0.0;

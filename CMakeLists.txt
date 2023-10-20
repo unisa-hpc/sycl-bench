@@ -42,10 +42,10 @@ if(SYCL_IMPL STREQUAL "ComputeCpp")
 elseif(SYCL_IMPL STREQUAL "hipSYCL")
   find_package(hipSYCL CONFIG REQUIRED)
 elseif(SYCL_IMPL STREQUAL "LLVM")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl -DSYCL2020_CONFORMANT_APIS -DSYCL2020_DISABLE_DEPRECATION_WARNINGS")
 elseif(SYCL_IMPL STREQUAL "LLVM-CUDA")
   set(CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -fsycl -fsycl-targets=nvptx64-nvidia-cuda-sycldevice")
+    "${CMAKE_CXX_FLAGS} -fsycl -fsycl-targets=nvptx64-nvidia-cuda -Wno-unknown-cuda-version -DSYCL2020_CONFORMANT_APIS -DSYCL2020_DISABLE_DEPRECATION_WARNINGS")
 elseif(SYCL_IMPL STREQUAL "triSYCL")
   find_package(TriSYCL MODULE REQUIRED)
 endif()
@@ -90,6 +90,7 @@ set(benchmarks
   polybench/syr2k.cpp
   polybench/syrk.cpp
   #compiletime/compiletime.cpp
+  spec_constants/spec_constant_convolution.cpp
 )
 
 foreach(benchmark IN LISTS benchmarks)
