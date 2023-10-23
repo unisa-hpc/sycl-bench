@@ -25,8 +25,8 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/polybench/common)
 
 set(supported_implementations
-  AdaptiveCpp
-  DPC++
+  acpp
+  dpcpp
   triSYCL
 )
 
@@ -37,35 +37,35 @@ if(NOT SYCL_IMPL OR impl_idx EQUAL -1)
 endif()
 
 if(SYCL_IMPL STREQUAL "acpp")
-  find_package(AdaptiveCpp CONFIG REQUIRED)
+  find_package(AdaptiveCpp REQUIRED)
 elseif(SYCL_IMPL STREQUAL "dpcpp")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl")
 
-  if(SYCL_BENCH_CUDA_SUPPORT)
+  if(WITH_CUDA_BACKEND)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=nvptx64-nvidia-cuda")
 
-    set(SYCL_BENCH_CUDA_ARCH "" CACHE STRING "CUDA device architecture e.g. sm_70")
+    set(CUDA_ARCH "" CACHE STRING "CUDA device architecture e.g. sm_70")
 
-    if(NOT SYCL_BENCH_CUDA_ARCH STREQUAL "")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xsycl-target-backend --cuda-gpu-arch=${SYCL_BENCH_CUDA_ARCH}")
+    if(NOT CUDA_ARCH STREQUAL "")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xsycl-target-backend --cuda-gpu-arch=${CUDA_ARCH}")
     endif()
   endif()
 
-  if(SYCL_BENCH_ROCM_SUPPORT)
+  if(WITH_ROCM_BACKEND)
     set(SYCL_BENCH_ROCM_ARCH "" CACHE STRING "ROCm device architecture e.g. gfx908")
 
-    if(NOT SYCL_BENCH_ROCM_ARCH STREQUAL "")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=amd_gpu_${SYCL_BENCH_ROCM_ARCH}")
+    if(NOT ROCM_ARCH STREQUAL "")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=amd_gpu_${ROCM_ARCH}")
     endif()
   endif()
 
-  if(SYCL_BENCH_LZ_SUPPORT)
+  if(WITH_LZ_BACKEND)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=spir64_gen")
 
-    set(SYCL_BENCH_LZ_ARCH "" CACHE STRING "Level Zero device architecture e.g. acm-g10")
+    set(LZ_ARCH "" CACHE STRING "Level Zero device architecture e.g. acm-g10")
 
-    if(NOT SYCL_BENCH_LZ_ARCH STREQUAL "")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xsycl-target-backend \"-device ${SYCL_BENCH_LZ_ARCH}\"")
+    if(NOT LZ_ARCH STREQUAL "")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xsycl-target-backend \"-device ${LZ_ARCH}\"")
     endif()
   endif()
 elseif(SYCL_IMPL STREQUAL "triSYCL")
@@ -120,19 +120,15 @@ foreach(benchmark IN LISTS benchmarks)
 
   add_executable(${target} ${benchmark})
 
-  if(SYCL_IMPL STREQUAL "ComputeCpp" OR SYCL_IMPL STREQUAL "hipSYCL")
+  if(SYCL_IMPL STREQUAL "acpp")
     add_sycl_to_target(TARGET ${target} SOURCES ${benchmark})
   endif()
 
-  if(SYCL_IMPL STREQUAL "ComputeCpp" AND COMPUTECPP_BITCODE STREQUAL "ptx64")
-    target_compile_definitions(${target} PRIVATE SYCL_BENCH_ENABLE_QUEUE_PROFILING)
-  endif()
-
-  if(SYCL_IMPL STREQUAL "LLVM")
+  if(SYCL_IMPL STREQUAL "dpcpp")
     target_compile_definitions(${target} PRIVATE __LLVM_SYCL__)
   endif()
 
-  if(SYCL_IMPL STREQUAL "LLVM-CUDA")
+  if(SYCL_IMPL STREQUAL "dpcpp" AND WITH_CUDA_BACKEND)
     target_compile_definitions(${target} PRIVATE __LLVM_SYCL_CUDA__)
   endif()
 
