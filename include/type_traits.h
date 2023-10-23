@@ -8,7 +8,7 @@ struct ReadableTypename
 #define MAKE_READABLE_TYPENAME(T, str) \
 template<> \
 struct ReadableTypename<T> \
-{ inline static const char* name = str; };
+{ static const char* name; }; const char* ReadableTypename<T>::name = str;
 
 MAKE_READABLE_TYPENAME(char, "int8")
 MAKE_READABLE_TYPENAME(unsigned char, "uint8")
