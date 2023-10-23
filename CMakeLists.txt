@@ -43,7 +43,7 @@ if(SYCL_IMPL STREQUAL "acpp")
     set(CUDA_ARCH "" CACHE STRING "CUDA device architecture e.g. sm_70")
 
     if(NOT CUDA_ARCH STREQUAL "")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -acpp-targets=cuda:${CUDA_ARCH}")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --acpp-targets=cuda:${CUDA_ARCH}")
     endif()
   endif()
 
@@ -51,12 +51,12 @@ if(SYCL_IMPL STREQUAL "acpp")
     set(ROCM_ARCH "" CACHE STRING "ROCm device architecture e.g. gfx908")
 
     if(NOT ROCM_ARCH STREQUAL "")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -acpp-targets=hip:${ROCM_ARCH}")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --acpp-targets=hip:${ROCM_ARCH}")
     endif()
   endif()
 
   if(WITH_LZ_BACKEND)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -acpp-targets=spirv")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --acpp-targets=generic")
 
     set(LZ_ARCH "" CACHE STRING "Level Zero device architecture e.g. acm-g10")
 
