@@ -1,8 +1,9 @@
 #pragma once
-#include <CL/sycl.hpp>
+#include "common.h"
 #include <memory>
 
 #include "utils.h"
+
 
 template <class AccType>
 class InitializationDummyKernel {
@@ -100,15 +101,16 @@ using has_dim_t = std::enable_if_t<has_dim_v<T, val, expected> == true, void>;
 } // namespace detail
 
 
-template <typename T, std::size_t dim, cl::sycl::usm::alloc type = cl::sycl::usm::alloc::device>
+template <typename T, std::size_t dim = 1, cl::sycl::usm::alloc type = cl::sycl::usm::alloc::device>
 class USMBuffer {
+static_assert(dim >= 1 && dim <= 3, "Invalid dim provided");
 protected:
   T* _data;
   cl::sycl::range<dim> _count;
   std::size_t total_size;
 
 public:
-  USMBuffer() : _data(nullptr), _count(), total_size(0) {}
+  USMBuffer() : _data(nullptr), _count(getRange()), total_size(0) {}
 
   template <typename U = T, typename = detail::has_dim_t<U, dim, 1>>
   void initialize(cl::sycl::queue& q, size_t count) {
@@ -142,6 +144,18 @@ private:
       return cl::sycl::malloc_shared<T>(count, Q);
     else
       throw std::runtime_error("Malloc invoked with unkown allocation type!");
+  }
+
+  auto constexpr getRange(){    
+    if constexpr (dim == 1){
+      return cl::sycl::range<dim>(0);
+    }
+    if constexpr (dim == 2){
+      return cl::sycl::range<dim>(0,0);
+    }
+    if constexpr (dim == 3){
+      return cl::sycl::range<dim>(0,0,0);
+    }
   }
 
   std::size_t inline getSize(const cl::sycl::range<dim>& count){
@@ -178,7 +192,7 @@ private:
 
   void copy(cl::sycl::queue& Q, const T* src, T* dst, cl::sycl::range<dim> count) const {
     loop<dim>([&](std::size_t idx){
-      assert(count[idx] >= 0 && "Cannot allocate negative num bytes");
+      assert(count[idx] >= 0 && "Cannot copy negative num bytes");
     });
 
     const size_t total_size = getSize(count);

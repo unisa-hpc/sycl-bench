@@ -1,5 +1,6 @@
 #pragma once
 
+#include <CL/sycl.hpp>
 
 #include <algorithm> // for std::min
 #include <cassert>

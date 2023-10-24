@@ -2,7 +2,7 @@
 #define BENCHMARK_COMMAND_LINE_HPP
 
 #include "common.h"
-#include "defines.h"
+
 #include "result_consumer.h"
 #include <iostream>
 #include <memory>
@@ -160,7 +160,7 @@ public:
 
     std::string device_type = cli_parser.getOrDefault<std::string>("--device", "default");
     cl::sycl::queue q = getQueue(device_type);
-    cl::sycl::queue q_in_order = getQueue(device_type, sycl::property::queue::in_order{});
+    cl::sycl::queue q_in_order = getQueue(device_type, cl::sycl::property::queue::in_order{});
 
     bool verification_enabled = true;
     if(cli_parser.isFlagSet("--no-verification"))
@@ -193,7 +193,7 @@ private:
     const auto getQueueProperties = [&]() -> cl::sycl::property_list {
 
 #if defined(SYCL_BENCH_ENABLE_QUEUE_PROFILING)
-      return {sycl::property::queue::enable_profiling{}, props...};
+      return {cl::sycl::property::queue::enable_profiling{}, props...};
 #endif
       return {props...};
     };
