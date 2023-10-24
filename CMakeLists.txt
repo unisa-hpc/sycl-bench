@@ -25,7 +25,7 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/polybench/common)
 
 set(supported_implementations
-  acpp
+  AdaptiveCpp
   dpcpp
   triSYCL
 )
@@ -36,7 +36,7 @@ if(NOT SYCL_IMPL OR impl_idx EQUAL -1)
   message(FATAL_ERROR "Please specify SYCL_IMPL (one of: ${supported_implementations})")
 endif()
 
-if(SYCL_IMPL STREQUAL "acpp")
+if(SYCL_IMPL STREQUAL "AdaptiveCpp")
   if(WITH_CUDA_BACKEND)
     set(CUDA_ARCH "" CACHE STRING "CUDA device architecture e.g. sm_70")
 
@@ -147,7 +147,7 @@ foreach(benchmark IN LISTS benchmarks)
 
   add_executable(${target} ${benchmark})
 
-  if(SYCL_IMPL STREQUAL "acpp")
+  if(SYCL_IMPL STREQUAL "AdaptiveCpp")
     add_sycl_to_target(TARGET ${target} SOURCES ${benchmark})
   endif()
 
