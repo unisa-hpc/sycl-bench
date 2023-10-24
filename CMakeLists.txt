@@ -37,8 +37,6 @@ if(NOT SYCL_IMPL OR impl_idx EQUAL -1)
 endif()
 
 if(SYCL_IMPL STREQUAL "acpp")
-  find_package(AdaptiveCpp REQUIRED)
-
   if(WITH_CUDA_BACKEND)
     set(CUDA_ARCH "" CACHE STRING "CUDA device architecture e.g. sm_70")
 
@@ -64,6 +62,9 @@ if(SYCL_IMPL STREQUAL "acpp")
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --acpp-gpu-arch=${LZ_ARCH}\"")
     endif()
   endif()
+
+  find_package(AdaptiveCpp REQUIRED)
+
 elseif(SYCL_IMPL STREQUAL "dpcpp")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl")
 
