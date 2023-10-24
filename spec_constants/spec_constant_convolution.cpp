@@ -15,7 +15,7 @@ enum class AccessVariants {
   constexpr_value,
 };
 
-namespace s = cl::sycl;
+namespace s = sycl;
 template <typename T, AccessVariants AccessVariant, int InnerLoops> class ConvKernel;
 
 // T is the data type operated on
@@ -70,8 +70,8 @@ public:
     out_buf.initialize(args.device_queue, in_vec.data(), s::range<2>(problem_size, problem_size));
   }
 
-  void run(std::vector<cl::sycl::event>& events) {
-    events.push_back(args.device_queue.submit([&](cl::sycl::handler& cgh) {
+  void run(std::vector<sycl::event>& events) {
+    events.push_back(args.device_queue.submit([&](sycl::handler& cgh) {
       auto in = in_buf.template get_access<s::access::mode::read>(cgh);
       auto out = out_buf.template get_access<s::access::mode::write>(cgh);
 
