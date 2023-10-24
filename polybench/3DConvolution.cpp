@@ -109,7 +109,7 @@ public:
     std::vector<DATA_TYPE> B_cpu(size * size * size);
     conv3D(A.data(), B_cpu.data(), size);
 
-    auto B_acc = B_buffer.get_access<sycl::access::mode::read>();
+    auto B_acc = B_buffer.get_host_access();
 
     for(size_t i = 0; i < size; i++) {
       for(size_t j = 0; j < size; j++) {

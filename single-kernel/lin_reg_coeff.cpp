@@ -114,7 +114,7 @@ public:
       }));
       array_size = n_wgroups;
     }
-    auto reduced_value = input_buf.template get_access<s::access::mode::read>();
+    auto reduced_value = input_buf.get_host_access();
     return (reduced_value[0]);
   }
 

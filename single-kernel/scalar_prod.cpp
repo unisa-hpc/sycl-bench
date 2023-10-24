@@ -179,7 +179,7 @@ public:
     bool pass = true;
     auto expected = static_cast<T>(0);
 
-    auto output_acc = output_buf.template get_access<s::access::mode::read>();
+    auto output_acc = output_buf.get_host_access();
 
     for(size_t i = 0; i < args.problem_size; i++) {
       expected += input1[i] * input2[i];

@@ -104,7 +104,7 @@ public:
 
     atax_cpu(A.data(), x.data(), y_cpu.data(), tmp_cpu.data(), size);
 
-    auto y_acc = y_buffer.get_access<sycl::access::mode::read>();
+    auto y_acc = y_buffer.get_host_access();
 
     for(size_t i = 0; i < size; i++) {
       const auto diff = percentDiff(y_cpu[i], y_acc[i]);

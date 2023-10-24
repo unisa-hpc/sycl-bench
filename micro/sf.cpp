@@ -62,7 +62,7 @@ public:
       v2 = s::tan(v0);
     }
     const DataT expected = v2;
-    auto result = output_buf.template get_access<s::access::mode::read>();
+    auto result = output_buf.get_host_access();
     for(size_t i = 0; i < args.problem_size; ++i) {
       constexpr DataT EPSILON = 1e-5;
       if(std::abs(result[i] - expected) > EPSILON) {

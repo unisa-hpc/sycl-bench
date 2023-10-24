@@ -82,7 +82,7 @@ public:
     T error = 0.0f;
     T ref = 0.0f;
 
-    auto output = output_buf.template get_access<s::access::mode::read>();
+    auto output = output_buf.get_host_access();
 
     for(size_t i = 0; i < length; ++i) {
       T diff = expected_output[i] - output[i];

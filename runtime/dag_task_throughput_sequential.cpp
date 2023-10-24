@@ -83,7 +83,7 @@ public:
   }
 
   bool verify(VerificationSetting& ver) {
-    auto host_acc = dummy_counter.get_access<sycl::access::mode::read>();
+    auto host_acc = dummy_counter.get_host_access();
 
     return host_acc[0] == args.problem_size;
   }

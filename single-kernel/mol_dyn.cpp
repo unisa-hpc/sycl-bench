@@ -95,7 +95,7 @@ public:
   }
 
   bool verify(VerificationSetting& ver) {
-    auto output_acc = output_buf.get_access<s::access::mode::read>();
+    auto output_acc = output_buf.get_host_access();
 
     bool pass = true;
     unsigned equal = 1;

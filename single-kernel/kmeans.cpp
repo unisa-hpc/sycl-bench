@@ -81,7 +81,7 @@ public:
   }
 
   bool verify(VerificationSetting& ver) {
-    auto membership_acc = membership_buf.template get_access<s::access::mode::read>();
+    auto membership_acc = membership_buf.get_host_access();
 
     bool pass = true;
     unsigned int equal = 1;

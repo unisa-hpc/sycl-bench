@@ -123,7 +123,7 @@ public:
     save_bitmap("median.bmp", size, output);
 
     bool pass = true;
-    auto output_acc = output_buf.get_access<s::access::mode::read>();
+    auto output_acc = output_buf.get_host_access();
 
     for(size_t i = ver.begin[0]; i < ver.begin[0] + ver.range[0]; i++) {
       int x = i % size;

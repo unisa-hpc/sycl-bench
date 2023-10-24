@@ -82,7 +82,7 @@ public:
   bool verify(VerificationSetting&) {
     constexpr auto ERROR_THRESHOLD = 0.05;
 
-    auto B_acc = B_buffer.get_access<sycl::access::mode::read>();
+    auto B_acc = B_buffer.get_host_access();
 
     std::vector<DATA_TYPE> B_cpu(size * size);
     conv2D(A.data(), B_cpu.data(), size);

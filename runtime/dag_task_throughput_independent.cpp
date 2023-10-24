@@ -85,7 +85,7 @@ public:
 
   bool verify(VerificationSetting& ver) {
     for(std::size_t i = 0; i < dummy_buffers.size(); ++i) {
-      auto host_acc = dummy_buffers[i].get_access<sycl::access::mode::read>();
+      auto host_acc = dummy_buffers[i].get_host_access();
 
       if(host_acc[0] != i)
         return false;

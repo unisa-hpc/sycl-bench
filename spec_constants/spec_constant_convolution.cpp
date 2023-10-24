@@ -119,7 +119,7 @@ public:
   }
 
   bool verify(VerificationSetting &ver) {
-    auto out_acc = out_buf.template get_access<s::access::mode::read>();
+    auto out_acc = out_buf.get_host_access();
 
     bool pass = true;
 
