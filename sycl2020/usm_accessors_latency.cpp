@@ -1,53 +1,62 @@
 #include "common.h"
-
+namespace s = cl::sycl;
 #include <iostream>
 
-namespace s = cl::sycl;
-
-// TODO: As kernel parameter
-#define NUM_KERNELS 50000
-
+#define KERNEL_LAUNCHES_DEFAULT 50000
+template <typename DATA_TYPE, bool in_order = false, bool synch = false>
+class accessor_latency_kernel;
+template <typename DATA_TYPE, bool in_order = false, bool synch = false>
+class usm_latency_kernel;
 /**
 Measure Accessors latency compared to USM
 The benchmark submits multiple small kernels which stress SYCL dependency tracking.
  */
 
 
-template <typename DATA_TYPE, std::size_t dim>
+template <typename DATA_TYPE, bool in_order>
 class LatencyBenchmark {
 protected:
   BenchmarkArgs args;
+  size_t kernel_launches_num;
 
-  LatencyBenchmark(const BenchmarkArgs& args) : args(args) {}
+  LatencyBenchmark(const BenchmarkArgs& args, const size_t kernel_launches_num)
+      : args(args), kernel_launches_num(kernel_launches_num) {}
 
-  s::range<dim> getRange() const {
-    if constexpr(dim == 1) {
-      return s::range<1>{args.problem_size};
-    } else if constexpr(dim == 2) {
-      return s::range<2>{args.problem_size, 1};
-    } else if constexpr(dim == 3) {
-      return s::range<3>{args.problem_size, 1, 1};
+  s::range<1> getRange() const { 
+    return s::range<1>{args.problem_size}; 
+  }
+
+  s::nd_range<1> getNDRange() const { 
+    return s::nd_range<1>{args.problem_size, args.problem_size > 1024 ? 1024 : args.problem_size}; 
+    
+    }
+
+  cl::sycl::queue& get_queue() {
+    if constexpr(in_order) {
+      return args.device_queue_in_order;
     } else {
-      // Not reachable
-      throw std::invalid_argument("Illegal dim provided");
+      return args.device_queue;
     }
   }
 };
 
-template <typename DATA_TYPE, int dim = 1, bool use_id = true>
-class AccessorLatency : LatencyBenchmark<DATA_TYPE, dim> {
+template <typename DATA_TYPE, bool in_order = false, bool synch = false>
+class AccessorLatency : LatencyBenchmark<DATA_TYPE, in_order> {
 protected:
-  PrefetchedBuffer<DATA_TYPE, dim> buff_A;
-  PrefetchedBuffer<DATA_TYPE, dim> buff_B;
-  PrefetchedBuffer<DATA_TYPE, dim> buff_C;
+  PrefetchedBuffer<DATA_TYPE> buff_A;
+  PrefetchedBuffer<DATA_TYPE> buff_B;
+  PrefetchedBuffer<DATA_TYPE> buff_C;
 
 public:
-  using base = LatencyBenchmark<DATA_TYPE, dim>;
+  using base = LatencyBenchmark<DATA_TYPE, in_order>;
   using base::args;
   using base::base;
+  using base::get_queue;
   using base::getRange;
+  using base::getNDRange;
+  using base::kernel_launches_num;
 
-  AccessorLatency(const BenchmarkArgs& args) : base(args) {}
+  AccessorLatency(const BenchmarkArgs& args, const size_t kernel_launches_num) : base(args, kernel_launches_num) {}
 
   // TODO: Problem size?
   void setup() {
@@ -57,31 +66,23 @@ public:
     buff_C.initialize(args.device_queue, range);
   }
 
-  void run() {
-    auto& queue = args.device_queue;
-    for(int i = 0; i < NUM_KERNELS; i++) {
-      queue.submit([&](s::handler& cgh) {
+  void run(std::vector<cl::sycl::event>& events) {
+    auto& queue = get_queue();
+    for(int i = 0; i < kernel_launches_num; i++) {
+      auto event = queue.submit([&](s::handler& cgh) {
         auto acc_A = buff_A.template get_access<s::access::mode::read>(cgh, buff_A.get_range());
         auto acc_B = buff_A.template get_access<s::access::mode::read>(cgh, buff_A.get_range());
         auto acc_C = buff_A.template get_access<s::access::mode::write>(cgh, buff_A.get_range());
 
-        cgh.parallel_for(getRange(), [=](s::item<dim> item) {
-          if constexpr(use_id) {
-            acc_C[item] = acc_A[item] + acc_B[item];
-          } else {
-            // Manual unroll, ugly but it works
-            if constexpr(dim == 1) {
-              acc_C[item[0]] = acc_A[item[0]] + acc_B[item[0]];
-            }
-            if constexpr(dim == 2) {
-              acc_C[item[0]][item[1]] = acc_A[item[0]][item[1]] + acc_B[item[0]][item[1]];
-            }
-            if constexpr(dim == 3) {
-              acc_C[item[0]][item[1]][item[2]] = acc_A[item[0]][item[1]][item[2]] + acc_B[item[0]][item[1]][item[2]];
-            }
-          }
+        cgh.parallel_for<class accessor_latency_kernel<DATA_TYPE,in_order,synch>>(getNDRange(), [=](s::nd_item<1> item) {
+          const auto id = item.get_global_linear_id();
+          acc_C[id] = acc_A[id] + acc_B[id];
         });
       });
+      if constexpr(synch) {
+        queue.wait();
+      }
+      events.push_back(event);
       // swap buffers
       std::swap(buff_A, buff_B);
       std::swap(buff_A, buff_C);
@@ -97,30 +98,29 @@ public:
     std::stringstream name;
     name << "SYCL2020_Accessors_Latency_";
     name << ReadableTypename<DATA_TYPE>::name << "_";
-    name << dim << "dim_";
-    if constexpr (!use_id){
-      name << "no_id_index_";
-    }
-    name << NUM_KERNELS;
+    name << (in_order ? "in_order" : "out_of_order") << "_";
+    name << (synch ? "synch" : "") << "_";
     return name.str();
   }
 };
 
-template <typename DATA_TYPE, std::size_t dim>
-class USMLatency : LatencyBenchmark<DATA_TYPE, dim> {
+template <typename DATA_TYPE, bool in_order = false, bool synch = false>
+class USMLatency : LatencyBenchmark<DATA_TYPE, in_order> {
 protected:
-  USMBuffer<DATA_TYPE, dim> buff_A;
-  USMBuffer<DATA_TYPE, dim> buff_B;
-  USMBuffer<DATA_TYPE, dim> buff_C;
+  USMBuffer<DATA_TYPE> buff_A;
+  USMBuffer<DATA_TYPE> buff_B;
+  USMBuffer<DATA_TYPE> buff_C;
 
-  using base = LatencyBenchmark<DATA_TYPE, dim>;
+  using base = LatencyBenchmark<DATA_TYPE, in_order>;
   using base::args;
   using base::base;
+  using base::get_queue;
   using base::getRange;
+  using base::getNDRange;
+  using base::kernel_launches_num;
 
 public:
-
-  USMLatency(const BenchmarkArgs& args) : base(args) {}
+  USMLatency(const BenchmarkArgs& args, const size_t kernel_launches_num) : base(args, kernel_launches_num) {}
 
   // TODO: Problem size?
   void setup() {
@@ -129,18 +129,28 @@ public:
     buff_C.initialize(args.device_queue, getRange());
   }
 
-  void run() {
-    auto& queue = args.device_queue;
+  void run(std::vector<cl::sycl::event>& events) {
+    auto& queue = get_queue();
     cl::sycl::event event;
-    for(int i = 0; i < NUM_KERNELS; i++) {
+    auto* acc_A = buff_A.get();
+    auto* acc_B = buff_B.get();
+    auto* acc_C = buff_C.get();
+    for(int i = 0; i < kernel_launches_num; i++) {
       event = queue.submit([&](s::handler& cgh) {
-        cgh.depends_on(event);
-        cgh.parallel_for(
-            getRange(), [acc_A = buff_A.get(), acc_B = buff_B.get(), acc_C = buff_C.get()](s::item<dim> item) {
-              const auto id = item.get_linear_id();
-              acc_C[id] = acc_A[id] + acc_B[id];
-            });
+        // Disable kernel dependencies build when queue is in_order
+        if constexpr(!in_order && !synch) {
+          cgh.depends_on(event);
+        }
+        cgh.parallel_for<class usm_latency_kernel<DATA_TYPE,in_order,synch>>(getNDRange(), [=](s::nd_item<1> item) {
+          const auto id = item.get_global_linear_id();
+          acc_C[id] = acc_A[id] + acc_B[id];
+        });
       });
+      if constexpr(synch) {
+        queue.wait();
+      }
+      // Add kernel event to kernel's list
+      events.push_back(event);
       // swap buffers to
       std::swap(buff_A, buff_B);
       std::swap(buff_A, buff_C);
@@ -154,51 +164,30 @@ public:
 
   static std::string getBenchmarkName() {
     std::stringstream name;
-    name << "SYCL2020_USM_Latency_";
+    name << "USM_Latency_";
     name << ReadableTypename<DATA_TYPE>::name << "_";
-    name << dim << "dim_";
-    name << NUM_KERNELS;
+    name << (in_order ? "in_order" : "out_of_order") << "_";
+    name << (synch ? "synch" : "") << "_";
     return name.str();
   }
 };
 
-void launchAccessorBenchmarks(BenchmarkApp& app) {
-  auto& args = app.getArgs();
-  if(args.cli.isFlagSet("-disable-id-index")) {
-    app.run<AccessorLatency<float, 1, false>>();
-    app.run<AccessorLatency<float, 2, false>>();
-    app.run<AccessorLatency<float, 3, false>>();
-    if(app.deviceSupportsFP64()) {
-      app.run<AccessorLatency<double, 1, false>>();
-      app.run<AccessorLatency<double, 2, false>>();
-      app.run<AccessorLatency<double, 3, false>>();
-    }
-  } else {
-    app.run<AccessorLatency<float, 1, true>>();
-    app.run<AccessorLatency<float, 2, true>>();
-    app.run<AccessorLatency<float, 3, true>>();
-    if(app.deviceSupportsFP64()) {
-      app.run<AccessorLatency<double, 1, true>>();
-      app.run<AccessorLatency<double, 2, true>>();
-      app.run<AccessorLatency<double, 3, true>>();
-    }
-  }
-}
-
-void launchUSMBenchmarks(BenchmarkApp& app) {
-  app.run<USMLatency<float, 1>>();
-  app.run<USMLatency<float, 2>>();
-  app.run<USMLatency<float, 3>>();
+template <template <typename DATA_TYPE, bool in_order = false, bool synch = false> typename latency_kernel>
+void launchBenchmarks(BenchmarkApp& app, const size_t kernel_launches_num) {
+  app.run<latency_kernel<float>>(kernel_launches_num);                  //out-of-order, no synch
+  app.run<latency_kernel<float, true>>(kernel_launches_num);            //in-order, no synch
+  // app.run<latency_kernel<float, false, true>>(kernel_launches_num);     //out-of-order, synch
   if(app.deviceSupportsFP64()) {
-    app.run<USMLatency<double, 1>>();
-    app.run<USMLatency<double, 2>>();
-    app.run<USMLatency<double, 3>>();
+    app.run<latency_kernel<double>>(kernel_launches_num);               //out-of-order, no synch
+    app.run<latency_kernel<double, true>>(kernel_launches_num);         //in-order, no synch
+    // app.run<latency_kernel<double, false, true>>(kernel_launches_num);  //out-of-order, synch
   }
 }
 
 int main(int argc, char** argv) {
   BenchmarkApp app(argc, argv);
+  const size_t kernel_launches_num = app.getArgs().cli.getOrDefault("--num-launches", KERNEL_LAUNCHES_DEFAULT);
 
-  launchAccessorBenchmarks(app);
-  launchUSMBenchmarks(app);
+  launchBenchmarks<AccessorLatency>(app, kernel_launches_num);
+  launchBenchmarks<USMLatency>(app, kernel_launches_num);
 }
