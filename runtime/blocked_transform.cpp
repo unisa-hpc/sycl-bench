@@ -1,39 +1,32 @@
-
-
-
-
 #include "common.h"
 
+#include <cassert>
+#include <cmath>
 #include <functional>
 #include <iostream>
-#include <cmath>
-#include <cassert>
 
-using namespace cl;
 
-using complex = sycl::vec<float,2>;
+using complex = sycl::vec<float, 2>;
 
-inline complex mandelbrot_iteration(complex z, complex c)
-{
+inline complex mandelbrot_iteration(complex z, complex c) {
   complex result = c;
 
-  result.x() += z.x()*z.x() - z.y()*z.y();
-  result.y() += 2 * z.x()*z.y();
+  result.x() += z.x() * z.x() - z.y() * z.y();
+  result.y() += 2 * z.x() * z.y();
 
   return result;
 }
 
-template<int Num_iterations>
-complex mandelbrot_sequence(complex z0, complex c)
-{
+template <int Num_iterations>
+complex mandelbrot_sequence(complex z0, complex c) {
   complex z = z0;
-  for(int i = 0; i < Num_iterations; ++i){
+  for(int i = 0; i < Num_iterations; ++i) {
     z = mandelbrot_iteration(z, c);
   }
   return z;
 }
 
-template<int Num_iterations>
+template <int Num_iterations>
 class MandelbrotKernel;
 
 /// Performs a blocked transform operation using the mandelbrot sequence
@@ -47,57 +40,47 @@ class MandelbrotKernel;
 /// accessed ranges are non-overlapping. In order for the benchmark to stress
 /// these aspects, \c Num_iterations should be tuned such that the kernel
 /// runtime is similar to the data transfer time of one block.
-template<int Num_iterations>
-class BlockedTransform
-{
+template <int Num_iterations>
+class BlockedTransform {
 private:
-    std::vector<complex> data;
-    BenchmarkArgs args;
-    std::size_t block_size;
+  std::vector<complex> data;
+  BenchmarkArgs args;
+  std::size_t block_size;
+
 public:
-  BlockedTransform(
-    const BenchmarkArgs &_args,
-    std::size_t _block_size)
-    : args(_args), block_size{_block_size}
-    {
-      assert(block_size > 0);
-    }
-  
-  void setup() {     
-    init_data(data);
+  BlockedTransform(const BenchmarkArgs& _args, std::size_t _block_size) : args(_args), block_size{_block_size} {
+    assert(block_size > 0);
   }
 
-  void run(){
-    sycl::buffer<complex,1> buff {data.data(), sycl::range<1>{data.size()}};
+  void setup() { init_data(data); }
 
-    sycl::id<1> begin {0};
-    sycl::range<1> current_batch_size {block_size};
-    for(;begin[0] < data.size(); begin[0] += this->block_size) {
+  void run() {
+    sycl::buffer<complex, 1> buff{data.data(), sycl::range<1>{data.size()}};
 
-      current_batch_size[0] = std::min(this->block_size, data.size()-begin[0]);
+    sycl::id<1> begin{0};
+    sycl::range<1> current_batch_size{block_size};
+    for(; begin[0] < data.size(); begin[0] += this->block_size) {
+      current_batch_size[0] = std::min(this->block_size, data.size() - begin[0]);
 
-      args.device_queue.submit([&](sycl::handler &cgh) {
+      args.device_queue.submit([&](sycl::handler& cgh) {
+        auto acc = buff.get_access<sycl::access::mode::read_write>(cgh, current_batch_size, begin);
 
-        auto acc = buff.get_access<sycl::access::mode::read_write>(
-            cgh, current_batch_size, begin);
-
-        cgh.parallel_for<MandelbrotKernel<Num_iterations>>(
-            current_batch_size, begin, [=](cl::sycl::id<1> idx) {
-              const complex z0{0.0f, 0.0f};
-              acc[idx] = mandelbrot_sequence<Num_iterations>(z0, acc[idx]);
-            });
+        cgh.parallel_for<MandelbrotKernel<Num_iterations>>(current_batch_size, [=](sycl::id<1> idx) {
+          const complex z0{0.0f, 0.0f};
+          acc[idx + begin] = mandelbrot_sequence<Num_iterations>(z0, acc[idx + begin]);
+        });
       });
     }
   }
 
-  bool verify(VerificationSetting &ver) { 
-    std::vector<complex>  v;
+  bool verify(VerificationSetting& ver) {
+    std::vector<complex> v;
     init_data(v);
 
     const double tol = 1.e-5;
 
     for(std::size_t i = 0; i < v.size(); ++i) {
-      v[i] = mandelbrot_sequence<Num_iterations>(complex{0.0f,0.0f}, v[i]);
+      v[i] = mandelbrot_sequence<Num_iterations>(complex{0.0f, 0.0f}, v[i]);
 
       if(std::abs(v[i].x() - data[i].x()) > tol)
         return false;
@@ -107,7 +90,7 @@ public:
 
     return true;
   }
-  
+
   std::string getBenchmarkName() {
     std::stringstream name;
     name << "Runtime_BlockedTransform_iter_";
@@ -117,25 +100,21 @@ public:
   }
 
 private:
-  void init_data(std::vector<complex>& initial_data)
-  {
+  void init_data(std::vector<complex>& initial_data) {
     initial_data.clear();
     initial_data.resize(args.problem_size);
 
-    for(std::size_t i = 0; i < initial_data.size(); ++i)
-    {
-      initial_data[i].x() = 0.8*std::cos(i/args.problem_size);
-      initial_data[i].y() = 0.8*std::sin(i/args.problem_size);
+    for(std::size_t i = 0; i < initial_data.size(); ++i) {
+      initial_data[i].x() = 0.8 * std::cos(i / args.problem_size);
+      initial_data[i].y() = 0.8 * std::sin(i / args.problem_size);
     }
   }
 };
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
   BenchmarkApp app(argc, argv);
 
-  for (std::size_t block_size = app.getArgs().local_size;
-       block_size < app.getArgs().problem_size; block_size *= 2) {
+  for(std::size_t block_size = app.getArgs().local_size; block_size < app.getArgs().problem_size; block_size *= 2) {
     app.run<BlockedTransform<64>>(block_size);
     app.run<BlockedTransform<128>>(block_size);
     app.run<BlockedTransform<256>>(block_size);
@@ -144,7 +123,3 @@ int main(int argc, char** argv)
 
   return 0;
 }
-
-
-
-

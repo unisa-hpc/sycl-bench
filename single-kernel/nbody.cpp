@@ -1,18 +1,19 @@
 #include "common.h"
 
-#include <iostream>
 #include <cassert>
+#include <iostream>
 #include <limits>
 
-using namespace cl;
+using namespace sycl;
 
-template<class float_type> class NDRangeNBodyKernel;
-template<class float_type> class HierarchicalNBodyKernel;
+template <class float_type>
+class NDRangeNBodyKernel;
+template <class float_type>
+class HierarchicalNBodyKernel;
 
 
-template<class float_type>
-class NBody
-{
+template <class float_type>
+class NBody {
 protected:
   using particle_type = sycl::vec<float_type, 4>;
   using vector_type = sycl::vec<float_type, 3>;
@@ -31,19 +32,17 @@ protected:
 
   PrefetchedBuffer<particle_type> particles_buf;
   PrefetchedBuffer<vector_type> velocities_buf;
+
 public:
-  NBody(const BenchmarkArgs& _args)
-      : args(_args), gravitational_softening{1.e-5f}, dt{1.e-2f} {
+  NBody(const BenchmarkArgs& _args) : args(_args), gravitational_softening{1.e-5f}, dt{1.e-2f} {
     assert(args.problem_size % args.local_size == 0);
   }
 
   void setup() {
-    
     particles.resize(args.problem_size);
     velocities.resize(args.problem_size);
 
     for(std::size_t i = 0; i < args.problem_size; ++i) {
-
       float_type rel_i = static_cast<float_type>(i) / static_cast<float_type>(args.problem_size);
 
       particles[i].x() = rel_i * std::cos(3000.f * 2.f * M_PI * rel_i);
@@ -56,21 +55,21 @@ public:
       velocities[i].z() = 0;
     }
 
-    particles_buf. initialize(args.device_queue, this->particles.data(), sycl::range<1>{this->args.problem_size});
+    particles_buf.initialize(args.device_queue, this->particles.data(), sycl::range<1>{this->args.problem_size});
     velocities_buf.initialize(args.device_queue, this->velocities.data(), sycl::range<1>{this->args.problem_size});
 
-    output_particles. initialize(args.device_queue, sycl::range<1>{args.problem_size});
+    output_particles.initialize(args.device_queue, sycl::range<1>{args.problem_size});
     output_velocities.initialize(args.device_queue, sycl::range<1>{args.problem_size});
   }
 
 
-  bool verify(VerificationSetting &ver) {
-    auto resulting_particles = output_particles.template get_access<sycl::access::mode::read>();
-    auto resulting_velocities = output_velocities.template get_access<sycl::access::mode::read>();
+  bool verify(VerificationSetting& ver) {
+    auto resulting_particles = output_particles.get_host_access();
+    auto resulting_velocities = output_velocities.get_host_access();
 
     std::vector<particle_type> host_resulting_particles(particles.size());
     std::vector<vector_type> host_resulting_velocities(particles.size());
-  
+
 
     for(std::size_t i = 0; i < particles.size(); ++i) {
       const particle_type my_p = particles[i];
@@ -78,27 +77,20 @@ public:
       vector_type acceleration{static_cast<float_type>(0.0f)};
 
       for(std::size_t j = 0; j < particles.size(); ++j) {
-
         if(i != j) {
           const particle_type p = particles[j];
-          
-          const vector_type R {
-            p.x() - my_p.x(), 
-            p.y() - my_p.y(),
-            p.z() - my_p.z()
-          };
 
-          const float_type r_inv = sycl::rsqrt(R.x() * R.x() + R.y() * R.y() + R.z() * R.z() + 
-                                              gravitational_softening);
+          const vector_type R{p.x() - my_p.x(), p.y() - my_p.y(), p.z() - my_p.z()};
+
+          const float_type r_inv = sycl::rsqrt(R.x() * R.x() + R.y() * R.y() + R.z() * R.z() + gravitational_softening);
 
           acceleration += static_cast<float_type>(p.w()) * r_inv * r_inv * r_inv * R;
         }
-        
       }
 
       vector_type new_v = my_v + acceleration * dt;
       particle_type new_p = my_p;
-      new_p.x() += new_v.x() * dt; 
+      new_p.x() += new_v.x() * dt;
       new_p.y() += new_v.y() * dt;
       new_p.z() += new_v.z() * dt;
 
@@ -131,12 +123,10 @@ protected:
       auto output_particles_access = output_particles.template get_access<sycl::access::mode::discard_write>(cgh);
       auto output_velocities_access = output_velocities.template get_access<sycl::access::mode::discard_write>(cgh);
 
-      auto scratch = sycl::accessor<particle_type, 1, sycl::access::mode::read_write, sycl::access::target::local>{
-          sycl::range<1>{args.local_size}, cgh};
+      auto scratch = sycl::local_accessor<particle_type, 1>{sycl::range<1>{args.local_size}, cgh};
 
       cgh.parallel_for<NDRangeNBodyKernel<float_type>>(execution_range,
           [=, dt = this->dt, gravitational_softening = this->gravitational_softening](sycl::nd_item<1> tid) {
-
             const size_t global_id = tid.get_global_id(0);
             const size_t local_id = tid.get_local_id(0);
             const size_t num_particles = tid.get_global_range()[0];
@@ -153,7 +143,7 @@ protected:
               scratch[local_id] = (global_id < num_particles) ? particles_access[offset + local_id]
                                                               : particle_type{static_cast<float_type>(0.0f)};
 
-              tid.barrier();
+              sycl::group_barrier(tid.get_group());
 
               for(int i = 0; i < local_size; ++i) {
                 const particle_type p = scratch[i];
@@ -168,7 +158,7 @@ protected:
                   acceleration += static_cast<float_type>(p.w()) * r_inv * r_inv * r_inv * R;
               }
 
-              tid.barrier();
+              sycl::group_barrier(tid.get_group());
             }
 
             // This is a dirt cheap Euler integration, but could be
@@ -199,8 +189,7 @@ protected:
       auto output_particles_access = output_particles.template get_access<sycl::access::mode::discard_write>(cgh);
       auto output_velocities_access = output_velocities.template get_access<sycl::access::mode::discard_write>(cgh);
 
-      auto scratch = sycl::accessor<particle_type, 1, sycl::access::mode::read_write, sycl::access::target::local>{
-          sycl::range<1>{args.local_size}, cgh};
+      auto scratch = sycl::local_accessor<particle_type, 1>{sycl::range<1>{args.local_size}, cgh};
 
 
       const size_t local_size = args.local_size;
@@ -267,20 +256,17 @@ protected:
   }
 };
 
-template<class float_type>
-class NBodyNDRange : public NBody<float_type>
-{
+template <class float_type>
+class NBodyNDRange : public NBody<float_type> {
 public:
   using typename NBody<float_type>::particle_type;
   using typename NBody<float_type>::vector_type;
 
-  NBodyNDRange(const BenchmarkArgs& _args)
-  : NBody<float_type>{_args} {}
+  NBodyNDRange(const BenchmarkArgs& _args) : NBody<float_type> { _args }
+  {}
 
 
-  void run(){
-    this->submitNDRange(this->particles_buf.get(), this->velocities_buf.get());
-  }
+  void run() { this->submitNDRange(this->particles_buf.get(), this->velocities_buf.get()); }
 
   std::string getBenchmarkName() {
     std::stringstream name;
@@ -291,41 +277,36 @@ public:
 };
 
 
-template<class float_type>
-class NBodyHierarchical : public NBody<float_type>
-{
+template <class float_type>
+class NBodyHierarchical : public NBody<float_type> {
 public:
   using typename NBody<float_type>::particle_type;
   using typename NBody<float_type>::vector_type;
 
-  NBodyHierarchical(const BenchmarkArgs& _args)
-  : NBody<float_type>{_args} {}
+  NBodyHierarchical(const BenchmarkArgs& _args) : NBody<float_type> { _args }
+  {}
 
 
-  void run(){
-    this->submitHierarchical(this->particles_buf.get(), this->velocities_buf.get());
-  }
+  void run() { this->submitHierarchical(this->particles_buf.get(), this->velocities_buf.get()); }
 
   std::string getBenchmarkName() {
     std::stringstream name;
     name << "NBody_Hierarchical_";
     name << ReadableTypename<float_type>::name;
-    
+
     return name.str();
   }
 };
 
-int main(int argc, char** argv)
-{
-
+int main(int argc, char** argv) {
   BenchmarkApp app(argc, argv);
 
-  app.run< NBodyHierarchical<float> >();
+  app.run<NBodyHierarchical<float>>();
   if(app.deviceSupportsFP64())
     app.run<NBodyHierarchical<double>>();
 
   if(app.shouldRunNDRangeKernels()) {
-    app.run< NBodyNDRange<float> >();
+    app.run<NBodyNDRange<float>>();
     if(app.deviceSupportsFP64())
       app.run<NBodyNDRange<double>>();
   }
