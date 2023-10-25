@@ -143,7 +143,7 @@ protected:
               scratch[local_id] = (global_id < num_particles) ? particles_access[offset + local_id]
                                                               : particle_type{static_cast<float_type>(0.0f)};
 
-              tid.barrier();
+              sycl::group_barrier(tid.get_group());
 
               for(int i = 0; i < local_size; ++i) {
                 const particle_type p = scratch[i];
@@ -158,7 +158,7 @@ protected:
                   acceleration += static_cast<float_type>(p.w()) * r_inv * r_inv * r_inv * R;
               }
 
-              tid.barrier();
+              sycl::group_barrier(tid.get_group());
             }
 
             // This is a dirt cheap Euler integration, but could be
@@ -262,7 +262,8 @@ public:
   using typename NBody<float_type>::particle_type;
   using typename NBody<float_type>::vector_type;
 
-  NBodyNDRange(const BenchmarkArgs& _args) : NBody<float_type>{_args} {}
+  NBodyNDRange(const BenchmarkArgs& _args) : NBody<float_type> { _args }
+  {}
 
 
   void run() { this->submitNDRange(this->particles_buf.get(), this->velocities_buf.get()); }
@@ -282,7 +283,8 @@ public:
   using typename NBody<float_type>::particle_type;
   using typename NBody<float_type>::vector_type;
 
-  NBodyHierarchical(const BenchmarkArgs& _args) : NBody<float_type>{_args} {}
+  NBodyHierarchical(const BenchmarkArgs& _args) : NBody<float_type> { _args }
+  {}
 
 
   void run() { this->submitHierarchical(this->particles_buf.get(), this->velocities_buf.get()); }

@@ -111,7 +111,7 @@ public:
                 local_mem[lid] += global_mem[input_element];
             }
 
-            item.barrier(s::access::fence_space::local_space);
+            sycl::group_barrier(item.get_group());
 
             for(size_t stride = wgroup_size / elements_per_thread; stride >= 1; stride /= elements_per_thread) {
               if(lid < stride) {
@@ -119,7 +119,7 @@ public:
                   local_mem[lid] += local_mem[lid + stride + i];
                 }
               }
-              item.barrier(s::access::fence_space::local_space);
+              sycl::group_barrier(item.get_group());
             }
 
             // Only one work-item per work group writes to global memory

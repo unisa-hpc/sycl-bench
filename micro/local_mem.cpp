@@ -47,7 +47,7 @@ public:
 
         local_mem[lid] = in[gid];
 
-        item.barrier(s::access::fence_space::local_space);
+        s::group_barrier(item.get_group());
 
         // Note: this is dangerous, as a compiler could in principle be smart enough to figure out that it can just drop
         // this
@@ -57,7 +57,7 @@ public:
           local_mem[lid2] = local_mem[lid];
         }
 
-        item.barrier(s::access::fence_space::local_space);
+        s::group_barrier(item.get_group());
 
         out[gid] = local_mem[lid];
       });

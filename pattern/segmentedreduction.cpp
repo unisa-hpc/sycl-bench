@@ -50,7 +50,7 @@ public:
         scratch[lid] = acc[gid];
 
         for(int i = group_size / 2; i > 0; i /= 2) {
-          item.barrier();
+          sycl::group_barrier(item.get_group());
           if(lid < i)
             scratch[lid] += scratch[lid + i];
         }
@@ -127,7 +127,8 @@ public:
 template <class T>
 class SegmentedReductionNDRange : public SegmentedReduction<T> {
 public:
-  SegmentedReductionNDRange(const BenchmarkArgs& args) : SegmentedReduction<T>{args} {}
+  SegmentedReductionNDRange(const BenchmarkArgs& args) : SegmentedReduction<T> { args }
+  {}
 
   void run(std::vector<sycl::event>& events) {
     this->submit_ndrange(events);
@@ -146,7 +147,8 @@ public:
 template <class T>
 class SegmentedReductionHierarchical : public SegmentedReduction<T> {
 public:
-  SegmentedReductionHierarchical(const BenchmarkArgs& args) : SegmentedReduction<T>{args} {}
+  SegmentedReductionHierarchical(const BenchmarkArgs& args) : SegmentedReduction<T> { args }
+  {}
 
   void run(std::vector<sycl::event>& events) {
     this->submit_hierarchical(events);
