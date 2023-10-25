@@ -1,8 +1,10 @@
 #include "common.h"
+
 namespace s = cl::sycl;
 #include <iostream>
 
 #define KERNEL_LAUNCHES_DEFAULT 50000
+
 template <typename DATA_TYPE, bool in_order = false, bool synch = false>
 class accessor_latency_kernel;
 template <typename DATA_TYPE, bool in_order = false, bool synch = false>
@@ -89,10 +91,6 @@ public:
     }
   }
 
-  bool verify(VerificationSetting& settings) {
-    // TODO
-    return true;
-  }
 
   static std::string getBenchmarkName() {
     std::stringstream name;
@@ -157,10 +155,6 @@ public:
     }
   }
 
-  bool verify(VerificationSetting& settings) {
-    // TODO
-    return true;
-  }
 
   static std::string getBenchmarkName() {
     std::stringstream name;
@@ -176,11 +170,9 @@ template <template <typename DATA_TYPE, bool in_order = false, bool synch = fals
 void launchBenchmarks(BenchmarkApp& app, const size_t kernel_launches_num) {
   app.run<latency_kernel<float>>(kernel_launches_num);                  //out-of-order, no synch
   app.run<latency_kernel<float, true>>(kernel_launches_num);            //in-order, no synch
-  // app.run<latency_kernel<float, false, true>>(kernel_launches_num);     //out-of-order, synch
   if(app.deviceSupportsFP64()) {
     app.run<latency_kernel<double>>(kernel_launches_num);               //out-of-order, no synch
     app.run<latency_kernel<double, true>>(kernel_launches_num);         //in-order, no synch
-    // app.run<latency_kernel<double, false, true>>(kernel_launches_num);  //out-of-order, synch
   }
 }
 
