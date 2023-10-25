@@ -135,15 +135,6 @@ struct BenchmarkArgs {
   std::shared_ptr<ResultConsumer> result_consumer;
 };
 
-int CUDASelector(const sycl::device& device) {
-  using namespace sycl::info;
-  const std::string driverVersion = device.get_info<device::driver_version>();
-  if(device.is_gpu() && (driverVersion.find("CUDA") != std::string::npos)) {
-    return 1;
-  };
-  return -1;
-}
-
 
 class BenchmarkCommandLine {
 public:
@@ -191,12 +182,6 @@ private:
       return {};
     };
 
-#if defined(__LLVM_SYCL_CUDA__)
-    if(device_type != "gpu") {
-      throw std::invalid_argument{"Only the 'gpu' device is supported on LLVM CUDA"};
-    }
-    return sycl::queue{CUDASelector, getQueueProperties()};
-#endif
 
     if(device_type == "cpu") {
       return sycl::queue{sycl::cpu_selector_v, getQueueProperties()};
