@@ -1,6 +1,5 @@
 #pragma once
-
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include <algorithm> // for std::min
 #include <cassert>
@@ -41,7 +40,7 @@ public:
     args.result_consumer->consumeResult("problem-size", std::to_string(args.problem_size));
     args.result_consumer->consumeResult("local-size", std::to_string(args.local_size));
     args.result_consumer->consumeResult(
-        "device-name", args.device_queue.get_device().template get_info<cl::sycl::info::device::name>());
+        "device-name", args.device_queue.get_device().template get_info<sycl::info::device::name>());
     args.result_consumer->consumeResult("sycl-implementation", this->getSyclImplementation());
 
     TimeMetricsProcessor<Benchmark> time_metrics(args);
@@ -62,7 +61,7 @@ public:
         args.device_queue.wait_and_throw();
         for(auto h : hooks) h->postSetup();
 
-        std::vector<cl::sycl::event> run_events;
+        std::vector<sycl::event> run_events;
         run_events.reserve(1024); // Make sure we don't need to resize during benchmarking.
 
         // Performance critical measurement section starts here
@@ -89,9 +88,9 @@ public:
           // Runtime without kernel time
           std::chrono::nanoseconds system_time{0};
           for(auto& e : run_events) {
-            const auto start = e.get_profiling_info<cl::sycl::info::event_profiling::command_start>();
-            const auto end = e.get_profiling_info<cl::sycl::info::event_profiling::command_end>();
-            const auto submit = e.get_profiling_info<cl::sycl::info::event_profiling::command_submit>();
+            const auto start = e.get_profiling_info<sycl::info::event_profiling::command_start>();
+            const auto end = e.get_profiling_info<sycl::info::event_profiling::command_end>();
+            const auto submit = e.get_profiling_info<sycl::info::event_profiling::command_submit>();
             total_time += std::chrono::nanoseconds(end - start);
             submit_time += std::chrono::nanoseconds(start - submit);
           }
@@ -152,14 +151,10 @@ private:
   std::vector<BenchmarkHook*> hooks;
 
   std::string getSyclImplementation() const {
-#if defined(__HIPSYCL__)
-    return "hipSYCL";
-#elif defined(__COMPUTECPP__)
-    return "ComputeCpp";
-#elif defined(__LLVM_SYCL__)
+#if defined(__ACPP__)
+    return "AdaptiveCpp";
+#elif defined(__DPCPP__)
     return "LLVM (Intel DPC++)";
-#elif defined(__LLVM_SYCL_CUDA__)
-    return "LLVM CUDA (Codeplay)";
 #elif defined(__TRISYCL__)
     return "triSYCL";
 #else
@@ -171,7 +166,7 @@ private:
 
 class BenchmarkApp {
   BenchmarkArgs args;
-  cl::sycl::queue device_queue;
+  sycl::queue device_queue;
   std::unordered_set<std::string> benchmark_names;
 
 public:
@@ -187,9 +182,9 @@ public:
 
   bool shouldRunNDRangeKernels() const { return !args.cli.isFlagSet("--no-ndrange-kernels"); }
 
-  bool deviceHasAspect(cl::sycl::aspect asp) const { return device_queue.get_device().has(asp); }
+  bool deviceHasAspect(sycl::aspect asp) const { return device_queue.get_device().has(asp); }
 
-  bool deviceSupportsFP64() const { return deviceHasAspect(cl::sycl::aspect::fp64); }
+  bool deviceSupportsFP64() const { return deviceHasAspect(sycl::aspect::fp64); }
 
   template <class Benchmark, typename... AdditionalArgs>
   void run(AdditionalArgs&&... additional_args) {
@@ -210,7 +205,7 @@ public:
 #endif
 
       mgr.run(additional_args...);
-    } catch(cl::sycl::exception& e) {
+    } catch(sycl::exception& e) {
       std::cerr << "SYCL error: " << e.what() << std::endl;
     } catch(std::exception& e) {
       std::cerr << "Error: " << e.what() << std::endl;

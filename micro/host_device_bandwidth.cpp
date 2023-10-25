@@ -1,6 +1,6 @@
 #include "common.h"
 
-namespace s = cl::sycl;
+namespace s = sycl;
 
 // The data type to be copied. This was originally a single byte (char), however
 // this causes device-side initialization kernels to quickly reach the
@@ -117,8 +117,10 @@ public:
         // Initialize buffer on device
         args.device_queue.submit([&](s::handler& cgh) {
           auto acc = buffer->template get_access<s::access::mode::discard_write>(cgh);
-          cgh.parallel_for<D2HInitKernel<Dims, Strided>>(
-              copy_size, getStridedCopyOffset<Dims, true>(), [=](s::id<Dims> gid) { acc[gid] = TEST_VALUE; });
+          cgh.parallel_for<D2HInitKernel<Dims, Strided>>(copy_size, [=](s::id<Dims> gid) {
+            auto offset = getStridedCopyOffset<Dims, true>();
+            acc[gid + offset] = TEST_VALUE;
+          });
         });
       }
     }
@@ -142,7 +144,7 @@ public:
 
       if constexpr(Direction == CopyDirection::DEVICE_TO_HOST) {
         // Request host accessor for data that has been written on device
-        buffer->template get_access<s::access::mode::read>();
+        buffer->get_host_access();
       }
     }
 
@@ -200,13 +202,13 @@ public:
         cgh.single_task<H2DVerificationKernel<Dims, Strided>>([=]() { /* NOP */ });
       });
 
-      auto acc = buffer->template get_access<s::access::mode::read>();
+      auto acc = buffer->get_host_access();
       return verifyAccessor(acc);
     }
 
     if constexpr(Direction == CopyDirection::DEVICE_TO_HOST) {
       if constexpr(!Strided) {
-        auto acc = buffer->template get_access<s::access::mode::read>();
+        auto acc = buffer->get_host_access();
         return verifyAccessor(acc);
       }
 

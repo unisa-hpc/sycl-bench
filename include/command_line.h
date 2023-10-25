@@ -9,6 +9,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <sycl/sycl.hpp>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -60,13 +61,13 @@ inline T cast(const std::string& s) {
 }
 
 template <>
-inline cl::sycl::range<3> cast(const std::string& s) {
-  return detail::parseSyclArray<cl::sycl::range<3>>(s, 1);
+inline sycl::range<3> cast(const std::string& s) {
+  return detail::parseSyclArray<sycl::range<3>>(s, 1);
 }
 
 template <>
-inline cl::sycl::id<3> cast(const std::string& s) {
-  return detail::parseSyclArray<cl::sycl::id<3>>(s, 0);
+inline sycl::id<3> cast(const std::string& s) {
+  return detail::parseSyclArray<sycl::id<3>>(s, 0);
 }
 
 class CommandLine {
@@ -121,33 +122,22 @@ private:
 
 struct VerificationSetting {
   bool enabled;
-  cl::sycl::id<3> begin = {0, 0, 0};
-  cl::sycl::range<3> range = {1, 1, 1};
+  sycl::id<3> begin = {0, 0, 0};
+  sycl::range<3> range = {1, 1, 1};
 };
 
 struct BenchmarkArgs {
   size_t problem_size;
   size_t local_size;
   size_t num_runs;
-  cl::sycl::queue device_queue;
-  cl::sycl::queue device_queue_in_order;
+  sycl::queue device_queue;
+  sycl::queue device_queue_in_order;
   VerificationSetting verification;
   // can be used to query additional benchmark specific information from the command line
   CommandLine cli;
   std::shared_ptr<ResultConsumer> result_consumer;
 };
 
-class CUDASelector : public cl::sycl::device_selector {
-public:
-  int operator()(const cl::sycl::device& device) const override {
-    using namespace cl::sycl::info;
-    const std::string driverVersion = device.get_info<device::driver_version>();
-    if(device.is_gpu() && (driverVersion.find("CUDA") != std::string::npos)) {
-      return 1;
-    };
-    return -1;
-  }
-};
 
 class BenchmarkCommandLine {
 public:
@@ -159,16 +149,16 @@ public:
     std::size_t num_runs = cli_parser.getOrDefault<std::size_t>("--num-runs", 5);
 
     std::string device_type = cli_parser.getOrDefault<std::string>("--device", "default");
-    cl::sycl::queue q = getQueue(device_type);
-    cl::sycl::queue q_in_order = getQueue(device_type, cl::sycl::property::queue::in_order{});
+    sycl::queue q = getQueue(device_type);
+    sycl::queue q_in_order = getQueue(device_type, sycl::property::queue::in_order{});
 
     bool verification_enabled = true;
     if(cli_parser.isFlagSet("--no-verification"))
       verification_enabled = false;
 
-    auto verification_begin = cli_parser.getOrDefault<cl::sycl::id<3>>("--verification-begin", cl::sycl::id<3>{0, 0, 0});
+    auto verification_begin = cli_parser.getOrDefault<sycl::id<3>>("--verification-begin", sycl::id<3>{0, 0, 0});
 
-    auto verification_range = cli_parser.getOrDefault<cl::sycl::range<3>>("--verification-range", cl::sycl::range<3>{1, 1, 1});
+    auto verification_range = cli_parser.getOrDefault<sycl::range<3>>("--verification-range", sycl::range<3>{1, 1, 1});
 
     auto result_consumer = getResultConsumer(cli_parser.getOrDefault<std::string>("--output", "stdio"));
 
@@ -189,28 +179,22 @@ private:
   }
 
   template <typename... Props>
-  cl::sycl::queue getQueue(const std::string& device_type, Props&&... props) const {
-    const auto getQueueProperties = [&]() -> cl::sycl::property_list {
+  sycl::queue getQueue(const std::string& device_type, Props&&... props) const {
+    const auto getQueueProperties = [&]() -> sycl::property_list {
 
 #if defined(SYCL_BENCH_ENABLE_QUEUE_PROFILING)
-      return {cl::sycl::property::queue::enable_profiling{}, props...};
+      return {sycl::property::queue::enable_profiling{}, props...};
 #endif
       return {props...};
     };
 
-#if defined(__LLVM_SYCL_CUDA__)
-    if(device_type != "gpu") {
-      throw std::invalid_argument{"Only the 'gpu' device is supported on LLVM CUDA"};
-    }
-    return cl::sycl::queue{CUDASelector{}, getQueueProperties()};
-#endif
 
     if(device_type == "cpu") {
-      return cl::sycl::queue{cl::sycl::cpu_selector{}, getQueueProperties()};
+      return sycl::queue{sycl::cpu_selector_v, getQueueProperties()};
     } else if(device_type == "gpu") {
-      return cl::sycl::queue{cl::sycl::gpu_selector{}, getQueueProperties()};
+      return sycl::queue{sycl::gpu_selector_v, getQueueProperties()};
     } else if(device_type == "default") {
-      return cl::sycl::queue{getQueueProperties()};
+      return sycl::queue{getQueueProperties()};
     } else {
       throw std::invalid_argument{"unknown device type: " + device_type};
     }

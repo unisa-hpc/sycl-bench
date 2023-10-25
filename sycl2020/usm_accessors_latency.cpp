@@ -1,6 +1,6 @@
 #include "common.h"
 
-namespace s = cl::sycl;
+namespace s = sycl;
 #include <iostream>
 
 #define KERNEL_LAUNCHES_DEFAULT 50000
@@ -33,7 +33,7 @@ protected:
     
     }
 
-  cl::sycl::queue& get_queue() {
+  sycl::queue& get_queue() {
     if constexpr(in_order) {
       return args.device_queue_in_order;
     } else {
@@ -68,7 +68,7 @@ public:
     buff_C.initialize(args.device_queue, range);
   }
 
-  void run(std::vector<cl::sycl::event>& events) {
+  void run(std::vector<sycl::event>& events) {
     auto& queue = get_queue();
     for(int i = 0; i < kernel_launches_num; i++) {
       auto event = queue.submit([&](s::handler& cgh) {
@@ -127,9 +127,9 @@ public:
     buff_C.initialize(args.device_queue, getRange());
   }
 
-  void run(std::vector<cl::sycl::event>& events) {
+  void run(std::vector<sycl::event>& events) {
     auto& queue = get_queue();
-    cl::sycl::event event;
+    sycl::event event;
     auto* acc_A = buff_A.get();
     auto* acc_B = buff_B.get();
     auto* acc_C = buff_C.get();
