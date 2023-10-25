@@ -37,38 +37,11 @@ if(NOT SYCL_IMPL OR impl_idx EQUAL -1)
 endif()
 
 if(SYCL_IMPL STREQUAL "AdaptiveCpp")
-  if(WITH_CUDA_BACKEND)
-    set(CUDA_ARCH "" CACHE STRING "CUDA device architecture e.g. sm_70")
-
-    if(NOT CUDA_ARCH STREQUAL "")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --acpp-targets=cuda:${CUDA_ARCH}")
-    endif()
-  endif()
-
-  if(WITH_ROCM_BACKEND)
-    set(ROCM_ARCH "" CACHE STRING "ROCm device architecture e.g. gfx908")
-
-    if(NOT ROCM_ARCH STREQUAL "")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --acpp-targets=hip:${ROCM_ARCH}")
-    endif()
-  endif()
-
-  if(WITH_LZ_BACKEND)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --acpp-targets=generic")
-
-    set(LZ_ARCH "" CACHE STRING "Level Zero device architecture e.g. acm-g10")
-
-    if(NOT LZ_ARCH STREQUAL "")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --acpp-gpu-arch=${LZ_ARCH}\"")
-    endif()
-  endif()
-
   find_package(AdaptiveCpp REQUIRED)
-
 elseif(SYCL_IMPL STREQUAL "dpcpp")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl")
 
-  if(WITH_CUDA_BACKEND)
+  if(DPCPP_WITH_CUDA_BACKEND)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=nvptx64-nvidia-cuda")
 
     set(CUDA_ARCH "" CACHE STRING "CUDA device architecture e.g. sm_70")
@@ -78,7 +51,7 @@ elseif(SYCL_IMPL STREQUAL "dpcpp")
     endif()
   endif()
 
-  if(WITH_ROCM_BACKEND)
+  if(DPCPP_WITH_ROCM_BACKEND)
     set(ROCM_ARCH "" CACHE STRING "ROCm device architecture e.g. gfx908")
 
     if(NOT ROCM_ARCH STREQUAL "")
@@ -86,7 +59,7 @@ elseif(SYCL_IMPL STREQUAL "dpcpp")
     endif()
   endif()
 
-  if(WITH_LZ_BACKEND)
+  if(DPCPP_WITH_LZ_BACKEND)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=spir64_gen")
 
     set(LZ_ARCH "" CACHE STRING "Level Zero device architecture e.g. acm-g10")
@@ -138,7 +111,8 @@ set(benchmarks
   polybench/mvt.cpp
   polybench/syr2k.cpp
   polybench/syrk.cpp
-  #compiletime/compiletime.cpp
+
+  # compiletime/compiletime.cpp
   spec_constants/spec_constant_convolution.cpp
 )
 
@@ -155,7 +129,7 @@ foreach(benchmark IN LISTS benchmarks)
     target_compile_definitions(${target} PRIVATE __LLVM_SYCL__)
   endif()
 
-  if(SYCL_IMPL STREQUAL "dpcpp" AND WITH_CUDA_BACKEND)
+  if(SYCL_IMPL STREQUAL "dpcpp" AND DPCPP_WITH_CUDA_BACKEND)
     target_compile_definitions(${target} PRIVATE __LLVM_SYCL_CUDA__)
   endif()
 
