@@ -137,14 +137,10 @@ private:
   std::vector<BenchmarkHook*> hooks;
 
   std::string getSyclImplementation() const {
-#if defined(__HIPSYCL__)
-    return "hipSYCL";
-#elif defined(__COMPUTECPP__)
-    return "ComputeCpp";
-#elif defined(__LLVM_SYCL__)
+#if defined(__ACPP__)
+    return "AdaptiveCpp";
+#elif defined(__DPCPP__)
     return "LLVM (Intel DPC++)";
-#elif defined(__LLVM_SYCL_CUDA__)
-    return "LLVM CUDA (Codeplay)";
 #elif defined(__TRISYCL__)
     return "triSYCL";
 #else

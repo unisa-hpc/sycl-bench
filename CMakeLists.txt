@@ -126,11 +126,7 @@ foreach(benchmark IN LISTS benchmarks)
   endif()
 
   if(SYCL_IMPL STREQUAL "dpcpp")
-    target_compile_definitions(${target} PRIVATE __LLVM_SYCL__)
-  endif()
-
-  if(SYCL_IMPL STREQUAL "dpcpp" AND DPCPP_WITH_CUDA_BACKEND)
-    target_compile_definitions(${target} PRIVATE __LLVM_SYCL_CUDA__)
+    target_compile_definitions(${target} PRIVATE __DPCPP__)
   endif()
 
   if(SYCL_IMPL STREQUAL "triSYCL")
