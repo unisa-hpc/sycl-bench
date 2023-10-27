@@ -115,6 +115,8 @@ set(benchmarks
   # compiletime/compiletime.cpp
   spec_constants/spec_constant_convolution.cpp
   reductions/kernel_reduction.cpp
+  reductions/reduction_local_mem.cpp
+  reductions/reduce_over_group_reduction.cpp
 )
 
 foreach(benchmark IN LISTS benchmarks)
