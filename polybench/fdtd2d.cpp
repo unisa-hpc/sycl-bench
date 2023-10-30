@@ -200,7 +200,10 @@ private:
 
 int main(int argc, char** argv) {
   BenchmarkApp app(argc, argv);
-  if(app.deviceSupportsFP64())
-    app.run<Polybench_Fdtd2d>();
+
+  if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
+    if(app.deviceSupportsFP64())
+      app.run<Polybench_Fdtd2d>();
+  }
   return 0;
 }
