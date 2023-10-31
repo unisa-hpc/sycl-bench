@@ -73,8 +73,8 @@ public:
     for(int i = 0; i < kernel_launches_num; i++) {
       auto event = queue.submit([&](s::handler& cgh) {
         auto acc_A = buff_A.template get_access<s::access::mode::read>(cgh, buff_A.get_range());
-        auto acc_B = buff_A.template get_access<s::access::mode::read>(cgh, buff_A.get_range());
-        auto acc_C = buff_A.template get_access<s::access::mode::write>(cgh, buff_A.get_range());
+        auto acc_B = buff_B.template get_access<s::access::mode::read>(cgh, buff_B.get_range());
+        auto acc_C = buff_C.template get_access<s::access::mode::write>(cgh, buff_C.get_range());
 
         cgh.parallel_for<class accessor_latency_kernel<DATA_TYPE,in_order,synch>>(getNDRange(), [=](s::nd_item<1> item) {
           const auto id = item.get_global_linear_id();
