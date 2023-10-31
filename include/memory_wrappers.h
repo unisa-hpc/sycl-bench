@@ -138,6 +138,8 @@ public:
 
   auto get() const { return _data; }
 
+  auto size() const { return total_size; }
+
 private:
   template <sycl::usm::alloc alloc_type>
   static T* malloc(sycl::queue& Q, size_t count) {
