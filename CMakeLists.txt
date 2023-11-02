@@ -24,6 +24,9 @@ endif()
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/polybench/common)
 
+# SYCL Bench variables
+set(SYCL_BENCH_ENABLE_FP64_BENCHMARKS "ON" CACHE STRING "Enable FP64 benchmarks [ON]")
+
 set(supported_implementations
   AdaptiveCpp
   dpcpp
@@ -115,6 +118,9 @@ set(benchmarks
   # compiletime/compiletime.cpp
   spec_constants/spec_constant_convolution.cpp
 )
+
+# Setting variables
+add_compile_definitions(SYCL_BENCH_ENABLE_FP64_BENCHMARKS=$<BOOL:${SYCL_BENCH_ENABLE_FP64_BENCHMARKS}>)
 
 foreach(benchmark IN LISTS benchmarks)
   get_filename_component(target ${benchmark} NAME_WE)
