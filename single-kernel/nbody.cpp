@@ -262,8 +262,7 @@ public:
   using typename NBody<float_type>::particle_type;
   using typename NBody<float_type>::vector_type;
 
-  NBodyNDRange(const BenchmarkArgs& _args) : NBody<float_type> { _args }
-  {}
+  NBodyNDRange(const BenchmarkArgs& _args) : NBody<float_type>{_args} {}
 
 
   void run() { this->submitNDRange(this->particles_buf.get(), this->velocities_buf.get()); }
@@ -283,8 +282,7 @@ public:
   using typename NBody<float_type>::particle_type;
   using typename NBody<float_type>::vector_type;
 
-  NBodyHierarchical(const BenchmarkArgs& _args) : NBody<float_type> { _args }
-  {}
+  NBodyHierarchical(const BenchmarkArgs& _args) : NBody<float_type>{_args} {}
 
 
   void run() { this->submitHierarchical(this->particles_buf.get(), this->velocities_buf.get()); }
@@ -302,13 +300,16 @@ int main(int argc, char** argv) {
   BenchmarkApp app(argc, argv);
 
   app.run<NBodyHierarchical<float>>();
-  if(app.deviceSupportsFP64())
-    app.run<NBodyHierarchical<double>>();
-
+  if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
+    if(app.deviceSupportsFP64())
+      app.run<NBodyHierarchical<double>>();
+  }
   if(app.shouldRunNDRangeKernels()) {
     app.run<NBodyNDRange<float>>();
-    if(app.deviceSupportsFP64())
-      app.run<NBodyNDRange<double>>();
+    if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
+      if(app.deviceSupportsFP64())
+        app.run<NBodyNDRange<double>>();
+    }
   }
 
   return 0;
