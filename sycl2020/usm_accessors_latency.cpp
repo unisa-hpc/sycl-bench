@@ -24,14 +24,11 @@ protected:
   LatencyBenchmark(const BenchmarkArgs& args, const size_t kernel_launches_num)
       : args(args), kernel_launches_num(kernel_launches_num) {}
 
-  s::range<1> getRange() const { 
-    return s::range<1>{args.problem_size}; 
-  }
+  s::range<1> getRange() const { return s::range<1>{args.problem_size}; }
 
-  s::nd_range<1> getNDRange() const { 
-    return s::nd_range<1>{args.problem_size, args.problem_size > 1024 ? 1024 : args.problem_size}; 
-    
-    }
+  s::nd_range<1> getNDRange() const {
+    return s::nd_range<1>{args.problem_size, args.problem_size > 1024 ? 1024 : args.problem_size};
+  }
 
   sycl::queue& get_queue() {
     if constexpr(in_order) {
@@ -54,8 +51,8 @@ public:
   using base::args;
   using base::base;
   using base::get_queue;
-  using base::getRange;
   using base::getNDRange;
+  using base::getRange;
   using base::kernel_launches_num;
 
   AccessorLatency(const BenchmarkArgs& args, const size_t kernel_launches_num) : base(args, kernel_launches_num) {}
@@ -76,10 +73,11 @@ public:
         auto acc_B = buff_B.template get_access<s::access::mode::read>(cgh, buff_B.get_range());
         auto acc_C = buff_C.template get_access<s::access::mode::write>(cgh, buff_C.get_range());
 
-        cgh.parallel_for<class accessor_latency_kernel<DATA_TYPE,in_order,synch>>(getNDRange(), [=](s::nd_item<1> item) {
-          const auto id = item.get_global_linear_id();
-          acc_C[id] = acc_A[id] + acc_B[id];
-        });
+        cgh.parallel_for<class accessor_latency_kernel<DATA_TYPE, in_order, synch>>(
+            getNDRange(), [=](s::nd_item<1> item) {
+              const auto id = item.get_global_linear_id();
+              acc_C[id] = acc_A[id] + acc_B[id];
+            });
       });
       if constexpr(synch) {
         queue.wait();
@@ -113,8 +111,8 @@ protected:
   using base::args;
   using base::base;
   using base::get_queue;
-  using base::getRange;
   using base::getNDRange;
+  using base::getRange;
   using base::kernel_launches_num;
 
 public:
@@ -139,7 +137,7 @@ public:
         if constexpr(!in_order && !synch) {
           cgh.depends_on(event);
         }
-        cgh.parallel_for<class usm_latency_kernel<DATA_TYPE,in_order,synch>>(getNDRange(), [=](s::nd_item<1> item) {
+        cgh.parallel_for<class usm_latency_kernel<DATA_TYPE, in_order, synch>>(getNDRange(), [=](s::nd_item<1> item) {
           const auto id = item.get_global_linear_id();
           acc_C[id] = acc_A[id] + acc_B[id];
         });
@@ -168,11 +166,13 @@ public:
 
 template <template <typename DATA_TYPE, bool in_order = false, bool synch = false> typename latency_kernel>
 void launchBenchmarks(BenchmarkApp& app, const size_t kernel_launches_num) {
-  app.run<latency_kernel<float>>(kernel_launches_num);                  //out-of-order, no synch
-  app.run<latency_kernel<float, true>>(kernel_launches_num);            //in-order, no synch
-  if(app.deviceSupportsFP64()) {
-    app.run<latency_kernel<double>>(kernel_launches_num);               //out-of-order, no synch
-    app.run<latency_kernel<double, true>>(kernel_launches_num);         //in-order, no synch
+  app.run<latency_kernel<float>>(kernel_launches_num);       // out-of-order, no synch
+  app.run<latency_kernel<float, true>>(kernel_launches_num); // in-order, no synch
+  if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
+    if(app.deviceSupportsFP64()) {
+      app.run<latency_kernel<double>>(kernel_launches_num);       // out-of-order, no synch
+      app.run<latency_kernel<double, true>>(kernel_launches_num); // in-order, no synch
+    }
   }
 }
 
