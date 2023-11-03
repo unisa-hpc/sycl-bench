@@ -148,7 +148,7 @@ public:
     }
     if constexpr(!detail::usm_properties<type>::is_host_accessible) {
       if(_host_ptr != nullptr) {
-        delete[] _host_ptr;
+        sycl::free(_host_ptr, queue);
       }
     }
   }
@@ -184,7 +184,7 @@ public:
   sycl::event update_host(sycl::event event) {
     if constexpr(!detail::usm_properties<type>::is_host_accessible) {
       if(_host_ptr == nullptr) {
-        _host_ptr = new T[total_size]();
+        _host_ptr = static_cast<T*>(sycl::malloc_host(total_size * sizeof(T), queue));
       }
       return queue.copy(_data, _host_ptr, total_size, event);
     }
