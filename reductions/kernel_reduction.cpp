@@ -3,7 +3,7 @@
 
 namespace s = sycl;
 
-template <typename T, typename Op>
+template <typename T, typename Op, int coarse_factor>
 class KernelReductionBench {
   int problem_size = 1;
   BenchmarkArgs args;
@@ -33,7 +33,11 @@ public:
       auto r = s::reduction(out_buf.get(), cgh, Op());
 #endif
       auto in_acc = in_buf.template get_access<s::access_mode::read>(cgh);
-      cgh.parallel_for(s::range<1>{problem_size}, r, [=](s::id<1> idx, auto& op) { op.combine(in_acc[idx]); });
+      auto ndrange = s::nd_range<1>{problem_size / coarse_factor, args.local_size};
+      cgh.parallel_for(ndrange, r, [=](s::nd_item<1> it, auto& op) {
+        const auto idx = it.get_global_id();
+        for(int i = 0; i < coarse_factor; i++) op.combine(in_acc[idx * coarse_factor + i]);
+      });
     }));
   }
   bool verify(VerificationSetting& ver) {
@@ -61,10 +65,18 @@ public:
   }
 };
 
+
+template <typename T, typename Op>
+void runCoarsening(BenchmarkApp& app) {
+  app.run<KernelReductionBench<T, Op, 1>>();
+  app.run<KernelReductionBench<T, Op, 4>>();
+  app.run<KernelReductionBench<T, Op, 8>>();
+}
+
 template <typename T>
 void runOperators(BenchmarkApp& app) {
-  app.run<KernelReductionBench<T, sycl::plus<T>>>();
-  app.run<KernelReductionBench<T, sycl::multiplies<T>>>();
+  runCoarsening<T, sycl::plus<T>>(app);
+  runCoarsening<T, sycl::multiplies<T>>(app);
 }
 
 int main(int argc, char** argv) {
