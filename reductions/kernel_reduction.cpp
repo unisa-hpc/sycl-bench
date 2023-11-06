@@ -34,8 +34,7 @@ public:
 #endif
       auto in_acc = in_buf.template get_access<s::access_mode::read>(cgh);
       auto ndrange = s::nd_range<1>{problem_size / coarse_factor, args.local_size};
-      cgh.parallel_for(ndrange, r, [=](s::nd_item<1> it, auto& op) {
-        const auto idx = it.get_global_id();
+      cgh.parallel_for(problem_size / coarse_factor, r, [=](s::id<1> idx, auto& op) {
         for(int i = 0; i < coarse_factor; i++) op.combine(in_acc[idx * coarse_factor + i]);
       });
     }));
@@ -61,6 +60,7 @@ public:
     } else {
       name << "_multiplies";
     }
+    name << "_cf" << coarse_factor;
     return name.str();
   }
 };
