@@ -27,10 +27,9 @@ public:
     events.push_back(args.device_queue.submit([&](s::handler& cgh) {
       auto in_acc = in_buf.template get_access<s::access_mode::read>(cgh);
       auto out_acc = out_buf.template get_access<s::access_mode::write>(cgh);
-
-
-      cgh.parallel_for<ReductionAtomic<T>>(problem_size, [=](sycl::id<1> id) {
-        const auto gid = id;
+      auto ndrange = s::nd_range<1>{problem_size, args.local_size};
+      cgh.parallel_for<ReductionAtomic<T>>(ndrange, [=](sycl::nd_item<1> it) {
+        const auto gid = it.get_global_id();
 
         // Implement atomic reduction: each WI0 in a WG should write in the out_acc using atomic operation
         s::atomic_ref<T, s::memory_order::relaxed, s::memory_scope::device, s::access::address_space::global_space> atm(
