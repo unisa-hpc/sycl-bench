@@ -174,7 +174,7 @@ public:
   void update_host() {
     if constexpr(!detail::usm_properties<type>::is_host_accessible) {
       if(_host_ptr == nullptr) {
-        _host_ptr = new T[total_size]();
+        _host_ptr = static_cast<T*>(sycl::malloc_host(total_size * sizeof(T), queue));
       }
       queue.copy(_data, _host_ptr, total_size);
       queue.wait_and_throw();
@@ -191,12 +191,14 @@ public:
     else return event;
   }
 
-  void update_device() {
+   sycl::event update_device() {
     if constexpr (detail::usm_properties<type>::is_device_accessible && !detail::usm_properties<type>::is_host_accessible){
       assert(_host_ptr != nullptr && "calling update_device when no modification has been made on the host");
-      queue.copy(_host_ptr, _data, total_size);
+      auto event = queue.copy(_host_ptr, _data, total_size);
       queue.wait_and_throw();
+      return event;
     }
+    else return sycl::event{};
   }
 
   sycl::event update_device(sycl::event event) {
