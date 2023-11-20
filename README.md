@@ -11,6 +11,7 @@ Benchmarks support the following command line arguments:
 * `--verification-range=<x,y,z>` - Specify the size of the 3D range that should be used for verifying results. Note: Most benchmarks do not implement this feature. Default: `1,1,1`
 * `--no-verification` - disable verification entirely
 * `--no-ndrange-kernels` - do not run kernels based on ndrange parallel for
+* `--warmup-run` - run benchmarks once before evaluation to discard possible "warmup" times, e.g., JIT compilation
 
 ## Usage
 Clone sycl-bench repo 
