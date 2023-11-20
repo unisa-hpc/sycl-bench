@@ -34,6 +34,7 @@ def create_log_range(begin, end):
     --verification-range=<x,y,z> - Specify the size of the 3D range that should be used for verifying results. Note: Most benchmarks do not implement this feature. Default: 1,1,1
     --no-verification - disable verification entirely
     --no-ndrange-kernels - do not run kernels based on ndrange parallel for
+    --warmup-run - run benchmarks once before evaluation to discard possible "warmup" times, e.g., JIT compilation
 '''
 output_file = "./sycl-bench.csv"
 
@@ -130,7 +131,9 @@ profiles = {
   'default': default_profile,
   'quicktest' : construct_profile({}, max_allowed_runtime=1.0),
   'cpu' : construct_profile({'--device':'cpu'}),
+  'cpu-warmup' : construct_profile({'--device':'cpu'},['--warmup-run']),
   'gpu' : construct_profile({'--device':'gpu'}),
+  'gpu-warmup' : construct_profile({'--device':'gpu'},['--warmup-run']),
   'cpu-noverify' : construct_profile({'--device':'cpu'},['--no-verification']),
   'cpu-nondrange' : construct_profile({'--device':'cpu'},['--no-ndrange-kernels']),
   'cpu-noverify-nondrange' : construct_profile({'--device':'cpu'},['--no-verification','--no-ndrange-kernels']),
