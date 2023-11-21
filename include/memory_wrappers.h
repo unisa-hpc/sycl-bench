@@ -194,9 +194,9 @@ public:
    sycl::event update_device() {
     if constexpr (detail::usm_properties<type>::is_device_accessible && !detail::usm_properties<type>::is_host_accessible){
       assert(_host_ptr != nullptr && "calling update_device when no modification has been made on the host");
-      auto event = queue.copy(_host_ptr, _data, total_size);
-      queue.wait_and_throw();
-      return event;
+      // auto event = queue.copy(_host_ptr, _data, total_size);
+      // queue.wait_and_throw();
+      return queue.copy(_host_ptr, _data, total_size);
     }
     else return sycl::event{};
   }
