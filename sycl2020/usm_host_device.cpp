@@ -13,7 +13,7 @@ std::string usm_to_string(sycl::usm::alloc usm_type) {
   else if(usm_type == sycl::usm::alloc::shared)
     return "shared";
   else
-    throw std::invalid_argument("Unknown USM type");
+    return "unknown";
 }
 
 
@@ -46,7 +46,7 @@ public:
   void run_strided(std::vector<sycl::event>& events) {
     sycl::queue& queue = args.device_queue;
     // Init
-    buff1.initialize(args.problem_size * offset);
+    buff1.initialize(args.problem_size);
     {
       auto host_ptr = buff1.update_and_get_host_ptr();
       std::fill(host_ptr, host_ptr + buff1.size(), 0);
@@ -57,15 +57,11 @@ public:
       auto kernel_event = queue.submit([&](sycl::handler& cgh) {
         auto* acc_1 = buff1.get();
         cgh.depends_on(device_copy_event);
-        cgh.parallel_for(sycl::nd_range<1>{{args.problem_size}, {args.local_size}}, [=](sycl::nd_item<1> item) {
+        cgh.parallel_for(sycl::nd_range<1>{{args.problem_size / offset}, {args.local_size}}, [=](sycl::nd_item<1> item) {
           acc_1[item.get_global_linear_id() * offset] = static_cast<DATA_TYPE>(item.get_global_linear_id());
         });
       });
       events.push_back(kernel_event);
-      // Host op
-      // TODO: Host tasks?
-      // TODO: Prefetch?
-      // TODO: Strided copy?
       auto [host_ptr, copy_event] = buff1.update_and_get_host_ptr(kernel_event);
       copy_event.wait(); // Need this wait 'cause we can't use host tasks and synchronization with the device is needed
       for(size_t i = 0; i < buff1.size() / offset; i++) {
@@ -99,12 +95,12 @@ public:
       // TODO: Strided copy?
       auto [host_ptr, copy_event] = buff1.update_and_get_host_ptr(kernel_event);
       copy_event.wait(); // Need this wait 'cause we can't use host tasks and synchronization with the device is needed
+      // Host op
       for(size_t i = 0; i < buff1.size(); i++) {
         host_ptr[i] -= DATA_TYPE{1};
       }
     }
   }
-
 
   bool verify(VerificationSetting& settings) {
     auto host_ptr = buff1.get_host_ptr();
@@ -125,7 +121,7 @@ public:
     name << "USM_Host_Device_";
     name << ReadableTypename<DATA_TYPE>::name << "_";
     name << usm_to_string(usm_type) << "_";
-    if constexpr (strided)
+    if constexpr(strided)
       name << "strided_";
     return name.str();
   }
