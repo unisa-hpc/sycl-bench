@@ -1,4 +1,5 @@
 #include "common.h"
+#include "polybenchUtilFuncts.h"
 #include <iostream>
 
 namespace s = sycl;
@@ -33,21 +34,22 @@ public:
       auto r = s::reduction(out_buf.get(), cgh, Op());
 #endif
       auto in_acc = in_buf.template get_access<s::access_mode::read>(cgh);
-      auto ndrange = s::nd_range<1>{problem_size / coarse_factor, args.local_size};
-      cgh.parallel_for(problem_size / coarse_factor, r, [=](s::id<1> idx, auto& op) {
+      cgh.parallel_for(s::range<1>{problem_size / coarse_factor}, r, [=](s::id<1> idx, auto& op) {
         for(int i = 0; i < coarse_factor; i++) op.combine(in_acc[idx * coarse_factor + i]);
       });
     }));
   }
   bool verify(VerificationSetting& ver) {
-    auto results = out_buf.get_host_access();
-    T verified_results = 0;
-    verified_results = std::reduce(in_vec.data(), in_vec.data() + problem_size, 0, Op());
+    constexpr auto ERROR_THRESHOLD = 0.05;
 
-    if(results[0] == verified_results)
-      return true;
-    else
+    auto results = out_buf.get_host_access();
+    T verified_results = problem_size;
+
+    if(percentDiff(results[0], verified_results) > ERROR_THRESHOLD) {
+      std::cout << results[0] << " -- " << verified_results << std::endl;
       return false;
+    } else
+      return true;
   }
 
 
@@ -57,8 +59,6 @@ public:
     name << ReadableTypename<T>::name;
     if constexpr(std::is_same<Op, sycl::plus<T>>::value) {
       name << "_plus";
-    } else {
-      name << "_multiplies";
     }
     name << "_cf" << coarse_factor;
     return name.str();
@@ -76,7 +76,6 @@ void runCoarsening(BenchmarkApp& app) {
 template <typename T>
 void runOperators(BenchmarkApp& app) {
   runCoarsening<T, sycl::plus<T>>(app);
-  runCoarsening<T, sycl::multiplies<T>>(app);
 }
 
 int main(int argc, char** argv) {

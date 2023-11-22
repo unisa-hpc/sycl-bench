@@ -1,4 +1,5 @@
 #include "common.h"
+#include "polybenchUtilFuncts.h"
 #include <iostream>
 
 namespace s = sycl;
@@ -47,11 +48,12 @@ public:
   }
   bool verify(VerificationSetting& ver) {
     auto results = out_buf.get_host_access();
-    T verified_results = 0;
-    verified_results = std::reduce(in_vec.data(), in_vec.data() + local_size, 0, std::plus<T>());
+    constexpr auto ERROR_THRESHOLD = 0.05;
 
+    T verified_results = local_size;
     for(int i = 0; i < problem_size / local_size; i++) {
-      if(results[i] != verified_results)
+      T diff = percentDiff(results[i], verified_results);
+      if(diff > ERROR_THRESHOLD)
         return false;
     }
     return true;

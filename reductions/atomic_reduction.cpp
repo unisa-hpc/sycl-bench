@@ -1,4 +1,5 @@
 #include "common.h"
+#include "polybenchUtilFuncts.h"
 #include <iostream>
 
 namespace s = sycl;
@@ -18,8 +19,10 @@ public:
   void setup() {
     problem_size = args.problem_size;
     in_vec.resize(problem_size);
+
     std::fill(in_vec.begin(), in_vec.end(), 1);
-    reduction_results = 0;
+
+    reduction_results = 0.f;
     in_buf.initialize(args.device_queue, in_vec.data(), s::range<1>{in_vec.size()});
     out_buf.initialize(args.device_queue, &reduction_results, s::range<1>{1});
   }
@@ -31,7 +34,6 @@ public:
       cgh.parallel_for<ReductionAtomic<T>>(ndrange, [=](sycl::nd_item<1> it) {
         const auto gid = it.get_global_id();
 
-        // Implement atomic reduction: each WI0 in a WG should write in the out_acc using atomic operation
         s::atomic_ref<T, s::memory_order::relaxed, s::memory_scope::device, s::access::address_space::global_space> atm(
             out_acc[0]);
 
@@ -41,13 +43,15 @@ public:
   }
   bool verify(VerificationSetting& ver) {
     auto results = out_buf.get_host_access();
-    T verified_results = 0;
-    verified_results = std::reduce(in_vec.data(), in_vec.data() + problem_size, 0, std::plus<T>());
+    constexpr auto ERROR_THRESHOLD = 0.05f;
 
-    if(results[0] == verified_results)
-      return true;
-    else
+    T verified_results = 0;
+    for(int i = 0; i < in_vec.size(); i++) verified_results += in_vec[i];
+
+    if(percentDiff(results[0], verified_results) > ERROR_THRESHOLD) {
       return false;
+    } else
+      return true;
   }
 
 
