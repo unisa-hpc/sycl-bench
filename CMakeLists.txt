@@ -115,9 +115,11 @@ set(benchmarks
   # compiletime/compiletime.cpp
   spec_constants/spec_constant_convolution.cpp
   reductions/kernel_reduction.cpp
-  reductions/reduction_local_mem.cpp
-  reductions/reduce_over_group_reduction.cpp
   reductions/atomic_reduction.cpp
+  reductions/reduce_over_group_no_atomic.cpp
+  reductions/reduce_over_group_with_atomic.cpp
+  reductions/reduction_local_mem_no_atomic.cpp
+  reductions/reduction_local_mem_with_atomic.cpp
 )
 
 foreach(benchmark IN LISTS benchmarks)
@@ -137,7 +139,11 @@ foreach(benchmark IN LISTS benchmarks)
     add_sycl_to_target(${target})
     target_compile_definitions(${target} PRIVATE __TRISYCL__)
   endif()
-
+  
+  if(ENABLE_TIME_EVENT_PROFILING)
+    target_compile_definitions(${target} PUBLIC SYCL_BENCH_ENABLE_QUEUE_PROFILING=1)
+  endif()
+  
   install(TARGETS ${target} RUNTIME DESTINATION bin/benchmarks/)
   get_filename_component(dir ${benchmark} DIRECTORY)
   set_property(TARGET ${target} PROPERTY FOLDER ${dir})
