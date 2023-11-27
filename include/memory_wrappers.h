@@ -173,9 +173,6 @@ public:
 
   void update_host() {
     if constexpr(!detail::usm_properties<type>::is_host_accessible) {
-      if(_host_ptr == nullptr) {
-        _host_ptr = static_cast<T*>(sycl::malloc_host(total_size * sizeof(T), queue));
-      }
       queue.copy(_data, _host_ptr, total_size);
       queue.wait_and_throw();
     }
@@ -183,9 +180,6 @@ public:
 
   sycl::event update_host(sycl::event event) {
     if constexpr(!detail::usm_properties<type>::is_host_accessible) {
-      if(_host_ptr == nullptr) {
-        _host_ptr = static_cast<T*>(sycl::malloc_host(total_size * sizeof(T), queue));
-      }
       return queue.copy(_data, _host_ptr, total_size, event);
     }
     else return event;
@@ -258,15 +252,14 @@ private:
   void allocate(size_t count) {
     assert(count >= 0 && "Cannot allocate negative num bytes");
     _data = malloc<type>(count);
-    this->_count = sycl::range<dim>{count};
-    total_size = count;
-
-    // All the USM allocations, apart from usm::device, are accessible from the host
     if constexpr(!detail::usm_properties<type>::is_host_accessible) {
-      _host_ptr = nullptr;
-    } else {
+      _host_ptr = static_cast<T*>(sycl::malloc_host(count * sizeof(T), queue));
+    }
+    else {
       _host_ptr = _data;
     }
+    this->_count = sycl::range<dim>{count};
+    total_size = count;
   }
 
   void allocate(const sycl::range<dim>& count) {
@@ -274,15 +267,15 @@ private:
 
     const size_t total_size = getSize(count);
     _data = malloc<type>(queue, total_size);
+    if constexpr(!detail::usm_properties<type>::is_host_accessible) {
+      _host_ptr = static_cast<T*>(sycl::malloc_host(total_size * sizeof(T), queue));
+    }
+    else {
+      _host_ptr = _data;
+    }
 
     this->_count = count;
     this->total_size = total_size;
-    // All the USM allocations, apart from usm::device, are accessible from the host
-    if constexpr(type == sycl::usm::alloc::device) {
-      _host_ptr = nullptr;
-    } else {
-      _host_ptr = _data;
-    }
   }
 
   void copy(const T* src, T* dst, std::size_t count) const {
