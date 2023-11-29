@@ -117,6 +117,7 @@ set(benchmarks
 
   # compiletime/compiletime.cpp
   spec_constants/spec_constant_convolution.cpp
+  sycl2020/usm_accessors_latency.cpp
 )
 
 # Setting variables

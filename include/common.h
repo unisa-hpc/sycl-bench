@@ -18,7 +18,7 @@
 
 #include "benchmark_hook.h"
 #include "benchmark_traits.h"
-#include "prefetched_buffer.h"
+#include "memory_wrappers.h"
 #include "time_metrics.h"
 
 #ifdef NV_ENERGY_MEAS
@@ -77,23 +77,37 @@ public:
         for(auto h : hooks) h->postKernel();
         // Performance critical measurement section ends here
 
-        time_metrics.addTimingResult("run-time", std::chrono::duration_cast<std::chrono::nanoseconds>(after - before));
+        auto run_time = std::chrono::duration_cast<std::chrono::nanoseconds>(after - before);
+        time_metrics.addTimingResult("run-time", run_time);
 
         if(detail::BenchmarkTraits<Benchmark>::supportsQueueProfiling) {
 #if defined(SYCL_BENCH_ENABLE_QUEUE_PROFILING)
           // TODO: We might also want to consider the "command_submit" time.
           std::chrono::nanoseconds total_time{0};
+          std::chrono::nanoseconds submit_time{0};
+          // Runtime without kernel time
+          std::chrono::nanoseconds system_time{0};
           for(auto& e : run_events) {
             const auto start = e.get_profiling_info<sycl::info::event_profiling::command_start>();
             const auto end = e.get_profiling_info<sycl::info::event_profiling::command_end>();
+            const auto submit = e.get_profiling_info<sycl::info::event_profiling::command_submit>();
             total_time += std::chrono::nanoseconds(end - start);
+            submit_time += std::chrono::nanoseconds(start - submit);
           }
+          system_time += std::chrono::nanoseconds(run_time - total_time);
+
           time_metrics.addTimingResult("kernel-time", total_time);
+          time_metrics.addTimingResult("submit-time", submit_time);
+          time_metrics.addTimingResult("system-time", system_time);
 #else
           time_metrics.markAsUnavailable("kernel-time");
+          time_metrics.markAsUnavailable("submit-time");
+          time_metrics.markAsUnavailable("system-time");
 #endif
         } else {
           time_metrics.markAsUnavailable("kernel-time");
+          time_metrics.markAsUnavailable("submit-time");
+          time_metrics.markAsUnavailable("system-time");
         }
 
         if constexpr(detail::BenchmarkTraits<Benchmark>::hasVerify) {
