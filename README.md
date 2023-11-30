@@ -43,7 +43,7 @@ $ ./arith --device=cpu --output=output.csv
 
 ## Packaging
 
-SYCL-Bench provides a CMake target `package` (and `package_source`) to package a SYCL-Bench installation. Users can configure what generators to use to build the packages by setting `CPACK_BINARY_<GENNAME>` CMake flag and then build the enabled packages by building the `package` target:
+SYCL-Bench provides a CMake target `package` (and `package_source`) to package a SYCL-Bench installation. Users can configure what generators to use to build the packages by passing a semicolon-separated list of generators to use to the `CPACK_GENERATOR` CMake flag and then build the enabled packages by building the `package` target:
 
 ```
 cmake -Bbuild -DCPACK_GENERATOR="TGZ;ZIP"
