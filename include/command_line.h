@@ -166,6 +166,7 @@ struct BenchmarkArgs
   // can be used to query additional benchmark specific information from the command line
   CommandLine cli;
   std::shared_ptr<ResultConsumer> result_consumer;
+  bool warmup_run;
 };
 
 class CUDASelector : public cl::sycl::device_selector {
@@ -193,6 +194,11 @@ public:
     std::size_t num_runs = cli_parser.getOrDefault<std::size_t>("--num-runs", 5);
 
     std::string device_type = cli_parser.getOrDefault<std::string>("--device", "default");
+    bool warmup_run = cli_parser.isFlagSet("--warmup-run");
+    if (warmup_run) {
+      // Make drop of first run transparent to the user
+      ++num_runs;
+    }
     cl::sycl::queue q = getQueue(device_type);
 
     bool verification_enabled = true;
@@ -216,7 +222,8 @@ public:
                                              verification_begin,
                                              verification_range},
                          cli_parser,
-                         result_consumer};
+                         result_consumer,
+                         warmup_run};
   }
 
 private:
