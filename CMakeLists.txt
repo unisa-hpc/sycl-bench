@@ -21,6 +21,9 @@ if(CMAKE_GENERATOR STREQUAL "Ninja")
   set(COMPUTECPP_USER_FLAGS "${COMPUTECPP_USER_FLAGS} -fdiagnostics-color=always")
 endif()
 
+include(InstallRequiredSystemLibraries)
+include(CPack)
+
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/polybench/common)
 
