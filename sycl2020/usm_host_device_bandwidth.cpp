@@ -1,16 +1,6 @@
 #include "common.h"
 #include "polybenchUtilFuncts.h"
 
-std::string usm_to_string(sycl::usm::alloc usm_type) {
-  if(usm_type == sycl::usm::alloc::device)
-    return "device";
-  else if(usm_type == sycl::usm::alloc::host)
-    return "host";
-  else if(usm_type == sycl::usm::alloc::shared)
-    return "shared";
-  else
-    return "unknown";
-}
 
 static constexpr int HOST_DEVICE = 0;
 static constexpr int DEVICE_HOST = 1;

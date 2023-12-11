@@ -1,19 +1,10 @@
 #include "common.h"
 #include "polybenchUtilFuncts.h"
+#include "usm_common.hpp"
 
 #define KERNEL_LAUNCHES_DEFAULT 50000
 static constexpr auto offset = 4;
 
-std::string usm_to_string(sycl::usm::alloc usm_type) {
-  if(usm_type == sycl::usm::alloc::device)
-    return "device";
-  else if(usm_type == sycl::usm::alloc::host)
-    return "host";
-  else if(usm_type == sycl::usm::alloc::shared)
-    return "shared";
-  else
-    return "unknown";
-}
 
 template <std::size_t exp>
 struct pow_2 {
