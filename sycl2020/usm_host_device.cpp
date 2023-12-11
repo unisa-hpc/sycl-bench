@@ -15,104 +15,71 @@ std::string usm_to_string(sycl::usm::alloc usm_type) {
     return "unknown";
 }
 
-template<std::size_t exp>
+template <std::size_t exp>
 struct pow_2 {
   static constexpr auto value = 2 * pow_2<exp - 1>::value;
 };
 
-template<>
-struct pow_2<0>{
+template <>
+struct pow_2<0> {
   static constexpr auto value = 1;
 };
 
-template <typename DATA_TYPE, sycl::usm::alloc usm_type, bool strided, bool include_init, int device_op>
+static constexpr std::array<float, 11> ratios = {1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6};
+
+// static constexpr std::array<float, 8> ratios = {1, 2, 4, 8, 16, 32, 64, 128};
+
+
+template <typename DATA_TYPE, sycl::usm::alloc usm_type, bool include_init, size_t device_op_ratio>
 class USMHostDeviceBenchmark {
 protected:
   BenchmarkArgs args;
   size_t kernel_launches;
   USMBuffer<DATA_TYPE, 1, usm_type> buff1;
-
+  DATA_TYPE* tmp;
 
 public:
   USMHostDeviceBenchmark(const BenchmarkArgs& _args, size_t kernel_launches)
       : args(_args), buff1(args.device_queue), kernel_launches(kernel_launches) {}
 
+  // ~USMHostDeviceBenchmark() {
+  //   sycl::free(tmp, args.device_queue);
+  // }
+
   void setup() {
     if constexpr (!include_init) {
       buff1.initialize(args.problem_size);
-      args.device_queue.fill(buff1.get_host_ptr(), 0, buff1.size());
+        args.device_queue.fill(buff1.get_host_ptr(), DATA_TYPE{0}, buff1.size());
     }
   }
 
-
   void run(std::vector<sycl::event>& events) {
-    // if constexpr(strided) {
-    //   run_strided(events);
-    // } else {
-      run_normal(events);
-    // }
-  }
-
-  // void run_strided(std::vector<sycl::event>& events) {
-  //   sycl::queue& queue = args.device_queue;
-  //   // Init
-  //   buff1.initialize(args.problem_size);
-  //   {
-  //     auto host_ptr = buff1.update_and_get_host_ptr();
-  //     std::fill(host_ptr, host_ptr + buff1.size(), 0);
-  //   }
-
-  //   for(size_t i = 0; i < kernel_launches; i++) {
-  //     auto device_copy_event = buff1.update_device();
-  //     auto kernel_event = queue.submit([&](sycl::handler& cgh) {
-  //       auto* acc_1 = buff1.get();
-  //       cgh.depends_on(device_copy_event);
-  //       cgh.parallel_for(sycl::nd_range<1>{{args.problem_size / offset}, {args.local_size}}, [=](sycl::nd_item<1> item) {
-  //         acc_1[item.get_global_linear_id() * offset] = static_cast<DATA_TYPE>(item.get_global_linear_id());
-  //       });
-  //     });
-  //     events.push_back(kernel_event);
-  //     auto [host_ptr, copy_event] = buff1.update_and_get_host_ptr(kernel_event);
-  //     copy_event.wait(); // Need this wait 'cause we can't use host tasks and synchronization with the device is needed
-  //     for(size_t i = 0; i < buff1.size() / offset; i++) {
-  //       host_ptr[i * offset] -= DATA_TYPE{1};
-  //     }
-  //   }
-  // }
-
-  void run_normal(std::vector<sycl::event>& events) {
     sycl::queue& queue = args.device_queue;
     // Init
-   if constexpr (include_init) {
+    if constexpr(include_init) {
       buff1.initialize(args.problem_size);
-      args.device_queue.fill(buff1.get_host_ptr(), 0, buff1.size());
+      // args.device_queue.fill(buff1.get_host_ptr(), DATA_TYPE{0}, buff1.size());
     }
 
     for(size_t i = 0; i < kernel_launches; i++) {
       auto device_copy_event = buff1.update_device();
-      device_copy_event.wait();
+      // Prefetch if using shared memory, should increase performance
+      if constexpr(usm_type == sycl::usm::alloc::shared) {
+        queue.prefetch(buff1.get(), buff1.size() * sizeof(DATA_TYPE));
+      }
       auto kernel_event = queue.submit([&](sycl::handler& cgh) {
         auto* acc_1 = buff1.get();
         cgh.depends_on(device_copy_event);
         cgh.parallel_for(sycl::nd_range<1>{{args.problem_size}, {args.local_size}}, [=](sycl::nd_item<1> item) {
-          const int base = static_cast<int>(item.get_global_linear_id());
-          const int global_size = static_cast<int>(item.get_global_range(0));
-          int index = base;
-          const int value = base;
-          index -= device_op / 2;
-          if(index < 0) {
-            index += global_size;
-          }
-          for (int i = 0; i < device_op; i++, index = (index + 1) % global_size ) {
-            acc_1[base] = acc_1[index] + static_cast<DATA_TYPE>(value);
+          constexpr auto device_op = ratios[device_op_ratio];
+          const auto id = item.get_global_id(0);
+          const auto num_ops = item.get_global_range(0) * device_op;
+          for(size_t i = id, j = 0; i < num_ops; i += item.get_global_range(0), j++) {
+            acc_1[(id + j) % item.get_global_range(0)] += DATA_TYPE{1};
           }
         });
       });
       events.push_back(kernel_event);
-      // Host op
-      // TODO: Host tasks?
-      // TODO: Prefetch?
-      // TODO: Strided copy?
       auto [host_ptr, copy_event] = buff1.update_and_get_host_ptr(kernel_event);
       copy_event.wait(); // Need this wait 'cause we can't use host tasks and synchronization with the device is needed
       // Host op
@@ -138,21 +105,20 @@ public:
   }
 
   static std::string getBenchmarkName() {
+    constexpr auto device_op = ratios[device_op_ratio];
     std::stringstream name;
     name << "USM_Host_Device_";
     name << ReadableTypename<DATA_TYPE>::name << "_";
     name << usm_to_string(usm_type) << "_";
-    name << "1:" << device_op << "mix_";
-    if constexpr(strided)
-      name << "strided_";
+    name << "1:" << (std::size_t(device_op) == device_op ? std::size_t(device_op) : device_op)
+         << "mix_"; // avoid .0 if it's an integer
     if constexpr(include_init)
       name << "with_init_";
-    else 
+    else
       name << "no_init_";
     return name.str();
   }
 };
-
 
 
 int main(int argc, char** argv) {
@@ -161,17 +127,16 @@ int main(int argc, char** argv) {
 
   if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
     if(app.deviceSupportsFP64()) {
-
-      loop<8>([&](auto idx) {
-        app.run<USMHostDeviceBenchmark<double, sycl::usm::alloc::device, false, true, pow_2<idx>::value>>(kernel_launches_num);
-        app.run<USMHostDeviceBenchmark<double, sycl::usm::alloc::host,   false, true, pow_2<idx>::value>>(kernel_launches_num);
-        app.run<USMHostDeviceBenchmark<double, sycl::usm::alloc::shared, false, true, pow_2<idx>::value>>(kernel_launches_num);
+      loop<ratios.size()>([&](auto idx) {
+        app.run<USMHostDeviceBenchmark<double, sycl::usm::alloc::device, true, idx>>(kernel_launches_num);
+        app.run<USMHostDeviceBenchmark<double, sycl::usm::alloc::host, true, idx>>(kernel_launches_num);
+        app.run<USMHostDeviceBenchmark<double, sycl::usm::alloc::shared, true, idx>>(kernel_launches_num);
       });
 
-      loop<8>([&](auto idx) {
-        app.run<USMHostDeviceBenchmark<double, sycl::usm::alloc::device, false, false, pow_2<idx>::value>>(kernel_launches_num);
-        app.run<USMHostDeviceBenchmark<double, sycl::usm::alloc::host,   false, false, pow_2<idx>::value>>(kernel_launches_num);
-        app.run<USMHostDeviceBenchmark<double, sycl::usm::alloc::shared, false, false, pow_2<idx>::value>>(kernel_launches_num);
+      loop<ratios.size()>([&](auto idx) {
+        app.run<USMHostDeviceBenchmark<double, sycl::usm::alloc::device, false, idx>>(kernel_launches_num);
+        app.run<USMHostDeviceBenchmark<double, sycl::usm::alloc::host, false, idx>>(kernel_launches_num);
+        app.run<USMHostDeviceBenchmark<double, sycl::usm::alloc::shared, false, idx>>(kernel_launches_num);
       });
     }
   }
