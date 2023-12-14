@@ -170,12 +170,6 @@ template <template <typename DATA_TYPE, bool in_order = false, bool synch = fals
 void launchBenchmarks(BenchmarkApp& app, const size_t kernel_launches_num) {
   app.run<latency_kernel<float>>(kernel_launches_num);       // out-of-order, no synch
   app.run<latency_kernel<float, true>>(kernel_launches_num); // in-order, no synch
-  if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
-    if(app.deviceSupportsFP64()) {
-      app.run<latency_kernel<double>>(kernel_launches_num);       // out-of-order, no synch
-      app.run<latency_kernel<double, true>>(kernel_launches_num); // in-order, no synch
-    }
-  }
 }
 
 int main(int argc, char** argv) {

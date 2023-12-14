@@ -117,8 +117,8 @@ set(benchmarks
 
   # # compiletime/compiletime.cpp
   # spec_constants/spec_constant_convolution.cpp
-  # sycl2020/usm_accessors_latency.cpp
-  sycl2020/usm_host_device.cpp
+  sycl2020/usm_accessors_latency.cpp
+  sycl2020/usm_instr_mix.cpp
   sycl2020/usm_host_device_bandwidth.cpp
   sycl2020/usm_allocation_latency.cpp
 )
