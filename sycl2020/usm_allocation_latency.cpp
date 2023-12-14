@@ -25,6 +25,27 @@ public:
     buffer = (DATA_TYPE*)sycl::malloc(args.problem_size * sizeof(DATA_TYPE), queue, usm_type);
   }
 
+  bool verify(VerificationSetting&) {
+    sycl::queue& queue = args.device_queue;
+    queue.fill(buffer, DATA_TYPE{1}, args.problem_size).wait();
+    DATA_TYPE* host_ptr = buffer;
+    if constexpr (usm_type == sycl::usm::alloc::device) {
+      host_ptr = (DATA_TYPE*)sycl::malloc(args.problem_size * sizeof(DATA_TYPE), args.device_queue, sycl::usm::alloc::host);
+      queue.copy(buffer, host_ptr, args.problem_size).wait();
+    }
+
+    bool pass = true;
+    for (int i = 0; i < args.problem_size; i++) {
+      if (host_ptr[i] != DATA_TYPE{1}) {
+            pass = false;
+      }
+    }
+    if constexpr (usm_type == sycl::usm::alloc::device) {
+      sycl::free(host_ptr, queue);
+    }
+    return pass;
+  }
+
 
   static std::string getBenchmarkName() {
     std::stringstream name;
@@ -39,9 +60,9 @@ public:
 int main(int argc, char** argv) {
   BenchmarkApp app(argc, argv);
 
-  app.run<USMAllocationLatency<double, sycl::usm::alloc::device>>();
-  app.run<USMAllocationLatency<double, sycl::usm::alloc::host>>();
-  app.run<USMAllocationLatency<double, sycl::usm::alloc::shared>>();
+  app.run<USMAllocationLatency<int, sycl::usm::alloc::device>>();
+  app.run<USMAllocationLatency<int, sycl::usm::alloc::host>>();
+  app.run<USMAllocationLatency<int, sycl::usm::alloc::shared>>();
 
   return 0;
 }
