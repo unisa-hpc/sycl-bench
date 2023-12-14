@@ -31,7 +31,7 @@ protected:
 
 public:
   USMHostDeviceBenchmark(const BenchmarkArgs& _args, size_t kernel_launches)
-      : args(_args), buff1(args.device_queue), kernel_launches(kernel_launches) {}
+      : args(_args), kernel_launches(kernel_launches) {}
 
   // ~USMHostDeviceBenchmark() {
   //   sycl::free(tmp, args.device_queue);
@@ -39,8 +39,8 @@ public:
 
   void setup() {
     if constexpr (!include_init) {
-      buff1.initialize(args.problem_size);
-        args.device_queue.fill(buff1.get_host_ptr(), DATA_TYPE{0}, buff1.size());
+      buff1.initialize(args.device_queue, args.problem_size);
+      args.device_queue.fill(buff1.get_host_ptr(), DATA_TYPE{0}, buff1.size());
     }
   }
 
@@ -48,7 +48,7 @@ public:
     sycl::queue& queue = args.device_queue;
     // Init
     if constexpr(include_init) {
-      buff1.initialize(args.problem_size);
+      buff1.initialize(args.device_queue, args.problem_size);
       // args.device_queue.fill(buff1.get_host_ptr(), DATA_TYPE{0}, buff1.size());
     }
 
@@ -80,20 +80,20 @@ public:
     }
   }
 
-  bool verify(VerificationSetting& settings) {
-    // auto host_ptr = buff1.get_host_ptr();
-    // constexpr auto ERROR_THRESHOLD = 0.05;
-    // for(int i = 0; i < buff1.size() / (strided ? offset : 1); i++) {
-    //   int index = strided ? i * offset : i;
-    //   const auto diff = percentDiff(host_ptr[index], i - 1);
-    //   if(diff > ERROR_THRESHOLD) {
-    //     std::cout << i << " -- " << host_ptr[index] << " : " << static_cast<DATA_TYPE>(i - 1) << "\n";
-    //     return false;
-    //   }
-    // }
-    // return true;
-    return false;
-  }
+  // bool verify(VerificationSetting& settings) {
+  //   // auto host_ptr = buff1.get_host_ptr();
+  //   // constexpr auto ERROR_THRESHOLD = 0.05;
+  //   // for(int i = 0; i < buff1.size() / (strided ? offset : 1); i++) {
+  //   //   int index = strided ? i * offset : i;
+  //   //   const auto diff = percentDiff(host_ptr[index], i - 1);
+  //   //   if(diff > ERROR_THRESHOLD) {
+  //   //     std::cout << i << " -- " << host_ptr[index] << " : " << static_cast<DATA_TYPE>(i - 1) << "\n";
+  //   //     return false;
+  //   //   }
+  //   // }
+  //   // return true;
+  //   return false;
+  // }
 
   static std::string getBenchmarkName() {
     constexpr auto device_op = ratios[device_op_ratio];

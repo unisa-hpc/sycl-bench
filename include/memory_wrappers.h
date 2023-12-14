@@ -137,28 +137,29 @@ protected:
   T* _host_ptr;
   sycl::range<dim> _count;
   std::size_t total_size;
-  sycl::queue queue;
+  sycl::queue* queue;
 
 public:
-  USMBuffer(const sycl::queue& q) : _data(nullptr), _host_ptr(nullptr), _count(getRange()), total_size(0), queue(q) {}
+  USMBuffer() : _data(nullptr), _host_ptr(nullptr), _count(getRange()), total_size(0), queue(nullptr) {}
 
   ~USMBuffer() {
     if(_data != nullptr) {
-      sycl::free(_data, queue);
+      sycl::free(_data, *queue);
     }
     if constexpr(!detail::usm_properties<type>::is_host_accessible) {
       if(_host_ptr != nullptr) {
-        sycl::free(_host_ptr, queue);
+        sycl::free(_host_ptr, *queue);
       }
     }
   }
 
   template <typename U = T, typename = detail::has_dim_t<U, dim, 1>>
-  void initialize(size_t count) {
+  void initialize(sycl::queue &q, size_t count) {
+    queue = &q;
     allocate(count);
   }
 
-  void initialize(sycl::range<dim> count) { allocate(count); }
+  void initialize(sycl::queue& q, sycl::range<dim> count) { queue = &q; allocate(count); }
 
   void initialize(const T* data, size_t count) {
     allocate(queue, count);
@@ -173,14 +174,14 @@ public:
 
   void update_host() {
     if constexpr(!detail::usm_properties<type>::is_host_accessible) {
-      queue.copy(_data, _host_ptr, total_size);
-      queue.wait_and_throw();
+      queue->copy(_data, _host_ptr, total_size);
+      queue->wait_and_throw();
     }
   }
 
   sycl::event update_host(sycl::event event) {
     if constexpr(!detail::usm_properties<type>::is_host_accessible) {
-      return queue.copy(_data, _host_ptr, total_size, event);
+      return queue->copy(_data, _host_ptr, total_size, event);
     }
     else return event;
   }
@@ -190,7 +191,7 @@ public:
       assert(_host_ptr != nullptr && "calling update_device when no modification has been made on the host");
       // auto event = queue.copy(_host_ptr, _data, total_size);
       // queue.wait_and_throw();
-      return queue.copy(_host_ptr, _data, total_size);
+      return queue->copy(_host_ptr, _data, total_size);
     }
     else return sycl::event{};
   }
@@ -198,7 +199,7 @@ public:
   sycl::event update_device(sycl::event event) {
     if constexpr (detail::usm_properties<type>::is_device_accessible && !detail::usm_properties<type>::is_host_accessible){
       assert(_host_ptr != nullptr && "calling update_device when no modification has been made on the host");
-      return queue.copy(_host_ptr, _data, total_size, event);
+      return queue->copy(_host_ptr, _data, total_size, event);
     }
     else return event;
   }
@@ -227,7 +228,7 @@ public:
 private:
   template <sycl::usm::alloc alloc_type>
   T* malloc(size_t count) {
-    return static_cast<T*>(sycl::malloc(count * sizeof(T), queue, alloc_type));
+    return static_cast<T*>(sycl::malloc(count * sizeof(T), *queue, alloc_type));
   }
 
   auto constexpr getRange() {
@@ -253,7 +254,7 @@ private:
     assert(count >= 0 && "Cannot allocate negative num bytes");
     _data = malloc<type>(count);
     if constexpr(!detail::usm_properties<type>::is_host_accessible) {
-      _host_ptr = static_cast<T*>(sycl::malloc_host(count * sizeof(T), queue));
+      _host_ptr = static_cast<T*>(sycl::malloc_host(count * sizeof(T), *queue));
     }
     else {
       _host_ptr = _data;
@@ -266,9 +267,9 @@ private:
     loop<dim>([&](std::size_t idx) { assert(count[idx] >= 0 && "Cannot allocate negative num bytes"); });
 
     const size_t total_size = getSize(count);
-    _data = malloc<type>(queue, total_size);
+    _data = malloc<type>(total_size);
     if constexpr(!detail::usm_properties<type>::is_host_accessible) {
-      _host_ptr = static_cast<T*>(sycl::malloc_host(total_size * sizeof(T), queue));
+      _host_ptr = static_cast<T*>(sycl::malloc_host(total_size * sizeof(T), *queue));
     }
     else {
       _host_ptr = _data;
@@ -281,13 +282,13 @@ private:
   void copy(const T* src, T* dst, std::size_t count) const {
     // assert(count <= _count[0] && "Cannot copy negative num bytes");
     // assert(_data != nullptr && "Called copy on initialized USM buffer");
-    queue.copy(src, dst, count).wait_and_throw();
+    queue->copy(src, dst, count).wait_and_throw();
   }
 
   void copy(const T* src, T* dst, sycl::range<dim> count) const {
     loop<dim>([&](std::size_t idx) { assert(count[idx] >= 0 && "Cannot copy negative num bytes"); });
 
     const size_t total_size = getSize(count);
-    queue.copy(src, dst, count).wait_and_throw();
+    queue->copy(src, dst, count).wait_and_throw();
   }
 };
