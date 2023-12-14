@@ -1,4 +1,5 @@
 #include "common.h"
+#include "memory_wrappers.h"
 
 namespace s = sycl;
 #include <iostream>
@@ -84,8 +85,8 @@ public:
       }
       events.push_back(event);
       // swap buffers
-      std::swap(buff_A, buff_B);
-      std::swap(buff_A, buff_C);
+      // std::swap(buff_A, buff_B);
+      // std::swap(buff_A, buff_C);
     }
   }
 
@@ -116,13 +117,14 @@ protected:
   using base::kernel_launches_num;
 
 public:
-  USMLatency(const BenchmarkArgs& args, const size_t kernel_launches_num) : base(args, kernel_launches_num) {}
+  USMLatency(const BenchmarkArgs& args, const size_t kernel_launches_num)
+      : base(args, kernel_launches_num) {}
 
   // TODO: Problem size?
   void setup() {
-    buff_A.initialize(args.device_queue, getRange());
-    buff_B.initialize(args.device_queue, getRange());
-    buff_C.initialize(args.device_queue, getRange());
+    buff_A.initialize(get_queue(), getRange());
+    buff_B.initialize(get_queue(), getRange());
+    buff_C.initialize(get_queue(), getRange());
   }
 
   void run(std::vector<sycl::event>& events) {
@@ -148,8 +150,8 @@ public:
       // Add kernel event to kernel's list
       events.push_back(event);
       // swap buffers to
-      std::swap(buff_A, buff_B);
-      std::swap(buff_A, buff_C);
+      // std::swap(buff_A, buff_B);
+      // std::swap(buff_A, buff_C);
     }
   }
 

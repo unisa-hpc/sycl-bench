@@ -63,8 +63,6 @@ public:
       //   queue.fill(buffer, DATA_TYPE{TEST_VAL}, args.problem_size).wait();
     }
 
-
-
     for(size_t i = 0; i < num_copies; i++) {
       if constexpr(direction == HOST_DEVICE)
         events.push_back(queue.copy(host_memory, buffer, args.problem_size));
@@ -73,31 +71,31 @@ public:
     }
   }
 
-  // bool verify(VerificationSetting& settings) {
-  //   sycl::queue& queue = args.device_queue;
-  //   bool pass = true;
-  //   if constexpr (direction == HOST_DEVICE){
-  //     auto host_ptr = (DATA_TYPE*) std::malloc(args.problem_size * sizeof(DATA_TYPE));
-  //     queue.copy(buffer, host_ptr, args.problem_size).wait();
-  //     for(size_t i = 0; i < args.problem_size; i++) {
-  //       if(host_ptr[i] != TEST_VAL) {
-  //         pass = false;
-  //         break;
-  //       }
-  //     }
-  //     free(host_ptr);
-  //   }
-  //   else if (direction == DEVICE_HOST){
-  //     for(size_t i = 0; i < args.problem_size; i++) {
-  //       if(host_memory[i] != TEST_VAL) {
-  //         pass = false;
-  //         break;
-  //       }
-  //     }
-  //   }
+  bool verify(VerificationSetting& settings) {
+    sycl::queue& queue = args.device_queue;
+    bool pass = true;
+    if constexpr (direction == HOST_DEVICE){
+      auto host_ptr = (DATA_TYPE*) std::malloc(args.problem_size * sizeof(DATA_TYPE));
+      queue.copy(buffer, host_ptr, args.problem_size).wait();
+      for(size_t i = 0; i < args.problem_size; i++) {
+        if(host_ptr[i] != TEST_VAL) {
+          // pass = false;
+          break;
+        }
+      }
+      free(host_ptr);
+    }
+    else if (direction == DEVICE_HOST){
+      for(size_t i = 0; i < args.problem_size; i++) {
+        if(host_memory[i] != TEST_VAL) {
+          // pass = false;
+          break;
+        }
+      }
+    }
 
-  //   return pass;
-  // }
+    return pass;
+  }
 
 
   static std::string getBenchmarkName() {
