@@ -108,6 +108,10 @@ public:
       name << "with_init_";
     else
       name << "no_init_";
+    if constexpr(use_prefetch)
+      name << "with_prefetch";
+    else
+      name << "no_prefetch";
     return name.str();
   }
 };
@@ -124,8 +128,6 @@ int main(int argc, char** argv) {
         app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::host, true, idx, false>>(kernel_launches_num);
         app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::shared, true, idx, false>>(kernel_launches_num);
 
-        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::device, true, idx, true>>(kernel_launches_num);
-        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::host, true, idx, true>>(kernel_launches_num);
         app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::shared, true, idx, true>>(kernel_launches_num);
       });
 
@@ -134,8 +136,6 @@ int main(int argc, char** argv) {
         app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::host, false, idx, false>>(kernel_launches_num);
         app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::shared, false, idx, false>>(kernel_launches_num);
 
-        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::device, true, idx, true>>(kernel_launches_num);
-        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::host, true, idx, true>>(kernel_launches_num);
         app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::shared, true, idx, true>>(kernel_launches_num);
       });
     }
