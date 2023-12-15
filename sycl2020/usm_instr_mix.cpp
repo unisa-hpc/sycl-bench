@@ -21,7 +21,7 @@ static constexpr std::array<float, 11> ratios = {1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5,
 // static constexpr std::array<float, 8> ratios = {1, 2, 4, 8, 16, 32, 64, 128};
 
 
-template <typename DATA_TYPE, sycl::usm::alloc usm_type, bool include_init, size_t device_op_ratio>
+template <typename DATA_TYPE, sycl::usm::alloc usm_type, bool include_init, size_t device_op_ratio, bool use_prefetch>
 class USMHostDeviceBenchmark {
 protected:
   BenchmarkArgs args;
@@ -55,7 +55,7 @@ public:
     for(size_t i = 0; i < kernel_launches; i++) {
       auto device_copy_event = buff1.update_device();
       // Prefetch if using shared memory, should increase performance
-      if constexpr(usm_type == sycl::usm::alloc::shared) {
+      if constexpr(usm_type == sycl::usm::alloc::shared && use_prefetch) {
         device_copy_event = queue.prefetch(buff1.get(), buff1.size() * sizeof(DATA_TYPE), device_copy_event);
       }
       auto kernel_event = queue.submit([&](sycl::handler& cgh) {
@@ -120,15 +120,23 @@ int main(int argc, char** argv) {
   if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
     if(app.deviceSupportsFP64()) {
       loop<ratios.size()>([&](auto idx) {
-        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::device, true, idx>>(kernel_launches_num);
-        // app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::host, true, idx>>(kernel_launches_num);
-        // app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::shared, true, idx>>(kernel_launches_num);
+        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::device, true, idx, false>>(kernel_launches_num);
+        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::host, true, idx, false>>(kernel_launches_num);
+        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::shared, true, idx, false>>(kernel_launches_num);
+
+        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::device, true, idx, true>>(kernel_launches_num);
+        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::host, true, idx, true>>(kernel_launches_num);
+        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::shared, true, idx, true>>(kernel_launches_num);
       });
 
       loop<ratios.size()>([&](auto idx) {
-        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::device, false, idx>>(kernel_launches_num);
-        // app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::host, false, idx>>(kernel_launches_num);
-        // app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::shared, false, idx>>(kernel_launches_num);
+        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::device, false, idx, false>>(kernel_launches_num);
+        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::host, false, idx, false>>(kernel_launches_num);
+        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::shared, false, idx, false>>(kernel_launches_num);
+
+        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::device, true, idx, true>>(kernel_launches_num);
+        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::host, true, idx, true>>(kernel_launches_num);
+        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::shared, true, idx, true>>(kernel_launches_num);
       });
     }
   }
