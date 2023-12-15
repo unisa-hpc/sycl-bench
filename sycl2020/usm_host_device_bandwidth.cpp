@@ -119,13 +119,13 @@ int main(int argc, char** argv) {
       return;
     // app.run<USMHostDeviceBandwidth<double, false, HOST_DEVICE, false, num_copies>>();
     // app.run<USMHostDeviceBandwidth<double, true, HOST_DEVICE, false, num_copies>>();
-    app.run<USMHostDeviceBandwidth<double, false, HOST_DEVICE, true, num_copies>>();
-    app.run<USMHostDeviceBandwidth<double, true, HOST_DEVICE, true, num_copies>>();
+    app.run<USMHostDeviceBandwidth<float, false, HOST_DEVICE, true, num_copies>>();
+    app.run<USMHostDeviceBandwidth<float, true, HOST_DEVICE, true, num_copies>>();
 
     // app.run<USMHostDeviceBandwidth<double, false, DEVICE_HOST, false, num_copies>>();
     // app.run<USMHostDeviceBandwidth<double, true, DEVICE_HOST, false, num_copies>>();
-    app.run<USMHostDeviceBandwidth<double, false, DEVICE_HOST, true, num_copies>>();
-    app.run<USMHostDeviceBandwidth<double, true, DEVICE_HOST, true, num_copies>>();
+    app.run<USMHostDeviceBandwidth<float, false, DEVICE_HOST, true, num_copies>>();
+    app.run<USMHostDeviceBandwidth<float, true, DEVICE_HOST, true, num_copies>>();
   });
 
 

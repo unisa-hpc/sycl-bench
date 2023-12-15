@@ -119,15 +119,15 @@ int main(int argc, char** argv) {
   if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
     if(app.deviceSupportsFP64()) {
       loop<ratios.size()>([&](auto idx) {
-        app.run<USMHostDeviceBenchmark<double, sycl::usm::alloc::device, true, idx>>(kernel_launches_num);
-        app.run<USMHostDeviceBenchmark<double, sycl::usm::alloc::host, true, idx>>(kernel_launches_num);
-        app.run<USMHostDeviceBenchmark<double, sycl::usm::alloc::shared, true, idx>>(kernel_launches_num);
+        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::device, true, idx>>(kernel_launches_num);
+        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::host, true, idx>>(kernel_launches_num);
+        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::shared, true, idx>>(kernel_launches_num);
       });
 
       loop<ratios.size()>([&](auto idx) {
-        app.run<USMHostDeviceBenchmark<double, sycl::usm::alloc::device, false, idx>>(kernel_launches_num);
-        app.run<USMHostDeviceBenchmark<double, sycl::usm::alloc::host, false, idx>>(kernel_launches_num);
-        app.run<USMHostDeviceBenchmark<double, sycl::usm::alloc::shared, false, idx>>(kernel_launches_num);
+        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::device, false, idx>>(kernel_launches_num);
+        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::host, false, idx>>(kernel_launches_num);
+        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::shared, false, idx>>(kernel_launches_num);
       });
     }
   }
