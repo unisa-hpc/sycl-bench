@@ -40,7 +40,7 @@ public:
   void setup() {
     if constexpr (!include_init) {
       buff1.initialize(args.device_queue, args.problem_size);
-      args.device_queue.fill(buff1.get_host_ptr(), DATA_TYPE{0}, buff1.size());
+      // args.device_queue.fill(buff1.get_host_ptr(), DATA_TYPE{0}, buff1.size()).wait();
     }
   }
 
@@ -56,11 +56,12 @@ public:
       auto device_copy_event = buff1.update_device();
       // Prefetch if using shared memory, should increase performance
       if constexpr(usm_type == sycl::usm::alloc::shared) {
-        queue.prefetch(buff1.get(), buff1.size() * sizeof(DATA_TYPE));
+        device_copy_event = queue.prefetch(buff1.get(), buff1.size() * sizeof(DATA_TYPE), device_copy_event);
       }
       auto kernel_event = queue.submit([&](sycl::handler& cgh) {
         auto* acc_1 = buff1.get();
         cgh.depends_on(device_copy_event);
+
         cgh.parallel_for(sycl::nd_range<1>{{args.problem_size}, {args.local_size}}, [=](sycl::nd_item<1> item) {
           constexpr auto device_op = ratios[device_op_ratio];
           const auto id = item.get_global_id(0);
@@ -120,14 +121,14 @@ int main(int argc, char** argv) {
     if(app.deviceSupportsFP64()) {
       loop<ratios.size()>([&](auto idx) {
         app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::device, true, idx>>(kernel_launches_num);
-        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::host, true, idx>>(kernel_launches_num);
-        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::shared, true, idx>>(kernel_launches_num);
+        // app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::host, true, idx>>(kernel_launches_num);
+        // app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::shared, true, idx>>(kernel_launches_num);
       });
 
       loop<ratios.size()>([&](auto idx) {
         app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::device, false, idx>>(kernel_launches_num);
-        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::host, false, idx>>(kernel_launches_num);
-        app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::shared, false, idx>>(kernel_launches_num);
+        // app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::host, false, idx>>(kernel_launches_num);
+        // app.run<USMHostDeviceBenchmark<float, sycl::usm::alloc::shared, false, idx>>(kernel_launches_num);
       });
     }
   }
