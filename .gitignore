@@ -1,2 +1,10 @@
 /build*
+*.csv
+img/
 
+# Clangd
+.cache/
+.clangd
+
+# Vscode
+.vscode/

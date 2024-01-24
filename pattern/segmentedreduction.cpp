@@ -127,8 +127,7 @@ public:
 template <class T>
 class SegmentedReductionNDRange : public SegmentedReduction<T> {
 public:
-  SegmentedReductionNDRange(const BenchmarkArgs& args) : SegmentedReduction<T> { args }
-  {}
+  SegmentedReductionNDRange(const BenchmarkArgs& args) : SegmentedReduction<T>{args} {}
 
   void run(std::vector<sycl::event>& events) {
     this->submit_ndrange(events);
@@ -147,8 +146,7 @@ public:
 template <class T>
 class SegmentedReductionHierarchical : public SegmentedReduction<T> {
 public:
-  SegmentedReductionHierarchical(const BenchmarkArgs& args) : SegmentedReduction<T> { args }
-  {}
+  SegmentedReductionHierarchical(const BenchmarkArgs& args) : SegmentedReduction<T>{args} {}
 
   void run(std::vector<sycl::event>& events) {
     this->submit_hierarchical(events);
@@ -172,16 +170,19 @@ int main(int argc, char** argv) {
     app.run<SegmentedReductionNDRange<int>>();
     app.run<SegmentedReductionNDRange<long long>>();
     app.run<SegmentedReductionNDRange<float>>();
-    if(app.deviceSupportsFP64())
-      app.run<SegmentedReductionNDRange<double>>();
+    if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
+      if(app.deviceSupportsFP64())
+        app.run<SegmentedReductionNDRange<double>>();
+    }
   }
 
   app.run<SegmentedReductionHierarchical<short>>();
   app.run<SegmentedReductionHierarchical<int>>();
   app.run<SegmentedReductionHierarchical<long long>>();
   app.run<SegmentedReductionHierarchical<float>>();
-  if(app.deviceSupportsFP64())
-    app.run<SegmentedReductionHierarchical<double>>();
-
+  if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
+    if(app.deviceSupportsFP64())
+      app.run<SegmentedReductionHierarchical<double>>();
+  }
   return 0;
 }
