@@ -116,7 +116,10 @@ set(benchmarks
   polybench/syrk.cpp
 
   # compiletime/compiletime.cpp
-  spec_constants/spec_constant_convolution.cpp
+  spec_constants/spec_constant_convolution.cpp  
+  sycl2020/atomics/atomic_reduction.cpp
+  sycl2020/kernel_reduction/kernel_reduction.cpp
+  sycl2020/group_algorithms/reduce_over_group.cpp
   sycl2020/usm_accessors_latency.cpp
 )
 
@@ -140,7 +143,11 @@ foreach(benchmark IN LISTS benchmarks)
     add_sycl_to_target(${target})
     target_compile_definitions(${target} PRIVATE __TRISYCL__)
   endif()
-
+  
+  if(ENABLE_TIME_EVENT_PROFILING)
+    target_compile_definitions(${target} PUBLIC SYCL_BENCH_ENABLE_QUEUE_PROFILING=1)
+  endif()
+  
   install(TARGETS ${target} RUNTIME DESTINATION bin/benchmarks/)
   get_filename_component(dir ${benchmark} DIRECTORY)
   set_property(TARGET ${target} PROPERTY FOLDER ${dir})
