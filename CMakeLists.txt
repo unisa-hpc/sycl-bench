@@ -113,13 +113,10 @@ set(benchmarks
   polybench/syrk.cpp
 
   # compiletime/compiletime.cpp
-  spec_constants/spec_constant_convolution.cpp
-  reductions/kernel_reduction.cpp
-  reductions/atomic_reduction.cpp
-  reductions/reduce_over_group_no_atomic.cpp
-  reductions/reduce_over_group_with_atomic.cpp
-  reductions/reduction_local_mem_no_atomic.cpp
-  reductions/reduction_local_mem_with_atomic.cpp
+  spec_constants/spec_constant_convolution.cpp  
+  sycl2020/atomics/atomic_reduction.cpp
+  sycl2020/kernel_reduction/kernel_reduction.cpp
+  sycl2020/group_algorithms/reduce_over_group.cpp
 )
 
 foreach(benchmark IN LISTS benchmarks)
