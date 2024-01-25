@@ -143,7 +143,7 @@ class Polybench_2mm {
 		return true;
 	}
 
-	static std::string getBenchmarkName() { return "Polybench_2mm"; }
+	static std::string getBenchmarkName(BenchmarkArgs& args) { return "Polybench_2mm"; }
 
   private:
 	BenchmarkArgs args;

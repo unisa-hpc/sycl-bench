@@ -72,7 +72,7 @@ public:
     return true;
   }
 
-  static std::string getBenchmarkName() {
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "MicroBench_sf_";
     name << ReadableTypename<DataT>::name << "_";

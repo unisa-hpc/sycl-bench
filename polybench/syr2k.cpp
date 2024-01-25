@@ -110,7 +110,7 @@ class Polybench_Syr2k {
 		return true;
 	}
 
-	static std::string getBenchmarkName() { return "Polybench_Syr2k"; }
+	static std::string getBenchmarkName(BenchmarkArgs& args) { return "Polybench_Syr2k"; }
 
   private:
 	BenchmarkArgs args;

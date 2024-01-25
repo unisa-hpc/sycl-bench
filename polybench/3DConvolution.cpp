@@ -117,7 +117,7 @@ class Polybench_3DConvolution {
 		return true;
 	}
 
-	static std::string getBenchmarkName() { return "Polybench_3DConvolution"; }
+	static std::string getBenchmarkName(BenchmarkArgs& args) { return "Polybench_3DConvolution"; }
 
   private:
 	BenchmarkArgs args;

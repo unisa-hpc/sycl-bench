@@ -141,7 +141,7 @@ public:
     return pass;
   }
   
-  static std::string getBenchmarkName() {
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
     return "MolecularDynamics";
   }
 };

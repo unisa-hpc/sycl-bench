@@ -48,7 +48,7 @@ public:
     })); // submit
   }
 
-  static std::string getBenchmarkName() {
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "MicroBench_L2_";
     name << ReadableTypename<DATA_TYPE>::name << "_";

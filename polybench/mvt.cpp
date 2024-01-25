@@ -121,7 +121,7 @@ class Polybench_Mvt {
 		return true;
 	}
 
-	static std::string getBenchmarkName() { return "Polybench_Mvt"; }
+	static std::string getBenchmarkName(BenchmarkArgs& args) { return "Polybench_Mvt"; }
 
   private:
 	BenchmarkArgs args;

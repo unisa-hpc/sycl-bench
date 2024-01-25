@@ -114,7 +114,7 @@ class Polybench_Atax {
 		return true;
 	}
 
-	static std::string getBenchmarkName() { return "Polybench_Atax"; }
+	static std::string getBenchmarkName(BenchmarkArgs& args) { return "Polybench_Atax"; }
 
   private:
 	BenchmarkArgs args;

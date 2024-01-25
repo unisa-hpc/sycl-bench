@@ -224,7 +224,7 @@ public:
     return false;
   }
 
-  static std::string getBenchmarkName() {
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "MicroBench_HostDeviceBandwidth_";
     name << Dims << "D_";

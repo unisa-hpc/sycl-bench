@@ -182,7 +182,7 @@ T reduce(std::vector<cl::sycl::event>& events, s::buffer<T, 1> &input_buf) {
     return pass;
   }
   
-  static std::string getBenchmarkName() {
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "LinearRegressionCoeff_";
     name << ReadableTypename<T>::name;

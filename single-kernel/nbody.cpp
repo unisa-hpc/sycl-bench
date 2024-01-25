@@ -282,7 +282,7 @@ public:
     this->submitNDRange(this->particles_buf.get(), this->velocities_buf.get());
   }
 
-  std::string getBenchmarkName() {
+  std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "NBody_NDRange_";
     name << ReadableTypename<float_type>::name;
@@ -306,7 +306,7 @@ public:
     this->submitHierarchical(this->particles_buf.get(), this->velocities_buf.get());
   }
 
-  std::string getBenchmarkName() {
+  std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "NBody_Hierarchical_";
     name << ReadableTypename<float_type>::name;
