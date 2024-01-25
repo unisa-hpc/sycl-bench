@@ -35,12 +35,12 @@ public:
 
   template <typename... Args>
   void run(Args&&... additionalArgs) {
-    args.result_consumer->proceedToBenchmark(Benchmark{args, additionalArgs...}.getBenchmarkName());
+    args.result_consumer->proceedToBenchmark(Benchmark{args, additionalArgs...}.getBenchmarkName(args));
 
     args.result_consumer->consumeResult("problem-size", std::to_string(args.problem_size));
     args.result_consumer->consumeResult("local-size", std::to_string(args.local_size));
     args.result_consumer->consumeResult(
-        "device-name", args.device_queue.get_device().template get_info<sycl::info::device::name>());
+        "device-name", args.device_queue.get_device().get_info<sycl::info::device::name>());
     args.result_consumer->consumeResult("sycl-implementation", this->getSyclImplementation());
 
     TimeMetricsProcessor<Benchmark> time_metrics(args);
@@ -189,7 +189,7 @@ public:
   template <class Benchmark, typename... AdditionalArgs>
   void run(AdditionalArgs&&... additional_args) {
     try {
-      const auto name = Benchmark{args, additional_args...}.getBenchmarkName();
+      const auto name = Benchmark{args, additional_args...}.getBenchmarkName(args);
       if(benchmark_names.count(name) == 0) {
         benchmark_names.insert(name);
       } else {
