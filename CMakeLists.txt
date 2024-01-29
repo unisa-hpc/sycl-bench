@@ -72,60 +72,58 @@ elseif(SYCL_IMPL STREQUAL "dpcpp")
 	endif()
 
 	if(DPCPP_WITH_LZ_BACKEND)
-		# # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=spir64_gen")
+		set(LZ_ARCH "" CACHE STRING "Level Zero device architecture e.g. acm-g10")
 
-    # set(LZ_ARCH "" CACHE STRING "Level Zero device architecture e.g. acm-g10")
-
-		# if(NOT LZ_ARCH STREQUAL "")
-		  #   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xsycl-target-backend \"-device ${LZ_ARCH}\"")
-		# endif()
+		if(NOT LZ_ARCH STREQUAL "")
+		  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xsycl-target-backend \"-device ${LZ_ARCH}\"")
+		endif()
 	endif()
 elseif(SYCL_IMPL STREQUAL "triSYCL")
 	find_package(TriSYCL MODULE REQUIRED)
 endif()
 
 set(benchmarks
-	# micro/arith.cpp
-	# micro/DRAM.cpp
-	# micro/host_device_bandwidth.cpp
-	# micro/pattern_L2.cpp
-	# micro/sf.cpp
-	# micro/local_mem.cpp
-	# single-kernel/median.cpp
-	# single-kernel/scalar_prod.cpp
-	# single-kernel/sobel.cpp
-	# single-kernel/sobel5.cpp
-	# single-kernel/sobel7.cpp
-	# single-kernel/vec_add.cpp
-	# single-kernel/lin_reg_error.cpp
-	# single-kernel/lin_reg_coeff.cpp
-	# single-kernel/kmeans.cpp
-	# single-kernel/mol_dyn.cpp
-	# single-kernel/nbody.cpp
-	# pattern/segmentedreduction.cpp
-	# pattern/reduction.cpp
-	# runtime/dag_task_throughput_sequential.cpp
-	# runtime/dag_task_throughput_independent.cpp
-	# runtime/blocked_transform.cpp
-	# runtime/matmulchain.cpp
-	# polybench/2DConvolution.cpp
-	# polybench/2mm.cpp
-	# polybench/3DConvolution.cpp
-	# polybench/3mm.cpp
-	# polybench/atax.cpp
-	# polybench/bicg.cpp
-	# polybench/correlation.cpp
-	# polybench/covariance.cpp
-	# polybench/fdtd2d.cpp
-	# polybench/gemm.cpp
-	# polybench/gesummv.cpp
-	# polybench/gramschmidt.cpp
-	# polybench/mvt.cpp
-	# polybench/syr2k.cpp
-	# polybench/syrk.cpp
+	micro/arith.cpp
+	micro/DRAM.cpp
+	micro/host_device_bandwidth.cpp
+	micro/pattern_L2.cpp
+	micro/sf.cpp
+	micro/local_mem.cpp
+	single-kernel/median.cpp
+	single-kernel/scalar_prod.cpp
+	single-kernel/sobel.cpp
+	single-kernel/sobel5.cpp
+	single-kernel/sobel7.cpp
+	single-kernel/vec_add.cpp
+	single-kernel/lin_reg_error.cpp
+	single-kernel/lin_reg_coeff.cpp
+	single-kernel/kmeans.cpp
+	single-kernel/mol_dyn.cpp
+	single-kernel/nbody.cpp
+	pattern/segmentedreduction.cpp
+	pattern/reduction.cpp
+	runtime/dag_task_throughput_sequential.cpp
+	runtime/dag_task_throughput_independent.cpp
+	runtime/blocked_transform.cpp
+	runtime/matmulchain.cpp
+	polybench/2DConvolution.cpp
+	polybench/2mm.cpp
+	polybench/3DConvolution.cpp
+	polybench/3mm.cpp
+	polybench/atax.cpp
+	polybench/bicg.cpp
+	polybench/correlation.cpp
+	polybench/covariance.cpp
+	polybench/fdtd2d.cpp
+	polybench/gemm.cpp
+	polybench/gesummv.cpp
+	polybench/gramschmidt.cpp
+	polybench/mvt.cpp
+	polybench/syr2k.cpp
+	polybench/syrk.cpp
 
-	# compiletime/compiletime.cpp
-	# spec_constants/spec_constant_convolution.cpp
+	# # compiletime/compiletime.cpp
+	spec_constants/spec_constant_convolution.cpp
 	sycl2020/USM/usm_accessors_latency.cpp
 	sycl2020/USM/usm_instr_mix.cpp
 	sycl2020/USM/usm_pinned_overhead.cpp

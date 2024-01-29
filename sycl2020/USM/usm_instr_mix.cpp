@@ -92,7 +92,7 @@ public:
     return pass;
   }
 
-  static std::string getBenchmarkName(BenchmarkArgs& args) {
+  static std::string getBenchmarkName() {
     const float device_op = args.cli.getOrDefault("--instr-mix", d_instr_mix);
 
     std::stringstream name;
