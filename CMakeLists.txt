@@ -66,12 +66,10 @@ elseif(SYCL_IMPL STREQUAL "dpcpp")
   endif()
 
   if(DPCPP_WITH_LZ_BACKEND)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=spir64_gen")
-
     set(LZ_ARCH "" CACHE STRING "Level Zero device architecture e.g. acm-g10")
 
     if(NOT LZ_ARCH STREQUAL "")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xsycl-target-backend \"-device ${LZ_ARCH}\"")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=${LZ_ARCH}")
     endif()
   endif()
 elseif(SYCL_IMPL STREQUAL "triSYCL")
