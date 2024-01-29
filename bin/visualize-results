@@ -1,0 +1,152 @@
+#!/usr/bin/env python3
+
+import matplotlib.pyplot as plt
+import numpy as np
+import sys
+import hashlib
+
+def read_data(filename):
+  data = np.genfromtxt(filename, unpack=True, delimiter=',', dtype=str)
+  
+  fields = []
+  with open(filename) as f:
+    first_line = f.readline().strip('#').strip()
+    fields = [f.strip() for f in first_line.split(',')]
+
+  result = {}
+
+  for i, f in enumerate(fields):
+    result[f] = data[i]
+
+  result['run-time-stddev'] = result['run-time-stddev'].astype(float)
+  result['run-time'] = result['run-time'].astype(float)
+  result['problem-size'] = result['problem-size'].astype(int)
+  result['local-size'] = result['local-size'].astype(int)
+
+  return result
+
+def filter_data(data, selection_function):
+  result = {}
+  for field in data:
+    result[field] = []
+
+  for i in range(0, len(data['Benchmark name'])):
+    line = {}
+
+    for field in data:
+      line[field] = data[field][i]
+
+    if selection_function(line):
+      for field in line:
+        result[field].append(line[field])
+
+
+  for f in result:
+    result[f] = np.array(result[f])
+  
+  return result
+
+# filters data based on equality. field_value_selector is a dict
+# that specifies for field names the values that a result must have
+# in order to be accepted by the filter.
+# for example, {'problem-size' : 1024} selects results where the problem
+# size is 1024. When multiple values are present in the dict, they act via
+# a logical and.
+def filter_data_by_equality(data, field_value_selector):
+
+  def should_include_result(line):
+    for selection_key in field_value_selector:
+      if not selection_key in line:
+        return False
+
+      if line[selection_key] != field_value_selector[selection_key]:
+        return False
+    return True
+  
+  return filter_data(data, should_include_result)
+
+
+def default_secondary_key_label_generator(key, key_value):
+  # We want to be deterministic across different runs,
+  # so don't use hash()
+  h  = int(hashlib.sha1(str(key_value).encode('utf-8')).hexdigest(), 16)
+  h2 = int(hashlib.sha1((str(key_value)+"2").encode('utf-8')).hexdigest(), 16)
+  h3 = int(hashlib.sha1((str(key_value)+"3").encode('utf-8')).hexdigest(), 16)
+
+  color = ((h%255)/255.0,(h2%255)/255.0,(h3%255)/255.0)
+  #colors = [(1.0, 1.0, 1.0), (0.8,0.8,0.8), (0.6,0.6,0.6)]
+  #colors = [(1.0,1.0,1.0)]
+
+  hatch_patterns = ['-', '+', 'x', '\\', '*', 'o', 'O', '.', '/']
+  # returns label, color, hatch
+  #return key_value, colors[h % len(colors)], hatch_patterns[h % len(hatch_patterns)]
+  return key_value, color, hatch_patterns[h % len(hatch_patterns)]
+
+def plot(data, x_field, secondary_xfield, figname, title="", xlabel="",
+        secondary_key_label_generator=default_secondary_key_label_generator):
+
+  secondary_keys = set()
+  for f in data[secondary_xfield]:
+    secondary_keys.add(f)
+  
+  secondary_keys = sorted(secondary_keys)
+
+  tick_positions = []
+  bar_positions  = []
+  primary_keys   = []
+  
+  current_bar_position = 0
+  primary_start = 0
+  processed_primary_keys = set()
+
+  for i, v in enumerate(data[x_field]):
+    
+    if not v in processed_primary_keys:
+      primary_keys.append(v)
+      processed_primary_keys.add(v)
+      primary_end = current_bar_position
+      # Extra gap when moving to new primary value,
+      # if we have multiple secondary values
+      current_bar_position += 1
+      if len(secondary_keys) > 1:
+        current_bar_position += 1
+
+      primary_start = current_bar_position
+      if len(tick_positions) > 0:
+        tick_positions[-1] += 0.5*primary_end
+      tick_positions.append(0.5 * primary_start)
+    else:
+      current_bar_position += 1
+
+    bar_positions.append(current_bar_position)
+  tick_positions[-1] += 0.5*bar_positions[-1]  
+  
+  
+  for secondary_key in secondary_keys:
+    # Extract only those measurements with specific
+    # secondary key
+    d = filter_data_by_equality(data, {secondary_xfield: secondary_key})
+    filtered_bar_positions = [
+      b[0] for b in zip(bar_positions,data[secondary_xfield]) if b[1]==secondary_key]
+
+    description = secondary_key_label_generator(secondary_xfield, secondary_key)
+
+    plt.bar(filtered_bar_positions, d['run-time'], yerr=d['run-time-stddev'],edgecolor='black',
+            label=description[0],color=description[1],hatch=3*description[2])
+
+  plt.xticks(tick_positions, primary_keys, rotation=45)
+  plt.title(title)
+  plt.ylabel(r'runtime $[s]$')
+  plt.xlabel(xlabel)
+  plt.legend()
+  plt.tight_layout()
+  plt.savefig(figname,dpi=250)
+
+if __name__ == '__main__':
+
+
+  data = read_data("./sycl-bench.csv")
+  
+  filtered_data = filter_data_by_equality(data, {'Benchmark name': 'MolecularDynamics'})
+  
+  plot(filtered_data, 'problem-size', 'local-size', 'test.png', xlabel="Problem size")

@@ -130,4 +130,5 @@ endforeach(benchmark)
 #set_target_properties(compiletime PROPERTIES EXCLUDE_FROM_ALL 1)
 
 install(PROGRAMS bin/run-suite DESTINATION bin/)
+install(PROGRAMS bin/visualize-results DESTINATION bin/)
 install(FILES ${PROJECT_SOURCE_DIR}/Brommy.bmp DESTINATION share/)
