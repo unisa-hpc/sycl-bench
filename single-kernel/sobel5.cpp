@@ -137,10 +137,12 @@ public:
       }
     }
     return pass;
+}
+
+
+static std::string getBenchmarkName(BenchmarkArgs& args) {
+    return "Sobel5";
   }
-
-
-  static std::string getBenchmarkName() { return "Sobel5"; }
 
 }; // SobelBench class
 

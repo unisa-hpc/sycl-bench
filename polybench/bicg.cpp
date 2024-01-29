@@ -123,7 +123,7 @@ public:
     return true;
   }
 
-  static std::string getBenchmarkName() { return "Polybench_Bicg"; }
+  static std::string getBenchmarkName(BenchmarkArgs& args) { return "Polybench_Bicg"; }
 
 private:
   BenchmarkArgs args;

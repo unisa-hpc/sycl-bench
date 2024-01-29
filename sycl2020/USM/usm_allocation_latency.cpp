@@ -49,7 +49,7 @@ public:
   }
 
 
-  static std::string getBenchmarkName() {
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "USM_Allocation_latency_";
     name << ReadableTypename<DATA_TYPE>::name << "_";

@@ -61,10 +61,9 @@ public:
 
     // Calculate CPU result in fp64 to avoid obtaining a wrong verification result
     std::vector<double> input_fp64(_input.size());
-    for(std::size_t i = 0; i < _input.size(); ++i) input_fp64[i] = static_cast<double>(_input[i]);
-
-    double delta = static_cast<double>(result) - std::accumulate(input_fp64.begin(), input_fp64.end(), T{});
-
+    for(std::size_t i = 0; i < _input.size(); ++i) input_fp64[i] = static_cast<double>(i);
+    double delta =
+        static_cast<double>(result) - std::reduce(input_fp64.begin(), input_fp64.end(), 0, std::plus<double>());
     return std::abs(delta) < 1.e-5;
   }
 
@@ -175,7 +174,7 @@ public:
 
   void run(std::vector<sycl::event>& events) { this->submit_ndrange(events); }
 
-  static std::string getBenchmarkName() {
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "Pattern_Reduction_NDRange_";
     name << ReadableTypename<T>::name;
@@ -194,7 +193,7 @@ public:
     // wait_and_throw() here
   }
 
-  static std::string getBenchmarkName() {
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "Pattern_Reduction_Hierarchical_";
     name << ReadableTypename<T>::name;

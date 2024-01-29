@@ -135,7 +135,7 @@ public:
     // wait_and_throw() here
   }
 
-  static std::string getBenchmarkName() {
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "Pattern_SegmentedReduction_NDRange_";
     name << ReadableTypename<T>::name;
@@ -154,7 +154,7 @@ public:
     // wait_and_throw() here
   }
 
-  static std::string getBenchmarkName() {
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "Pattern_SegmentedReduction_Hierarchical_";
     name << ReadableTypename<T>::name;

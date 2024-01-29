@@ -73,7 +73,7 @@ public:
     return {copiedGiB, "GiB"};
   }
 
-  static std::string getBenchmarkName() {
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     const size_t num_copies= args.cli.getOrDefault("--num-copies", d_num_copies);
     

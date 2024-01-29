@@ -136,6 +136,7 @@ struct BenchmarkArgs {
   // can be used to query additional benchmark specific information from the command line
   CommandLine cli;
   std::shared_ptr<ResultConsumer> result_consumer;
+  bool warmup_run;
 };
 
 

@@ -30,6 +30,9 @@ if(SYCL_BENCH_ENABLE_QUEUE_PROFILING)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSYCL_BENCH_ENABLE_QUEUE_PROFILING")
 endif()
 
+include(InstallRequiredSystemLibraries)
+include(CPack)
+
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/polybench/common)
 
@@ -75,7 +78,7 @@ elseif(SYCL_IMPL STREQUAL "dpcpp")
 		set(LZ_ARCH "" CACHE STRING "Level Zero device architecture e.g. acm-g10")
 
 		if(NOT LZ_ARCH STREQUAL "")
-		  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xsycl-target-backend \"-device ${LZ_ARCH}\"")
+		  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=${LZ_ARCH}")
 		endif()
 	endif()
 elseif(SYCL_IMPL STREQUAL "triSYCL")
@@ -83,51 +86,54 @@ elseif(SYCL_IMPL STREQUAL "triSYCL")
 endif()
 
 set(benchmarks
-	micro/arith.cpp
-	micro/DRAM.cpp
-	micro/host_device_bandwidth.cpp
-	micro/pattern_L2.cpp
-	micro/sf.cpp
-	micro/local_mem.cpp
-	single-kernel/median.cpp
-	single-kernel/scalar_prod.cpp
-	single-kernel/sobel.cpp
-	single-kernel/sobel5.cpp
-	single-kernel/sobel7.cpp
-	single-kernel/vec_add.cpp
-	single-kernel/lin_reg_error.cpp
-	single-kernel/lin_reg_coeff.cpp
-	single-kernel/kmeans.cpp
-	single-kernel/mol_dyn.cpp
-	single-kernel/nbody.cpp
-	pattern/segmentedreduction.cpp
-	pattern/reduction.cpp
-	runtime/dag_task_throughput_sequential.cpp
-	runtime/dag_task_throughput_independent.cpp
-	runtime/blocked_transform.cpp
-	runtime/matmulchain.cpp
-	polybench/2DConvolution.cpp
-	polybench/2mm.cpp
-	polybench/3DConvolution.cpp
-	polybench/3mm.cpp
-	polybench/atax.cpp
-	polybench/bicg.cpp
-	polybench/correlation.cpp
-	polybench/covariance.cpp
-	polybench/fdtd2d.cpp
-	polybench/gemm.cpp
-	polybench/gesummv.cpp
-	polybench/gramschmidt.cpp
-	polybench/mvt.cpp
-	polybench/syr2k.cpp
-	polybench/syrk.cpp
+  micro/arith.cpp
+  micro/DRAM.cpp
+  micro/host_device_bandwidth.cpp
+  micro/pattern_L2.cpp
+  micro/sf.cpp
+  micro/local_mem.cpp
+  single-kernel/median.cpp
+  single-kernel/scalar_prod.cpp
+  single-kernel/sobel.cpp
+  single-kernel/sobel5.cpp
+  single-kernel/sobel7.cpp
+  single-kernel/vec_add.cpp
+  single-kernel/lin_reg_error.cpp
+  single-kernel/lin_reg_coeff.cpp
+  single-kernel/kmeans.cpp
+  single-kernel/mol_dyn.cpp
+  single-kernel/nbody.cpp
+  pattern/segmentedreduction.cpp
+  pattern/reduction.cpp
+  runtime/dag_task_throughput_sequential.cpp
+  runtime/dag_task_throughput_independent.cpp
+  runtime/blocked_transform.cpp
+  runtime/matmulchain.cpp
+  polybench/2DConvolution.cpp
+  polybench/2mm.cpp
+  polybench/3DConvolution.cpp
+  polybench/3mm.cpp
+  polybench/atax.cpp
+  polybench/bicg.cpp
+  polybench/correlation.cpp
+  polybench/covariance.cpp
+  polybench/fdtd2d.cpp
+  polybench/gemm.cpp
+  polybench/gesummv.cpp
+  polybench/gramschmidt.cpp
+  polybench/mvt.cpp
+  polybench/syr2k.cpp
+  polybench/syrk.cpp
 
-	# # compiletime/compiletime.cpp
-	spec_constants/spec_constant_convolution.cpp
-	sycl2020/USM/usm_accessors_latency.cpp
-	sycl2020/USM/usm_instr_mix.cpp
-	sycl2020/USM/usm_pinned_overhead.cpp
-	sycl2020/USM/usm_allocation_latency.cpp
+  # compiletime/compiletime.cpp
+  sycl2020/spec_constants/spec_constant_convolution.cpp  
+  sycl2020/atomics/atomic_reduction.cpp
+  sycl2020/kernel_reduction/kernel_reduction.cpp
+  sycl2020/group_algorithms/reduce_over_group.cpp
+  sycl2020/USM/usm_accessors_latency.cpp
+  sycl2020/USM/usm_instr_mix.cpp
+  sycl2020/USM/usm_pinned_overhead.cpp
+  sycl2020/USM/usm_allocation_latency.cpp
 )
 
 # Setting variables
@@ -146,14 +152,18 @@ foreach(benchmark IN LISTS benchmarks)
 		target_compile_definitions(${target} PRIVATE __DPCPP__)
 	endif()
 
-	if(SYCL_IMPL STREQUAL "triSYCL")
-		add_sycl_to_target(${target})
-		target_compile_definitions(${target} PRIVATE __TRISYCL__)
-	endif()
-
-	install(TARGETS ${target} RUNTIME DESTINATION bin/benchmarks/)
-	get_filename_component(dir ${benchmark} DIRECTORY)
-	set_property(TARGET ${target} PROPERTY FOLDER ${dir})
+  if(SYCL_IMPL STREQUAL "triSYCL")
+    add_sycl_to_target(${target})
+    target_compile_definitions(${target} PRIVATE __TRISYCL__)
+  endif()
+  
+  if(ENABLE_TIME_EVENT_PROFILING)
+    target_compile_definitions(${target} PUBLIC SYCL_BENCH_ENABLE_QUEUE_PROFILING=1)
+  endif()
+  
+  install(TARGETS ${target} RUNTIME DESTINATION bin/benchmarks/)
+  get_filename_component(dir ${benchmark} DIRECTORY)
+  set_property(TARGET ${target} PROPERTY FOLDER ${dir})
 endforeach(benchmark)
 
 # The "compiletime" target should only be used in the context of the compile time evaluation script

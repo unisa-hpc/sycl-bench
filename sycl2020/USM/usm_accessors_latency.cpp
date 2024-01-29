@@ -86,7 +86,7 @@ public:
   }
 
 
-  static std::string getBenchmarkName() {
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "SYCL2020_Accessors_Latency_";
     name << ReadableTypename<DATA_TYPE>::name << "_";
@@ -147,7 +147,7 @@ public:
   }
 
 
-  static std::string getBenchmarkName() {
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "USM_Latency_";
     name << ReadableTypename<DATA_TYPE>::name << "_";
