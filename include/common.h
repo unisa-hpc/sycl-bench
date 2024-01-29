@@ -1,6 +1,7 @@
 #pragma once 
 #include <CL/sycl.hpp>
 
+#include <cstdlib>
 #include <string>
 #include <iostream>
 #include <cassert>
@@ -167,19 +168,19 @@ private:
 };
 
 
-class BenchmarkApp
-{
-  BenchmarkArgs args;  
-  cl::sycl::queue device_queue;
-  std::unordered_set<std::string> benchmark_names;
-  
-public:  
-  BenchmarkApp(int argc, char** argv)
-  {
-    try{
-      args = BenchmarkCommandLine{argc, argv}.getBenchmarkArgs();
+class BenchmarkApp {
+public:
+  BenchmarkApp(int argc, char** argv) {
+    std::stringstream ss;
+    for(int i = 0; i < argc; ++i) {
+      ss << " " << argv[i];
     }
-    catch(std::exception& e){
+    self_call = ss.str();
+    is_meta_run = getenv(run_env_var) == nullptr;
+
+    try {
+      args = BenchmarkCommandLine{argc, argv}.getBenchmarkArgs();
+    } catch(std::exception& e) {
       std::cerr << "Error while parsing command lines: " << e.what() << std::endl;
     }
   }
@@ -208,6 +209,13 @@ public:
         throw std::runtime_error("Duplicate benchmark name");
       }
 
+      if(is_meta_run) {
+        spawnBenchmark(name);
+        return;
+      } else if(!shouldRun(name)) {
+        return;
+      }
+
       BenchmarkManager<Benchmark> mgr(args);
 
 #ifdef NV_ENERGY_MEAS
@@ -223,5 +231,26 @@ public:
     catch(std::exception& e){
       std::cerr << "Error: " << e.what() << std::endl;
     }
+  }
+
+private:
+  const char* run_env_var = "__SYCL_BENCH_RUN";
+  std::string self_call;
+  bool is_meta_run = false;
+
+  BenchmarkArgs args;
+  cl::sycl::queue device_queue;
+  std::unordered_set<std::string> benchmark_names;
+
+  void spawnBenchmark(const std::string& name) const {
+    std::stringstream cmd;
+    cmd << run_env_var << "=\"" << name << "\"";
+    cmd << self_call;
+    std::system(cmd.str().c_str());
+  }
+
+  bool shouldRun(const std::string& name) const {
+    assert(!is_meta_run);
+    return std::string(getenv(run_env_var)) == name;
   }
 };
