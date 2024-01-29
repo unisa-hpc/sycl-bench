@@ -108,7 +108,7 @@ public:
     return true;
   }
   
-  std::string getBenchmarkName() {
+  std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "Runtime_BlockedTransform_iter_";
     name << Num_iterations << "_blocksize_";

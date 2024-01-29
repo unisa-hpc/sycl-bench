@@ -75,7 +75,7 @@ public:
     return pass;
   }
   
-  static std::string getBenchmarkName() {
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "VectorAddition_";
     name << ReadableTypename<T>::name;

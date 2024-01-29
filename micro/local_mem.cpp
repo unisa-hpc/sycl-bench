@@ -63,7 +63,7 @@ public:
     })); // submit
   }
 
-  static std::string getBenchmarkName() {
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "MicroBench_LocalMem_";
     name << ReadableTypename<DATA_TYPE>::name << "_";

@@ -130,7 +130,7 @@ public:
     submit_single_task();
   }
 
-  static std::string getBenchmarkName() {
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
     return "Runtime_IndependentDAGTaskThroughput_SingleTask";
   }
 };
@@ -146,7 +146,7 @@ public:
     submit_basic_parallel_for();
   }
 
-  static std::string getBenchmarkName() {
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
     return "Runtime_IndependentDAGTaskThroughput_BasicParallelFor";
   }
 };
@@ -162,7 +162,7 @@ public:
     submit_ndrange_parallel_for();
   }
 
-  static std::string getBenchmarkName() {
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
     return "Runtime_IndependentDAGTaskThroughput_NDRangeParallelFor";
   }
 };
@@ -178,7 +178,7 @@ public:
     submit_hierarchical_parallel_for();
   }
 
-  static std::string getBenchmarkName() {
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
     return "Runtime_IndependentDAGTaskThroughput_HierarchicalParallelFor";
   }
 };
