@@ -53,7 +53,7 @@ public:
   }
 
 
-  static std::string getBenchmarkName() {
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "KernelReduction_";
     name << ReadableTypename<T>::name;

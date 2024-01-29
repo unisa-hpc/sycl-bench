@@ -217,7 +217,7 @@ public:
     return true;
   }
 
-  static std::string getBenchmarkName() { return "Polybench_Correlation"; }
+  static std::string getBenchmarkName(BenchmarkArgs& args) { return "Polybench_Correlation"; }
 
 private:
   BenchmarkArgs args;

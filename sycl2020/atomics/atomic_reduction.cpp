@@ -55,7 +55,7 @@ public:
   }
 
 
-  static std::string getBenchmarkName() {
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "ReductionAtomic_";
     name << ReadableTypename<T>::name;

@@ -101,7 +101,9 @@ public:
 
   void run() { submit_single_task(); }
 
-  static std::string getBenchmarkName() { return "Runtime_IndependentDAGTaskThroughput_SingleTask"; }
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
+    return "Runtime_IndependentDAGTaskThroughput_SingleTask";
+  }
 };
 
 class IndependentDagTaskThroughputBasicPF : public IndependentDagTaskThroughput {
@@ -110,7 +112,9 @@ public:
 
   void run() { submit_basic_parallel_for(); }
 
-  static std::string getBenchmarkName() { return "Runtime_IndependentDAGTaskThroughput_BasicParallelFor"; }
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
+    return "Runtime_IndependentDAGTaskThroughput_BasicParallelFor";
+  }
 };
 
 class IndependentDagTaskThroughputNDRangePF : public IndependentDagTaskThroughput {
@@ -119,7 +123,9 @@ public:
 
   void run() { submit_ndrange_parallel_for(); }
 
-  static std::string getBenchmarkName() { return "Runtime_IndependentDAGTaskThroughput_NDRangeParallelFor"; }
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
+    return "Runtime_IndependentDAGTaskThroughput_NDRangeParallelFor";
+  }
 };
 
 class IndependentDagTaskThroughputHierarchicalPF : public IndependentDagTaskThroughput {
@@ -128,7 +134,9 @@ public:
 
   void run() { submit_hierarchical_parallel_for(); }
 
-  static std::string getBenchmarkName() { return "Runtime_IndependentDAGTaskThroughput_HierarchicalParallelFor"; }
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
+    return "Runtime_IndependentDAGTaskThroughput_HierarchicalParallelFor";
+  }
 };
 
 int main(int argc, char** argv) {

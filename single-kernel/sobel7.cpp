@@ -142,7 +142,9 @@ public:
   }
 
 
-  static std::string getBenchmarkName() { return "Sobel7"; }
+static std::string getBenchmarkName(BenchmarkArgs& args) {
+    return "Sobel7";
+  }
 
 }; // SobelBench class
 
