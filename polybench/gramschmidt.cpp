@@ -146,7 +146,7 @@ public:
     return true;
   }
 
-  static std::string getBenchmarkName() { return "Polybench_Gramschmidt"; }
+  static std::string getBenchmarkName(BenchmarkArgs& args) { return "Polybench_Gramschmidt"; }
 
 private:
   BenchmarkArgs args;

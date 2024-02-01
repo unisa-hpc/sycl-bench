@@ -62,7 +62,7 @@ public:
   }
 
 
-  static std::string getBenchmarkName() {
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "ReduceGroupAlgorithm_";
     name << ReadableTypename<T>::name;

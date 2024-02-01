@@ -84,7 +84,7 @@ public:
     multiply(args.device_queue, mat_p_buf.get(), mat_q_buf.get(), mat_res_buf.get(), mat_size);
   }
 
-  static std::string getBenchmarkName() { return "MatmulChain"; }
+  static std::string getBenchmarkName(BenchmarkArgs& args) { return "MatmulChain"; }
 
   bool verify(VerificationSetting& ver) {
     // Triggers writeback

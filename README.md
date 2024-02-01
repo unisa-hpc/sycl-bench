@@ -11,6 +11,7 @@ Benchmarks support the following command line arguments:
 * `--verification-range=<x,y,z>` - Specify the size of the 3D range that should be used for verifying results. Note: Most benchmarks do not implement this feature. Default: `1,1,1`
 * `--no-verification` - disable verification entirely
 * `--no-ndrange-kernels` - do not run kernels based on ndrange parallel for
+* `--warmup-run` - run benchmarks once before evaluation to discard possible "warmup" times, e.g., JIT compilation
 
 ## Usage
 Clone sycl-bench repo 
@@ -40,6 +41,19 @@ Run individual tests as such:
 ```
 $ ./arith --device=cpu --output=output.csv
 ```
+
+## Packaging
+
+SYCL-Bench provides a CMake target `package` (and `package_source`) to package a SYCL-Bench installation. Users can configure what generators to use to build the packages by passing a semicolon-separated list of generators to use to the `CPACK_GENERATOR` CMake flag and then build the enabled packages by building the `package` target:
+
+```
+cmake -Bbuild -DCPACK_GENERATOR="TGZ;ZIP"
+cmake --build build --target package
+```
+
+For more information, check the [CPack documentation](https://cmake.org/cmake/help/latest/module/CPack.html) for the relevant CMake version.
+
+Packages built via the `package` target will contain all files contained in a SYCL-Bench installation (binaries, scripts, benchmark inputs). Packages built via the `package_source` target will additionally contain the source files.
 
 ## Attribution
 If you use SYCL-Bench, please cite the following papers:

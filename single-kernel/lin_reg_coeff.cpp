@@ -178,8 +178,8 @@ public:
 
     return pass;
   }
-
-  static std::string getBenchmarkName() {
+  
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "LinearRegressionCoeff_";
     name << ReadableTypename<T>::name;

@@ -174,7 +174,7 @@ public:
 
   void run(std::vector<sycl::event>& events) { this->submit_ndrange(events); }
 
-  static std::string getBenchmarkName() {
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "Pattern_Reduction_NDRange_";
     name << ReadableTypename<T>::name;
@@ -193,7 +193,7 @@ public:
     // wait_and_throw() here
   }
 
-  static std::string getBenchmarkName() {
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "Pattern_Reduction_Hierarchical_";
     name << ReadableTypename<T>::name;

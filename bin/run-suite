@@ -34,6 +34,7 @@ def create_log_range(begin, end):
     --verification-range=<x,y,z> - Specify the size of the 3D range that should be used for verifying results. Note: Most benchmarks do not implement this feature. Default: 1,1,1
     --no-verification - disable verification entirely
     --no-ndrange-kernels - do not run kernels based on ndrange parallel for
+    --warmup-run - run benchmarks once before evaluation to discard possible "warmup" times, e.g., JIT compilation
 '''
 output_file = "./sycl-bench.csv"
 
@@ -107,9 +108,25 @@ default_profile = {
     },
     'mvt' : {
       '--size' : create_log_range(2**14, 2**14)
-    },                                                                             
+    },              
+    ## USM benchmarks
+    'usm_accessors_latency' : {
+      '--size' : create_log_range(2**20, 2**20)
+    },
+    'usm_allocation_latency' : {
+      '--size' : create_log_range(2**25, 2**25)
+    },
+    'usm_instr_mix' : {
+      '--size' : create_log_range(2**20, 2**20)
+    },
+    'usm_pinned_overhead' : {
+      '--size' : create_log_range(2**20, 2**20)
+    }                                                  
   },
-  'individual-benchmark-flags' : set([])
+  'individual-benchmark-flags' : {
+    'usm_instr_mix' : ['--instr-mix=6'],
+    'usm_pinned_overhead' : ['--num-copies=5']
+  }
 }
 
 def construct_profile(overridden_options_dict,
@@ -130,7 +147,9 @@ profiles = {
   'default': default_profile,
   'quicktest' : construct_profile({}, max_allowed_runtime=1.0),
   'cpu' : construct_profile({'--device':'cpu'}),
+  'cpu-warmup' : construct_profile({'--device':'cpu'},['--warmup-run']),
   'gpu' : construct_profile({'--device':'gpu'}),
+  'gpu-warmup' : construct_profile({'--device':'gpu'},['--warmup-run']),
   'cpu-noverify' : construct_profile({'--device':'cpu'},['--no-verification']),
   'cpu-nondrange' : construct_profile({'--device':'cpu'},['--no-ndrange-kernels']),
   'cpu-noverify-nondrange' : construct_profile({'--device':'cpu'},['--no-verification','--no-ndrange-kernels']),
@@ -219,8 +238,9 @@ if __name__ == '__main__':
         if benchmark_name in individual_benchmark_options:
           for param in individual_benchmark_options[benchmark_name]:
             options[param] = individual_benchmark_options[benchmark_name][param]
+            
         if benchmark_name in individual_benchmark_flags:
-          for f in individual_benchmark_flags:
+          for f in individual_benchmark_flags[benchmark_name]:
             flags.add(f)
         
         max_runtime = 0.0

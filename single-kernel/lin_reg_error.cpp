@@ -115,8 +115,8 @@ public:
 
     return compare(expected_output, args.problem_size, 0.000001);
   }
-
-  static std::string getBenchmarkName() {
+  
+  static std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "LinearRegression_";
     name << ReadableTypename<T>::name;
