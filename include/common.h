@@ -33,15 +33,14 @@ public:
 
   void addHook(BenchmarkHook& h) { hooks.push_back(&h); }
 
-  template<typename... Args>
-  void run(Args&&... additionalArgs)
-  {
+  template <typename... Args>
+  void run(Args&&... additionalArgs) {
     args.result_consumer->proceedToBenchmark(Benchmark{args, additionalArgs...}.getBenchmarkName(args));
 
     args.result_consumer->consumeResult("problem-size", std::to_string(args.problem_size));
     args.result_consumer->consumeResult("local-size", std::to_string(args.local_size));
     args.result_consumer->consumeResult(
-        "device-name", args.device_queue.get_device().template get_info<sycl::info::device::name>());
+        "device-name", args.device_queue.get_device().get_info<sycl::info::device::name>());
     args.result_consumer->consumeResult("sycl-implementation", this->getSyclImplementation());
 
     TimeMetricsProcessor<Benchmark> time_metrics(args);
@@ -54,7 +53,7 @@ public:
       // verification fails
       for(std::size_t run = 0; run < args.num_runs && all_runs_pass; ++run) {
         Benchmark b(args, additionalArgs...);
-
+        
         for(auto h : hooks) h->preSetup();
 
         b.setup();
