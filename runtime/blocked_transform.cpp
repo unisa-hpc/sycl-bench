@@ -67,7 +67,7 @@ public:
 
         cgh.parallel_for<MandelbrotKernel<Num_iterations>>(current_batch_size, [=](sycl::id<1> idx) {
           const complex z0{0.0f, 0.0f};
-          acc[idx + begin] = mandelbrot_sequence<Num_iterations>(z0, acc[idx + begin]);
+          acc[idx] = mandelbrot_sequence<Num_iterations>(z0, acc[idx]);
         });
       });
     }
