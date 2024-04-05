@@ -46,9 +46,15 @@ class SpecConstConvBench {
     return problem_size < 0 ? T(problem_size) : T(1);
   }
 
+#ifdef __ADAPTIVECPP__
+  // ACPP implements sycl::specialized instead of spec constants
+  sycl::specialized<coeff_t> coeff_spec;
+  sycl::specialized<T> div_spec;
+#else
   // ids for the specialization constants
   static constexpr s::specialization_id<coeff_t> coeff_id;
   static constexpr s::specialization_id<T> div_id;
+#endif
 
   BenchmarkArgs args;
 
@@ -70,8 +76,10 @@ public:
     out_buf.initialize(args.device_queue, in_vec.data(), s::range<2>(problem_size, problem_size));
   }
 
+
   void run(std::vector<sycl::event>& events) {
     events.push_back(args.device_queue.submit([&](sycl::handler& cgh) {
+      
       auto in = in_buf.template get_access<s::access::mode::read>(cgh);
       auto out = out_buf.template get_access<s::access::mode::write>(cgh);
 
@@ -82,38 +90,53 @@ public:
         dynamic_coeff = getCoefficients();
         dynamic_div = getDivider();
       } else if constexpr(AccessVariant == AccessVariants::spec_const_value) {
+#ifndef __ADAPTIVECPP__
         cgh.set_specialization_constant<coeff_id>(getCoefficients());
         cgh.set_specialization_constant<div_id>(getDivider());
+#else
+       coeff_spec = getCoefficients();
+       div_spec = getDivider();
+#endif
       }
 
-      cgh.parallel_for<class ConvKernel<T, AccessVariant, InnerLoops>>(
-          in.get_range(), [=](s::item<2> item_id, s::kernel_handler h) {
-            T acc = 0;
-            coeff_t coeff;
-            T div;
-            if constexpr(AccessVariant == AccessVariants::dynamic_value) {
-              coeff = dynamic_coeff;
-              div = dynamic_div;
-            } else if constexpr(AccessVariant == AccessVariants::spec_const_value) {
-              coeff = h.get_specialization_constant<coeff_id>();
-              div = h.get_specialization_constant<div_id>();
-            } else if constexpr(AccessVariant == AccessVariants::constexpr_value) {
-              coeff = {{{0, 2, 0}, {2, 2, 2}, {0, 2, 0}}};
-              div = 5;
+      cgh.parallel_for<class ConvKernel<T, AccessVariant, InnerLoops>>(in.get_range(), 
+      #ifdef __ADAPTIVECPP__ 
+      [=, coeff_spec_copy = coeff_spec, div_spec_copy = div_spec](s::item<2> item_id) //Copy to avoid this ptr access in lambda
+      #else
+      [=](s::item<2> item_id, s::kernel_handler h)
+      #endif
+      {
+        T acc = 0;
+        coeff_t coeff;
+        T div;
+        if constexpr(AccessVariant == AccessVariants::dynamic_value) {
+          coeff = dynamic_coeff;
+          div = dynamic_div;
+        } else if constexpr(AccessVariant == AccessVariants::spec_const_value) {
+#ifndef __ADAPTIVECPP__
+          coeff = h.get_specialization_constant<coeff_id>();
+          div = h.get_specialization_constant<div_id>();
+#else
+              coeff = coeff_spec_copy;
+              div = div_spec_copy;
+#endif
+        } else if constexpr(AccessVariant == AccessVariants::constexpr_value) {
+          coeff = {{{0, 2, 0}, {2, 2, 2}, {0, 2, 0}}};
+          div = 5;
+        }
+        for(int k = 0; k < InnerLoops; ++k) {
+          for(int i = -1; i <= 1; i++) {
+            if(item_id[0] + i < 0 || item_id[0] + i >= in.get_range()[0])
+              continue;
+            for(int j = -1; j <= 1; j++) {
+              if(item_id[1] + j < 0 || item_id[1] + j >= out.get_range()[1])
+                continue;
+              acc += coeff[i + 1][j + 1] * in[item_id[0] + i][item_id[1] + j];
             }
-            for(int k = 0; k < InnerLoops; ++k) {
-              for(int i = -1; i <= 1; i++) {
-                if(item_id[0] + i < 0 || item_id[0] + i >= in.get_range()[0])
-                  continue;
-                for(int j = -1; j <= 1; j++) {
-                  if(item_id[1] + j < 0 || item_id[1] + j >= out.get_range()[1])
-                    continue;
-                  acc += coeff[i + 1][j + 1] * in[item_id[0] + i][item_id[1] + j];
-                }
-              }
-            }
-            out[item_id] = acc / (div * T(InnerLoops));
-          });
+          }
+        }
+        out[item_id] = acc / (div * T(InnerLoops));
+      });
     }));
   }
 
@@ -184,7 +207,7 @@ int main(int argc, char** argv) {
   runAccessVariants<long long>(app);
   runAccessVariants<float>(app);
   if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
-          runAccessVariants<double>(app);
-    }
-    return 0;
+    runAccessVariants<double>(app);
+  }
+  return 0;
 }
