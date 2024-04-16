@@ -46,7 +46,7 @@ class SpecConstConvBench {
     return problem_size < 0 ? T(problem_size) : T(1);
   }
 
-#ifdef __ADAPTIVECPP__
+#ifdef HIPSYCL_EXT_SPECIALIZED
   // ACPP implements sycl::specialized instead of spec constants
   sycl::specialized<coeff_t> coeff_spec;
   sycl::specialized<T> div_spec;
@@ -90,7 +90,7 @@ public:
         dynamic_coeff = getCoefficients();
         dynamic_div = getDivider();
       } else if constexpr(AccessVariant == AccessVariants::spec_const_value) {
-#ifndef __ADAPTIVECPP__
+#ifndef HIPSYCL_EXT_SPECIALIZED
         cgh.set_specialization_constant<coeff_id>(getCoefficients());
         cgh.set_specialization_constant<div_id>(getDivider());
 #else
@@ -100,7 +100,7 @@ public:
       }
 
       cgh.parallel_for<class ConvKernel<T, AccessVariant, InnerLoops>>(in.get_range(), 
-      #ifdef __ADAPTIVECPP__ 
+      #ifdef HIPSYCL_EXT_SPECIALIZED 
       [=, coeff_spec_copy = coeff_spec, div_spec_copy = div_spec](s::item<2> item_id) //Copy to avoid this ptr access in lambda
       #else
       [=](s::item<2> item_id, s::kernel_handler h)
@@ -113,7 +113,7 @@ public:
           coeff = dynamic_coeff;
           div = dynamic_div;
         } else if constexpr(AccessVariant == AccessVariants::spec_const_value) {
-#ifndef __ADAPTIVECPP__
+#ifndef HIPSYCL_EXT_SPECIALIZED
           coeff = h.get_specialization_constant<coeff_id>();
           div = h.get_specialization_constant<div_id>();
 #else
