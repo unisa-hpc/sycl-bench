@@ -10,7 +10,7 @@ Measure the overhead of copying data from host to device and vice versa using pi
 Takes a --num-copies parameter to specify how many copies to perform.
 */
 template <typename DATA_TYPE, bool use_pinned_memory, int direction, bool include_init>
-class USMPienndOverhead {
+class USMPinnedOverhead {
 protected:
   BenchmarkArgs args;
   DATA_TYPE* buffer;
@@ -28,10 +28,10 @@ private:
   }
 
 public:
-  USMPienndOverhead(const BenchmarkArgs& _args, size_t num_copies)
+  USMPinnedOverhead(const BenchmarkArgs& _args, size_t num_copies)
       : args(_args), buffer(nullptr), host_memory(nullptr), num_copies(num_copies) {}
 
-  ~USMPienndOverhead() {
+  ~USMPinnedOverhead() {
     if(buffer == nullptr || host_memory == nullptr) {
       return;
     }
@@ -92,10 +92,10 @@ int main(int argc, char** argv) {
   BenchmarkApp app(argc, argv);
   const size_t num_copies= app.getArgs().cli.getOrDefault("--num-copies", d_num_copies);
 
-  app.run<USMPienndOverhead<float, false, HOST_DEVICE, true>>(num_copies);
-  app.run<USMPienndOverhead<float, true, HOST_DEVICE, true>>(num_copies);
-  app.run<USMPienndOverhead<float, false, DEVICE_HOST, true>>(num_copies);
-  app.run<USMPienndOverhead<float, true, DEVICE_HOST, true>>(num_copies);
+  app.run<USMPinnedOverhead<float, false, HOST_DEVICE, true>>(num_copies);
+  app.run<USMPinnedOverhead<float, true, HOST_DEVICE, true>>(num_copies);
+  app.run<USMPinnedOverhead<float, false, DEVICE_HOST, true>>(num_copies);
+  app.run<USMPinnedOverhead<float, true, DEVICE_HOST, true>>(num_copies);
 
 
   return 0;
