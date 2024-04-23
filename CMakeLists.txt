@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(sycl-bench)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake ${PROJECT_SOURCE_DIR}/cmake/has-features)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -89,6 +89,8 @@ elseif(SYCL_IMPL STREQUAL "triSYCL")
 	find_package(TriSYCL MODULE REQUIRED)
 endif()
 
+include(HasFeatures)
+
 set(benchmarks
   micro/arith.cpp
   micro/DRAM.cpp
@@ -130,18 +132,25 @@ set(benchmarks
   polybench/syrk.cpp
 
   # compiletime/compiletime.cpp
-  sycl2020/spec_constants/spec_constant_convolution.cpp  
   sycl2020/atomics/atomic_reduction.cpp
-  sycl2020/kernel_reduction/kernel_reduction.cpp
-  sycl2020/group_algorithms/reduce_over_group.cpp
   sycl2020/USM/usm_accessors_latency.cpp
   sycl2020/USM/usm_instr_mix.cpp
   sycl2020/USM/usm_pinned_overhead.cpp
   sycl2020/USM/usm_allocation_latency.cpp
 )
+# Selectively add benchmarks based on some SYCL 2020 features
+if (SYCL_BENCH_HAS_SPEC_CONSTANTS)
+  list(APPEND benchmarks sycl2020/spec_constants/spec_constant_convolution.cpp)
+endif()
+if (SYCL_BENCH_HAS_KERNEL_REDUCTION)
+list(APPEND benchmarks sycl2020/kernel_reduction/kernel_reduction.cpp)
+endif()
+if (SYCL_BENCH_HAS_GROUP_ALGORITHMS)
+  list(APPEND benchmarks sycl2020/group_algorithms/reduce_over_group.cpp)
+endif()
 
 # Setting variables
-add_compile_definitions(SYCL_BENCH_ENABLE_FP64_BENCHMARKS=$<BOOL:${SYCL_BENCH_ENABLE_FP64_BENCHMARKS}>)
+add_compile_definitions(SYCL_BENCH_ENABLE_FP64_BENCHMARKS=$<BOOL:${SYCL_BENCH_HAS_FP64_SUPPORT}>)
 
 foreach(benchmark IN LISTS benchmarks)
 	get_filename_component(target ${benchmark} NAME_WE)
