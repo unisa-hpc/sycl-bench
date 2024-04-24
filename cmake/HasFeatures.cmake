@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.4.3) # TODO: No idea with one is the actual minimum
+cmake_minimum_required(VERSION 3.25) # TODO: No idea with one is the actual minimum
 
 macro(check_feature VAR FILENAME)
     if(NOT DEFINED SYCL_BENCH_HAS_${VAR})
