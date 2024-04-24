@@ -50,8 +50,8 @@ public:
   using base = LatencyBenchmark<DATA_TYPE, in_order>;
   using base::args;
   using base::base;
-  using base::getQueue;
   using base::getNDRange;
+  using base::getQueue;
   using base::getRange;
   using base::kernel_launches_num;
 
@@ -106,14 +106,13 @@ protected:
   using base = LatencyBenchmark<DATA_TYPE, in_order>;
   using base::args;
   using base::base;
-  using base::getQueue;
   using base::getNDRange;
+  using base::getQueue;
   using base::getRange;
   using base::kernel_launches_num;
 
 public:
-  USMLatency(const BenchmarkArgs& args, const size_t kernel_launches_num)
-      : base(args, kernel_launches_num) {}
+  USMLatency(const BenchmarkArgs& args, const size_t kernel_launches_num) : base(args, kernel_launches_num) {}
 
   void setup() {
     buff_A.initialize(getQueue(), getRange());

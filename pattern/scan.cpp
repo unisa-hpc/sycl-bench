@@ -1,1 +1,1 @@
-TODO: SYCL code with a scan
+TODO : SYCL code with a scan

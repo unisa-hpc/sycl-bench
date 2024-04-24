@@ -101,9 +101,7 @@ public:
 
   void run() { submit_single_task(); }
 
-  static std::string getBenchmarkName(BenchmarkArgs& args) {
-    return "Runtime_IndependentDAGTaskThroughput_SingleTask";
-  }
+  static std::string getBenchmarkName(BenchmarkArgs& args) { return "Runtime_IndependentDAGTaskThroughput_SingleTask"; }
 };
 
 class IndependentDagTaskThroughputBasicPF : public IndependentDagTaskThroughput {

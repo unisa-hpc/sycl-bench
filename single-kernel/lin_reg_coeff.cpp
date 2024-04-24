@@ -178,7 +178,7 @@ public:
 
     return pass;
   }
-  
+
   static std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "LinearRegressionCoeff_";
@@ -192,8 +192,7 @@ int main(int argc, char** argv) {
   if(app.shouldRunNDRangeKernels()) {
     app.run<LinearRegressionCoeffBench<float>>();
     if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
-      if(app.deviceSupportsFP64())
-        app.run<LinearRegressionCoeffBench<double>>();
+      app.run<LinearRegressionCoeffBench<double>>();
     }
   }
   return 0;

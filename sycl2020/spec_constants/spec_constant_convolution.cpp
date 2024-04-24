@@ -79,7 +79,6 @@ public:
 
   void run(std::vector<sycl::event>& events) {
     events.push_back(args.device_queue.submit([&](sycl::handler& cgh) {
-      
       auto in = in_buf.template get_access<s::access::mode::read>(cgh);
       auto out = out_buf.template get_access<s::access::mode::write>(cgh);
 
@@ -94,49 +93,50 @@ public:
         cgh.set_specialization_constant<coeff_id>(getCoefficients());
         cgh.set_specialization_constant<div_id>(getDivider());
 #else
-       coeff_spec = getCoefficients();
-       div_spec = getDivider();
+        coeff_spec = getCoefficients();
+        div_spec = getDivider();
 #endif
       }
 
-      cgh.parallel_for<class ConvKernel<T, AccessVariant, InnerLoops>>(in.get_range(), 
-      #ifdef HIPSYCL_EXT_SPECIALIZED 
-      [=, coeff_spec_copy = coeff_spec, div_spec_copy = div_spec](s::item<2> item_id) //Copy to avoid this ptr access in lambda
-      #else
+      cgh.parallel_for<class ConvKernel<T, AccessVariant, InnerLoops>>(in.get_range(),
+#ifdef HIPSYCL_EXT_SPECIALIZED
+          [=, coeff_spec_copy = coeff_spec, div_spec_copy = div_spec](
+              s::item<2> item_id) // Copy to avoid this ptr access in lambda
+#else
       [=](s::item<2> item_id, s::kernel_handler h)
-      #endif
-      {
-        T acc = 0;
-        coeff_t coeff;
-        T div;
-        if constexpr(AccessVariant == AccessVariants::dynamic_value) {
-          coeff = dynamic_coeff;
-          div = dynamic_div;
-        } else if constexpr(AccessVariant == AccessVariants::spec_const_value) {
+#endif
+          {
+            T acc = 0;
+            coeff_t coeff;
+            T div;
+            if constexpr(AccessVariant == AccessVariants::dynamic_value) {
+              coeff = dynamic_coeff;
+              div = dynamic_div;
+            } else if constexpr(AccessVariant == AccessVariants::spec_const_value) {
 #ifndef HIPSYCL_EXT_SPECIALIZED
-          coeff = h.get_specialization_constant<coeff_id>();
-          div = h.get_specialization_constant<div_id>();
+              coeff = h.get_specialization_constant<coeff_id>();
+              div = h.get_specialization_constant<div_id>();
 #else
               coeff = coeff_spec_copy;
               div = div_spec_copy;
 #endif
-        } else if constexpr(AccessVariant == AccessVariants::constexpr_value) {
-          coeff = {{{0, 2, 0}, {2, 2, 2}, {0, 2, 0}}};
-          div = 5;
-        }
-        for(int k = 0; k < InnerLoops; ++k) {
-          for(int i = -1; i <= 1; i++) {
-            if(item_id[0] + i < 0 || item_id[0] + i >= in.get_range()[0])
-              continue;
-            for(int j = -1; j <= 1; j++) {
-              if(item_id[1] + j < 0 || item_id[1] + j >= out.get_range()[1])
-                continue;
-              acc += coeff[i + 1][j + 1] * in[item_id[0] + i][item_id[1] + j];
+            } else if constexpr(AccessVariant == AccessVariants::constexpr_value) {
+              coeff = {{{0, 2, 0}, {2, 2, 2}, {0, 2, 0}}};
+              div = 5;
             }
-          }
-        }
-        out[item_id] = acc / (div * T(InnerLoops));
-      });
+            for(int k = 0; k < InnerLoops; ++k) {
+              for(int i = -1; i <= 1; i++) {
+                if(item_id[0] + i < 0 || item_id[0] + i >= in.get_range()[0])
+                  continue;
+                for(int j = -1; j <= 1; j++) {
+                  if(item_id[1] + j < 0 || item_id[1] + j >= out.get_range()[1])
+                    continue;
+                  acc += coeff[i + 1][j + 1] * in[item_id[0] + i][item_id[1] + j];
+                }
+              }
+            }
+            out[item_id] = acc / (div * T(InnerLoops));
+          });
     }));
   }
 

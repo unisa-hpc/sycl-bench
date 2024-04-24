@@ -115,7 +115,7 @@ public:
     return true;
   }
 
-	static std::string getBenchmarkName(BenchmarkArgs& args) { return "Polybench_Gemm"; }
+  static std::string getBenchmarkName(BenchmarkArgs& args) { return "Polybench_Gemm"; }
 
 private:
   BenchmarkArgs args;

@@ -19,7 +19,7 @@ The benchmark is run with 4 different configurations:
   - USM allocations with device memory
   - USM allocations with host memory
   - USM allocations with shared memory
-  - USM allocations with shared memory and prefetching  
+  - USM allocations with shared memory and prefetching
 
 The benchmark uses 2 additional configurations:
   - USM allocations with initialization

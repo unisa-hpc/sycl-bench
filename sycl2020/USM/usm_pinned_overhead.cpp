@@ -48,7 +48,7 @@ public:
     if constexpr(!include_init) {
       init();
     }
-    buffer = (DATA_TYPE*) sycl::malloc_device(args.problem_size * sizeof(DATA_TYPE), queue);
+    buffer = (DATA_TYPE*)sycl::malloc_device(args.problem_size * sizeof(DATA_TYPE), queue);
   }
 
   void run(std::vector<sycl::event>& events) {
@@ -58,10 +58,9 @@ public:
     }
 
     for(size_t i = 0; i < num_copies; i++) {
-      if constexpr(direction == HOST_DEVICE){
+      if constexpr(direction == HOST_DEVICE) {
         events.push_back(queue.copy(host_memory, buffer, args.problem_size));
-      }
-      else{
+      } else {
         events.push_back(queue.copy(buffer, host_memory, args.problem_size));
       }
     }
@@ -75,22 +74,22 @@ public:
 
   static std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
-    const size_t num_copies= args.cli.getOrDefault("--num-copies", d_num_copies);
-    
+    const size_t num_copies = args.cli.getOrDefault("--num-copies", d_num_copies);
+
     name << "USM_Pinned_Overhead_";
     name << ReadableTypename<DATA_TYPE>::name << "_";
     name << (direction == HOST_DEVICE ? "HostDevice" : "DeviceHost") << "_";
     name << (use_pinned_memory ? "Pinned" : "NonPinned") << "_";
-    name << (include_init ? "Init" : "NoInit") << "_"; 
+    name << (include_init ? "Init" : "NoInit") << "_";
     name << num_copies;
-    
+
     return name.str();
   }
 };
 
 int main(int argc, char** argv) {
   BenchmarkApp app(argc, argv);
-  const size_t num_copies= app.getArgs().cli.getOrDefault("--num-copies", d_num_copies);
+  const size_t num_copies = app.getArgs().cli.getOrDefault("--num-copies", d_num_copies);
 
   app.run<USMPinnedOverhead<float, false, HOST_DEVICE, true>>(num_copies);
   app.run<USMPinnedOverhead<float, true, HOST_DEVICE, true>>(num_copies);

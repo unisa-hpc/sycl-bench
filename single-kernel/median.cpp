@@ -39,7 +39,7 @@ public:
 
   void setup() {
     size = args.problem_size; // input size defined by the user
-    input.resize(size * size); 
+    input.resize(size * size);
     load_bitmap_mirrored("../share/Brommy.bmp", size, input);
     output.resize(size * size);
 
@@ -176,9 +176,7 @@ public:
   }
 
 
-static std::string getBenchmarkName(BenchmarkArgs& args) {
-    return "MedianFilter";
-  }
+  static std::string getBenchmarkName(BenchmarkArgs& args) { return "MedianFilter"; }
 
 }; // MedianFilterBench class
 

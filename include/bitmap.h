@@ -87,7 +87,7 @@ public:
 //////////////////////////////////////////////////////////////////////////////////
 #include <fstream>
 #include <iostream>
-//#include "bitmap.h"
+// #include "bitmap.h"
 #include <cstdlib>
 
 typedef unsigned char uchar_t;

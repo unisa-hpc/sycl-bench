@@ -1,1 +1,1 @@
-TODO: SYCL code with segmented scan
+TODO : SYCL code with segmented scan

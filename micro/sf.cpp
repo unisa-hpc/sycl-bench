@@ -86,8 +86,7 @@ int main(int argc, char** argv) {
 
   app.run<MicroBenchSpecialFunc<float>>();
   if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
-    if(app.deviceSupportsFP64())
-      app.run<MicroBenchSpecialFunc<double>>();
+    app.run<MicroBenchSpecialFunc<double>>();
   }
   return 0;
 }

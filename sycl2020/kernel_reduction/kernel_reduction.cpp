@@ -83,7 +83,7 @@ int main(int argc, char** argv) {
   runOperators<int>(app);
   runOperators<long long>(app);
   runOperators<float>(app);
-  if(app.deviceSupportsFP64())
-    runOperators<double>(app);
+
+  runOperators<double>(app);
   return 0;
 }
