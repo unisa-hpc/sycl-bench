@@ -15,7 +15,7 @@ macro(check_feature VAR FILENAME)
 endmacro()
 
 message(STATUS "Checking for SYCL features....")
-check_feature(KERNEL_REDUCTION kernel_reduction_dummy.cpp)
+check_feature(KERNEL_REDUCTIONS kernel_reduction_dummy.cpp)
 check_feature(SPEC_CONSTANTS spec_constants_dummy.cpp)
 check_feature(GROUP_ALGORITHMS group_algorithms_dummy.cpp)
 check_feature(FP64_SUPPORT fp64_support_dummy.cpp)

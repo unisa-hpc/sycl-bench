@@ -135,7 +135,7 @@ set(benchmarks
 if (SYCL_BENCH_HAS_SPEC_CONSTANTS)
   list(APPEND benchmarks sycl2020/spec_constants/spec_constant_convolution.cpp)
 endif()
-if (SYCL_BENCH_HAS_KERNEL_REDUCTION)
+if (SYCL_BENCH_HAS_KERNEL_REDUCTIONS)
   list(APPEND benchmarks sycl2020/kernel_reduction/kernel_reduction.cpp)
 endif()
 if (SYCL_BENCH_HAS_GROUP_ALGORITHMS)
