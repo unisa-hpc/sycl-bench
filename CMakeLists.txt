@@ -34,9 +34,6 @@ include(CPack)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/polybench/common)
 
-# SYCL Bench variables
-set(SYCL_BENCH_ENABLE_FP64_BENCHMARKS "ON" CACHE STRING "Enable FP64 benchmarks [ON]")
-
 set(supported_implementations
 	AdaptiveCpp
 	dpcpp
@@ -84,6 +81,7 @@ elseif(SYCL_IMPL STREQUAL "triSYCL")
 	find_package(TriSYCL MODULE REQUIRED)
 endif()
 
+# Check if SYCL implementation implements the required SYCL features
 include(HasFeatures)
 
 set(benchmarks
@@ -138,14 +136,14 @@ if (SYCL_BENCH_HAS_SPEC_CONSTANTS)
   list(APPEND benchmarks sycl2020/spec_constants/spec_constant_convolution.cpp)
 endif()
 if (SYCL_BENCH_HAS_KERNEL_REDUCTION)
-list(APPEND benchmarks sycl2020/kernel_reduction/kernel_reduction.cpp)
+  list(APPEND benchmarks sycl2020/kernel_reduction/kernel_reduction.cpp)
 endif()
 if (SYCL_BENCH_HAS_GROUP_ALGORITHMS)
   list(APPEND benchmarks sycl2020/group_algorithms/reduce_over_group.cpp)
 endif()
 
 # Setting variables
-add_compile_definitions(SYCL_BENCH_ENABLE_FP64_BENCHMARKS=$<BOOL:${SYCL_BENCH_HAS_FP64_SUPPORT}>)
+add_compile_definitions(SYCL_BENCH_HAS_FP64_SUPPORT=$<BOOL:${SYCL_BENCH_HAS_FP64_SUPPORT}>)
 
 foreach(benchmark IN LISTS benchmarks)
 	get_filename_component(target ${benchmark} NAME_WE)

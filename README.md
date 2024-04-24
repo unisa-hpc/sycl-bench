@@ -27,7 +27,7 @@ $ mkdir build && cd build
 
 Compile with CMake
 ```
-$ cmake -DSYCL_IMPL=[target SYCL implementation] [other compiler arguments] ..
+$ cmake -DSYCL_IMPL=[target SYCL implementation] [-DSYCL_BENCH_HAS_FP64_SUPPORT=ON|OFF] [other compiler arguments] ..
 $ cmake --build .
 $ sudo make install
 ```

@@ -73,7 +73,7 @@ int main(int argc, char** argv) {
 
 
   // double precision
-  if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
+  if constexpr(SYCL_BENCH_HAS_FP64_SUPPORT) {
     app.run<MicroBenchL2<double, 1>>();
     app.run<MicroBenchL2<double, 2>>();
     app.run<MicroBenchL2<double, 4>>();

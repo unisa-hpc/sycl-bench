@@ -127,7 +127,7 @@ public:
 int main(int argc, char** argv) {
   BenchmarkApp app(argc, argv);
   app.run<LinearRegressionBench<float>>();
-  if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
+  if constexpr(SYCL_BENCH_HAS_FP64_SUPPORT) {
     app.run<LinearRegressionBench<double>>();
   }
   return 0;

@@ -211,7 +211,7 @@ int main(int argc, char** argv) {
     app.run<ReductionNDRange<int>>();
     app.run<ReductionNDRange<long long>>();
     app.run<ReductionNDRange<float>>();
-    if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
+    if constexpr(SYCL_BENCH_HAS_FP64_SUPPORT) {
       app.run<ReductionNDRange<double>>();
     }
   }
@@ -219,7 +219,7 @@ int main(int argc, char** argv) {
   app.run<ReductionHierarchical<int>>();
   app.run<ReductionHierarchical<long long>>();
   app.run<ReductionHierarchical<float>>();
-  if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
+  if constexpr(SYCL_BENCH_HAS_FP64_SUPPORT) {
     app.run<ReductionHierarchical<double>>();
   }
   return 0;

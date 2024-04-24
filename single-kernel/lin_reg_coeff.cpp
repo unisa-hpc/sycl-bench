@@ -191,7 +191,7 @@ int main(int argc, char** argv) {
   BenchmarkApp app(argc, argv);
   if(app.shouldRunNDRangeKernels()) {
     app.run<LinearRegressionCoeffBench<float>>();
-    if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
+    if constexpr(SYCL_BENCH_HAS_FP64_SUPPORT) {
       app.run<LinearRegressionCoeffBench<double>>();
     }
   }

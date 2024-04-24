@@ -206,7 +206,7 @@ int main(int argc, char** argv) {
   runAccessVariants<int>(app);
   runAccessVariants<long long>(app);
   runAccessVariants<float>(app);
-  if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
+  if constexpr(SYCL_BENCH_HAS_FP64_SUPPORT) {
     runAccessVariants<double>(app);
   }
   return 0;

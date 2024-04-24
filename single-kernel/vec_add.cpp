@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
   app.run<VecAddBench<int>>();
   app.run<VecAddBench<long long>>();
   app.run<VecAddBench<float>>();
-  if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
+  if constexpr(SYCL_BENCH_HAS_FP64_SUPPORT) {
     app.run<VecAddBench<double>>();
   }
   return 0;

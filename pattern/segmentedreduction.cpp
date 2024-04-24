@@ -170,7 +170,7 @@ int main(int argc, char** argv) {
     app.run<SegmentedReductionNDRange<int>>();
     app.run<SegmentedReductionNDRange<long long>>();
     app.run<SegmentedReductionNDRange<float>>();
-    if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
+    if constexpr(SYCL_BENCH_HAS_FP64_SUPPORT) {
       app.run<SegmentedReductionNDRange<double>>();
     }
   }
@@ -179,7 +179,7 @@ int main(int argc, char** argv) {
   app.run<SegmentedReductionHierarchical<int>>();
   app.run<SegmentedReductionHierarchical<long long>>();
   app.run<SegmentedReductionHierarchical<float>>();
-  if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
+  if constexpr(SYCL_BENCH_HAS_FP64_SUPPORT) {
     app.run<SegmentedReductionHierarchical<double>>();
   }
   return 0;
