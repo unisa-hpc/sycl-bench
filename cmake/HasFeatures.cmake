@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.25) # TODO: No idea with one is the actual minimum
-
 macro(check_feature VAR FILENAME)
     if(NOT DEFINED SYCL_BENCH_HAS_${VAR})
         try_compile(SYCL_BENCH_HAS_${VAR} ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/has-features/src/${FILENAME} 
@@ -13,8 +11,7 @@ macro(check_feature VAR FILENAME)
     else()
         set(RES OFF)
     endif()
-    message(STATUS "${VAR}: ${RES}")    
-
+    message(STATUS "${VAR}: ${RES}")
 endmacro()
 
 message(STATUS "Checking for SYCL features....")
