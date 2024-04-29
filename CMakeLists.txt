@@ -168,4 +168,4 @@ endforeach(benchmark)
 # The "compiletime" target should only be used in the context of the compile time evaluation script
 # set_target_properties(compiletime PROPERTIES EXCLUDE_FROM_ALL 1)
 install(PROGRAMS bin/run-suite DESTINATION bin/)
-install(FILES ${PROJECT_SOURCE_DIR}/Brommy.bmp DESTINATION share/)
+install(FILES ${PROJECT_SOURCE_DIR}/share/Brommy.bmp DESTINATION share/)
