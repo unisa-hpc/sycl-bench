@@ -53,7 +53,7 @@ public:
       // verification fails
       for(std::size_t run = 0; run < args.num_runs && all_runs_pass; ++run) {
         Benchmark b(args, additionalArgs...);
-        
+
         for(auto h : hooks) h->preSetup();
 
         b.setup();

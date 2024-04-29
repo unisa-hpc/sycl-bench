@@ -154,12 +154,15 @@ public:
   }
 
   template <typename U = T, typename = detail::has_dim_t<U, dim, 1>>
-  void initialize(sycl::queue &q, size_t count) {
+  void initialize(sycl::queue& q, size_t count) {
     queue = &q;
     allocate(count);
   }
 
-  void initialize(sycl::queue& q, sycl::range<dim> count) { queue = &q; allocate(count); }
+  void initialize(sycl::queue& q, sycl::range<dim> count) {
+    queue = &q;
+    allocate(count);
+  }
 
   void initialize(const T* data, size_t count) {
     allocate(queue, count);
@@ -182,30 +185,32 @@ public:
   sycl::event update_host(sycl::event event) {
     if constexpr(!detail::usm_properties<type>::is_host_accessible) {
       return queue->copy(_data, _host_ptr, total_size, event);
-    }
-    else return event;
+    } else
+      return event;
   }
 
-   sycl::event update_device() {
-    if constexpr (detail::usm_properties<type>::is_device_accessible && !detail::usm_properties<type>::is_host_accessible){
+  sycl::event update_device() {
+    if constexpr(detail::usm_properties<type>::is_device_accessible &&
+                 !detail::usm_properties<type>::is_host_accessible) {
       assert(_host_ptr != nullptr && "calling update_device when no modification has been made on the host");
       // auto event = queue.copy(_host_ptr, _data, total_size);
       // queue.wait_and_throw();
       return queue->copy(_host_ptr, _data, total_size);
-    }
-    else return sycl::event{};
+    } else
+      return sycl::event{};
   }
 
   sycl::event update_device(sycl::event event) {
-    if constexpr (detail::usm_properties<type>::is_device_accessible && !detail::usm_properties<type>::is_host_accessible){
+    if constexpr(detail::usm_properties<type>::is_device_accessible &&
+                 !detail::usm_properties<type>::is_host_accessible) {
       assert(_host_ptr != nullptr && "calling update_device when no modification has been made on the host");
       return queue->copy(_host_ptr, _data, total_size, event);
-    }
-    else return event;
+    } else
+      return event;
   }
 
   T* get() const { return _data; }
-  
+
   T* get_host_ptr() const {
     assert(_host_ptr != nullptr && "_host_ptr not initialized. You should first call update_host()");
     return _host_ptr;
@@ -220,7 +225,6 @@ public:
     auto new_event = update_host(event);
     return {_host_ptr, new_event};
   }
-
 
 
   auto size() const { return total_size; }
@@ -255,8 +259,7 @@ private:
     _data = malloc<type>(count);
     if constexpr(!detail::usm_properties<type>::is_host_accessible) {
       _host_ptr = static_cast<T*>(sycl::malloc_host(count * sizeof(T), *queue));
-    }
-    else {
+    } else {
       _host_ptr = _data;
     }
     this->_count = sycl::range<dim>{count};
@@ -270,8 +273,7 @@ private:
     _data = malloc<type>(total_size);
     if constexpr(!detail::usm_properties<type>::is_host_accessible) {
       _host_ptr = static_cast<T*>(sycl::malloc_host(total_size * sizeof(T), *queue));
-    }
-    else {
+    } else {
       _host_ptr = _data;
     }
 

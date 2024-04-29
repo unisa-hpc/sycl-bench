@@ -300,15 +300,13 @@ int main(int argc, char** argv) {
   BenchmarkApp app(argc, argv);
 
   app.run<NBodyHierarchical<float>>();
-  if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
-    if(app.deviceSupportsFP64())
-      app.run<NBodyHierarchical<double>>();
+  if constexpr(SYCL_BENCH_HAS_FP64_SUPPORT) {
+    app.run<NBodyHierarchical<double>>();
   }
   if(app.shouldRunNDRangeKernels()) {
     app.run<NBodyNDRange<float>>();
-    if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
-      if(app.deviceSupportsFP64())
-        app.run<NBodyNDRange<double>>();
+    if constexpr(SYCL_BENCH_HAS_FP64_SUPPORT) {
+      app.run<NBodyNDRange<double>>();
     }
   }
 

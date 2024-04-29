@@ -115,7 +115,7 @@ public:
 
     return compare(expected_output, args.problem_size, 0.000001);
   }
-  
+
   static std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "LinearRegression_";
@@ -127,9 +127,8 @@ public:
 int main(int argc, char** argv) {
   BenchmarkApp app(argc, argv);
   app.run<LinearRegressionBench<float>>();
-  if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
-    if(app.deviceSupportsFP64())
-      app.run<LinearRegressionBench<double>>();
+  if constexpr(SYCL_BENCH_HAS_FP64_SUPPORT) {
+    app.run<LinearRegressionBench<double>>();
   }
   return 0;
 }

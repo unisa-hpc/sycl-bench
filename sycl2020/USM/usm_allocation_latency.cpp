@@ -32,7 +32,8 @@ public:
     queue.fill(buffer, DATA_TYPE{1}, args.problem_size).wait();
     DATA_TYPE* host_ptr = buffer;
     if constexpr(usm_type == sycl::usm::alloc::device) {
-      host_ptr = static_cast<DATA_TYPE*>(sycl::malloc(args.problem_size * sizeof(DATA_TYPE), args.device_queue, sycl::usm::alloc::host));
+      host_ptr = static_cast<DATA_TYPE*>(
+          sycl::malloc(args.problem_size * sizeof(DATA_TYPE), args.device_queue, sycl::usm::alloc::host));
       queue.copy(buffer, host_ptr, args.problem_size).wait();
     }
 

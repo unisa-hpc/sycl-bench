@@ -102,12 +102,10 @@ int main(int argc, char** argv) {
   app.run<MicroBenchDRAM<float, 1>>();
   app.run<MicroBenchDRAM<float, 2>>();
   app.run<MicroBenchDRAM<float, 3>>();
-  if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
-    if(app.deviceSupportsFP64()) {
-      app.run<MicroBenchDRAM<double, 1>>();
-      app.run<MicroBenchDRAM<double, 2>>();
-      app.run<MicroBenchDRAM<double, 3>>();
-    }
+  if constexpr(SYCL_BENCH_HAS_FP64_SUPPORT) {
+    app.run<MicroBenchDRAM<double, 1>>();
+    app.run<MicroBenchDRAM<double, 2>>();
+    app.run<MicroBenchDRAM<double, 3>>();
   }
   return 0;
 }

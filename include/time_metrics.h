@@ -76,7 +76,7 @@ public:
       if(unavailableTimings.count(name) == 0) {
         std::vector<double> resultsSeconds;
         auto timesBegin = timingResults.at(name).begin();
-        if (args.warmup_run) {
+        if(args.warmup_run) {
           ++timesBegin;
         }
         std::transform(timesBegin, timingResults.at(name).end(), std::back_inserter(resultsSeconds),

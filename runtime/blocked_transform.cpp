@@ -90,7 +90,7 @@ public:
 
     return true;
   }
-  
+
   std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "Runtime_BlockedTransform_iter_";

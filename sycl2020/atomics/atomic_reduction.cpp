@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
   app.run<ReductionAtomic<int>>();
   app.run<ReductionAtomic<long long>>();
   app.run<ReductionAtomic<float>>();
-  if(app.deviceSupportsFP64())
-    app.run<ReductionAtomic<double>>();
+
+  app.run<ReductionAtomic<double>>();
   return 0;
 }

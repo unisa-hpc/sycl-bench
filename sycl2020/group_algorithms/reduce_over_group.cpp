@@ -77,7 +77,7 @@ int main(int argc, char** argv) {
   app.run<ReduceGroupAlgorithm<int>>();
   app.run<ReduceGroupAlgorithm<long long>>();
   app.run<ReduceGroupAlgorithm<float>>();
-  if(app.deviceSupportsFP64())
-    app.run<ReduceGroupAlgorithm<double>>();
+
+  app.run<ReduceGroupAlgorithm<double>>();
   return 0;
 }

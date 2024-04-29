@@ -196,7 +196,7 @@ public:
 
     return pass;
   }
-  
+
   static std::string getBenchmarkName(BenchmarkArgs& args) {
     std::stringstream name;
     name << "ScalarProduct_";
@@ -212,18 +212,16 @@ int main(int argc, char** argv) {
     app.run<ScalarProdBench<int, true>>();
     app.run<ScalarProdBench<long long, true>>();
     app.run<ScalarProdBench<float, true>>();
-    if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
-      if(app.deviceSupportsFP64())
-        app.run<ScalarProdBench<double, true>>();
+    if constexpr(SYCL_BENCH_HAS_FP64_SUPPORT) {
+      app.run<ScalarProdBench<double, true>>();
     }
   }
 
   app.run<ScalarProdBench<int, false>>();
   app.run<ScalarProdBench<long long, false>>();
   app.run<ScalarProdBench<float, false>>();
-  if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
-    if(app.deviceSupportsFP64())
-      app.run<ScalarProdBench<double, false>>();
+  if constexpr(SYCL_BENCH_HAS_FP64_SUPPORT) {
+    app.run<ScalarProdBench<double, false>>();
   }
   return 0;
 }

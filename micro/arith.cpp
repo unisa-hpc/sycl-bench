@@ -91,9 +91,8 @@ int main(int argc, char** argv) {
 
   app.run<MicroBenchArithmetic<int>>();
   app.run<MicroBenchArithmetic<float>>();
-  if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
-    if(app.deviceSupportsFP64())
-      app.run<MicroBenchArithmetic<double>>();
+  if constexpr(SYCL_BENCH_HAS_FP64_SUPPORT) {
+    app.run<MicroBenchArithmetic<double>>();
   }
   return 0;
 }

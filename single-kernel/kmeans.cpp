@@ -124,9 +124,8 @@ public:
 int main(int argc, char** argv) {
   BenchmarkApp app(argc, argv);
   app.run<KmeansBench<float>>();
-  if constexpr(SYCL_BENCH_ENABLE_FP64_BENCHMARKS) {
-    if(app.deviceSupportsFP64())
-      app.run<KmeansBench<double>>();
+  if constexpr(SYCL_BENCH_HAS_FP64_SUPPORT) {
+    app.run<KmeansBench<double>>();
   }
   return 0;
 }
