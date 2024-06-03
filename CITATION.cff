@@ -1,4 +1,4 @@
-cff-ersion: 1.2.0
+cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 conference-paper: "Proceedings of the 12th International Workshop on OpenCL and SYCL (IWOCL 24)"
 authors:
@@ -18,4 +18,4 @@ title: "SYCL-Bench 2020: Benchmarking SYCL 2020 on AMD, Intel, and NVIDIA GPUs"
 version: 2.0.4
 doi: 10.1145/3648115.3648120
 date-released: 2024-04-08
-url: "https://github.com/unisa-hpc/sycl-bench/"v
+url: "https://github.com/unisa-hpc/sycl-bench/"
