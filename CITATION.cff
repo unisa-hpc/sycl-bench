@@ -1,0 +1,21 @@
+cff-ersion: 1.2.0
+message: "If you use this software, please cite it as below."
+conference-paper: "Proceedings of the 12th International Workshop on OpenCL and SYCL (IWOCL 24)"
+authors:
+- family-names: "Luigi"
+  given-names: "Crisci"
+- family-names: "Lorenzo"
+  given-names: "Carpentieri"
+- family-names: "Peter"
+  given-names: "Thoman"
+- family-names: "Aksel"
+  given-names: "Alpay"
+- family-names: "Vincent"
+  given-names: "Heuveline"
+- family-names: "Biagio"
+  given-names: "Cosenza"
+title: "SYCL-Bench 2020: Benchmarking SYCL 2020 on AMD, Intel, and NVIDIA GPUs"
+version: 2.0.4
+doi: 10.1145/3648115.3648120
+date-released: 2024-04-08
+url: "https://github.com/unisa-hpc/sycl-bench/"v
