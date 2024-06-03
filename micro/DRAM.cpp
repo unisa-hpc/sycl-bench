@@ -1,6 +1,6 @@
 #include "common.h"
 
-namespace s = cl::sycl;
+namespace s = sycl;
 
 template <typename DataT, int Dims>
 class MicroBenchDRAMKernel;
@@ -52,7 +52,7 @@ public:
   }
 
   void run(std::vector<s::event>& events) {
-    events.push_back(args.device_queue.submit([&](cl::sycl::handler& cgh) {
+    events.push_back(args.device_queue.submit([&](sycl::handler& cgh) {
       auto in = input_buf.template get_access<s::access::mode::read>(cgh);
       auto out = output_buf.template get_access<s::access::mode::discard_write>(cgh);
       // We spawn one work item for each buffer element to be copied.
@@ -62,7 +62,7 @@ public:
   }
 
   bool verify(VerificationSetting& ver) {
-    auto result = output_buf.template get_access<s::access::mode::read>();
+    auto result = output_buf.get_host_access();
     for(size_t i = 0; i < buffer_size[0]; ++i) {
       for(size_t j = 0; j < (Dims < 2 ? 1 : buffer_size[1]); ++j) {
         for(size_t k = 0; k < (Dims < 3 ? 1 : buffer_size[2]); ++k) {
@@ -102,11 +102,10 @@ int main(int argc, char** argv) {
   app.run<MicroBenchDRAM<float, 1>>();
   app.run<MicroBenchDRAM<float, 2>>();
   app.run<MicroBenchDRAM<float, 3>>();
-  if(app.deviceSupportsFP64()) {
+  if constexpr(SYCL_BENCH_HAS_FP64_SUPPORT) {
     app.run<MicroBenchDRAM<double, 1>>();
     app.run<MicroBenchDRAM<double, 2>>();
     app.run<MicroBenchDRAM<double, 3>>();
   }
-
   return 0;
 }

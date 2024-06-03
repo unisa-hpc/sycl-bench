@@ -1,6 +1,6 @@
 #include "common.h"
 
-namespace s = cl::sycl;
+namespace s = sycl;
 
 template <typename DataT, int Iterations>
 class MicroBenchArithmeticKernel;
@@ -46,13 +46,13 @@ public:
     return {};
   }
 
-  void run(std::vector<cl::sycl::event>& events) {
-    events.push_back(args.device_queue.submit([&](cl::sycl::handler& cgh) {
+  void run(std::vector<sycl::event>& events) {
+    events.push_back(args.device_queue.submit([&](sycl::handler& cgh) {
       auto in = input_buf.template get_access<s::access::mode::read>(cgh);
       auto out = output_buf.template get_access<s::access::mode::discard_write>(cgh);
 
       cgh.parallel_for<MicroBenchArithmeticKernel<DataT, Iterations>>(
-          s::range<1>{args.problem_size}, [=](cl::sycl::id<1> gid) {
+          s::range<1>{args.problem_size}, [=](sycl::id<1> gid) {
             DataT a1 = in[gid];
             const DataT a2 = a1;
 
@@ -68,7 +68,7 @@ public:
   }
 
   bool verify(VerificationSetting& ver) {
-    auto result = output_buf.template get_access<s::access::mode::read>();
+    auto result = output_buf.get_host_access();
     for(size_t i = 0; i < args.problem_size; ++i) {
       if(result[i] != DataT{1}) {
         return false;
@@ -91,8 +91,8 @@ int main(int argc, char** argv) {
 
   app.run<MicroBenchArithmetic<int>>();
   app.run<MicroBenchArithmetic<float>>();
-  if(app.deviceSupportsFP64())
+  if constexpr(SYCL_BENCH_HAS_FP64_SUPPORT) {
     app.run<MicroBenchArithmetic<double>>();
-
+  }
   return 0;
 }

@@ -1,0 +1,28 @@
+---
+#
+# Clang-Tidy configuration for SYCL-Bench.
+#
+# There are three usage scenarios:
+# 1. Automatic checks through an IDE (CLion, VsCode, ...)
+# 2. Running manually on select files (not recommended)
+#    `clang-tidy -p path/to/compile_commands.json file1 [file2, ...]`
+#    Note: A script for running clang-tidy on all Celerity sources is provided in `ci/run-clang-tidy.sh`
+# 3. Running on a diff (for CI)
+#    `git diff -U0 --no-color | clang-tidy-diff.py -p1 -path path/to/compile_commands.json`
+#
+InheritParentConfig: false
+# See https://clang.llvm.org/extra/clang-tidy/checks/list.html for a full list of available checks.
+Checks: -*,
+  readability-*,
+  -readability-avoid-const-params-in-decls,
+  -readability-function-cognitive-complexity,
+  -readability-identifier-length,
+  -readability-magic-numbers,
+  -readability-uppercase-literal-suffix,
+  -readability-convert-member-functions-to-static
+  -readability-qualified-auto
+
+# Treat naming violations as errors
+WarningsAsErrors: "readability-identifier-naming"
+# Use .clang-format configuration for fixes
+FormatStyle: file

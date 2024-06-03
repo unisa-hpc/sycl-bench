@@ -27,7 +27,7 @@ $ mkdir build && cd build
 
 Compile with CMake
 ```
-$ cmake -DSYCL_IMPL=[target SYCL implementation] [other compiler arguments] ..
+$ cmake -DSYCL_IMPL=[target SYCL implementation] [-DSYCL_BENCH_HAS_FP64_SUPPORT=ON|OFF] [other compiler arguments] ..
 $ cmake --build .
 $ sudo make install
 ```
@@ -57,6 +57,24 @@ Packages built via the `package` target will contain all files contained in a SY
 
 ## Attribution
 If you use SYCL-Bench, please cite the following papers:
+```
+@inproceedings{SYCL-Bench:IWOCL:2024,
+author = {Crisci, Luigi and Carpentieri, Lorenzo and Thoman, Peter and Alpay, Aksel and Heuveline, Vincent and Cosenza, Biagio},
+title = {SYCL-Bench 2020: Benchmarking SYCL 2020 on AMD, Intel, and NVIDIA GPUs},
+year = {2024},
+isbn = {9798400717901},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3648115.3648120},
+doi = {10.1145/3648115.3648120},
+booktitle = {Proceedings of the 12th International Workshop on OpenCL and SYCL},
+articleno = {1},
+numpages = {12},
+keywords = {GPU, HPC, SYCL, benchmark, heterogeneous computing, portability},
+location = {<conf-loc>, <city>Chicago</city>, <state>IL</state>, <country>USA</country>, </conf-loc>},
+series = {IWOCL '24}
+}
+```
 
 ```
 @inproceedings{SYCL-Bench:Euro-Par:2020,

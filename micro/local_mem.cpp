@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-namespace s = cl::sycl;
+namespace s = sycl;
 
 template <typename DATA_TYPE, int COMP_ITERS>
 class MicroBenchLocalMemoryKernel;
@@ -30,12 +30,12 @@ public:
     output_buf.initialize(args.device_queue, s::range<1>(args.problem_size));
   }
 
-  void run(std::vector<cl::sycl::event>& events) {
-    events.push_back(args.device_queue.submit([&](cl::sycl::handler& cgh) {
+  void run(std::vector<sycl::event>& events) {
+    events.push_back(args.device_queue.submit([&](sycl::handler& cgh) {
       auto in = input_buf.template get_access<s::access::mode::read>(cgh);
       auto out = output_buf.template get_access<s::access::mode::discard_write>(cgh);
       // local memory definition
-      s::accessor<DATA_TYPE, 1, s::access::mode::read_write, s::access::target::local> local_mem(args.local_size, cgh);
+      s::local_accessor<DATA_TYPE, 1> local_mem(args.local_size, cgh);
 
       s::nd_range<1> ndrange{{args.problem_size}, {args.local_size}};
 
@@ -43,20 +43,21 @@ public:
         DATA_TYPE r0;
         int gid = item.get_global_id(0);
         int lid = item.get_local_id(0);
-        int lid2 = (item.get_local_id(0)+1) % item.get_local_range()[0];
+        int lid2 = (item.get_local_id(0) + 1) % item.get_local_range()[0];
 
         local_mem[lid] = in[gid];
 
-        item.barrier(s::access::fence_space::local_space);
+        s::group_barrier(item.get_group());
 
-        // Note: this is dangerous, as a compiler could in principle be smart enough to figure out that it can just drop this
-        //       so far, we haven't encountered such a compiler, and all options to make it "safer" 
+        // Note: this is dangerous, as a compiler could in principle be smart enough to figure out that it can just drop
+        // this
+        //       so far, we haven't encountered such a compiler, and all options to make it "safer"
         //       introduce overhead on at least some platform / data type combinations
         for(int i = 0; i < COMP_ITERS; i++) {
           local_mem[lid2] = local_mem[lid];
         }
 
-        item.barrier(s::access::fence_space::local_space);
+        s::group_barrier(item.get_group());
 
         out[gid] = local_mem[lid];
       });
@@ -72,7 +73,7 @@ public:
   }
 
   bool verify(VerificationSetting& ver) {
-    auto result = output_buf.template get_access<s::access::mode::read>();
+    auto result = output_buf.get_host_access();
     for(size_t i = 0; i < args.problem_size; ++i) {
       if(result[i] != 42) {
         return false;
@@ -99,8 +100,8 @@ int main(int argc, char** argv) {
   app.run<MicroBenchLocalMemory<float, compute_iters>>();
 
   // double precision
-  if(app.deviceSupportsFP64())
+  if constexpr(SYCL_BENCH_HAS_FP64_SUPPORT) {
     app.run<MicroBenchLocalMemory<double, compute_iters>>();
-
+  }
   return 0;
 }
