@@ -1,12 +1,13 @@
 macro(check_feature VAR FILENAME)
-    if(NOT DEFINED SYCL_BENCH_HAS_${VAR})
-        try_compile(SYCL_BENCH_HAS_${VAR} ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/has-features/src/${FILENAME} 
-            CMAKE_FLAGS ${CMAKE_CXX_FLAGS}
-            OUTPUT_VARIABLE OUTPUT_VAR
-        )
+    if(NOT DEFINED RUN_RES_${VAR})
+            try_run(RUN_RES_${VAR} COMPILE_RES_${VAR} ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/has-features/src/${FILENAME} 
+                CMAKE_FLAGS ${CMAKE_CXX_FLAGS}
+                COMPILE_OUTPUT_VARIABLE OUTPUT_VAR
+                RUN_OUTPUT_VARIABLE RUN_VAR 
+            )
     endif()
 
-    if (SYCL_BENCH_HAS_${VAR})
+    if (COMPILE_RES_${VAR} AND RUN_RES_${VAR} EQUAL 0)
         set(RES ON)
     else()
         set(RES OFF)

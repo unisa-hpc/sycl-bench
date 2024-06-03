@@ -10,6 +10,9 @@ int main() {
     auto r = sycl::reduction(x, cgh, sycl::plus<int>{});
 #endif
 
-    cgh.parallel_for(sycl::range<1>{1}, r, [=](sycl::id<1> idx, auto& op) { op.combine(1); });
-  });
+    cgh.parallel_for(sycl::range<1>{5}, r, [=](sycl::id<1> idx, auto& op) { op.combine(1); });
+  }).wait();
+
+  sycl::host_accessor host{x};
+  assert(host[0] == 5);
 }
