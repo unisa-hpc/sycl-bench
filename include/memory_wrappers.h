@@ -78,7 +78,7 @@ public:
     return buff->template get_access<mode>(accessRange, accessOffset);
   }
 
-  auto get_host_access() { return buff->template get_host_access(); }
+  auto get_host_access() { return buff->get_host_access(); }
 
   sycl::range<Dimensions> get_range() const { return buff->get_range(); }
 
