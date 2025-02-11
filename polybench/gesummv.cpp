@@ -102,7 +102,7 @@ public:
     constexpr auto ERROR_THRESHOLD = 0.05;
 
     // Trigger writeback
-    y_buffer.reset();
+    auto y = y_buffer.get_host_access();
 
     std::vector<DATA_TYPE> y_cpu(size);
     std::vector<DATA_TYPE> tmp_cpu(size);

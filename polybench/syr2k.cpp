@@ -96,7 +96,7 @@ public:
     init_arrays(A.data(), B.data(), C_cpu.data(), size);
 
     // Trigger writeback
-    C_buffer.reset();
+    auto* C = C_buffer.get_host_access().get_pointer();
 
     syr2k(A.data(), B.data(), C_cpu.data(), size);
 

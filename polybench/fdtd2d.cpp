@@ -142,7 +142,7 @@ public:
     std::vector<DATA_TYPE> hz_cpu(size * size);
 
     // Trigger writebacks
-    hz_buffer.reset();
+    auto* hz = hz_buffer.get_host_access().get_pointer();
 
     init_arrays(fict_cpu.data(), ex_cpu.data(), ey_cpu.data(), hz_cpu.data(), size);
 

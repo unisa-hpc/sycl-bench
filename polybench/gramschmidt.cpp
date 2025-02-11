@@ -129,7 +129,7 @@ public:
     std::vector<DATA_TYPE> Q_cpu(size * size);
 
     // Trigger writeback
-    A_buffer.reset();
+    auto* A = A_buffer.get_host_access().get_pointer();
 
     init_array(A_cpu.data(), size);
 
