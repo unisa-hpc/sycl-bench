@@ -103,8 +103,8 @@ public:
     std::vector<DATA_TYPE> x2_cpu(size);
 
     // Trigger writeback
-    x1_buffer.reset();
-    x2_buffer.reset();
+    auto x1 = x1_buffer.get_host_access();
+    auto x2 = x2_buffer.get_host_access();
 
     init_arrays(a.data(), x1_cpu.data(), x2_cpu.data(), y1.data(), y2.data(), size);
 

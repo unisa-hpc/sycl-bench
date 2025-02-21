@@ -8,8 +8,8 @@
 using std::string;
 
 
-void load_bitmap_mirrored(string filename, int size, std::vector<sycl::float4>& pixels);
-void save_bitmap(string filename, int size, const std::vector<sycl::float4>& buffer);
+void load_bitmap_mirrored(string filename, int size, sycl::float4* input);
+void save_bitmap(string filename, int size, const sycl::float4* output);
 
 /**
   A single Pixel in the image. A Pixel has red, green, and blue
@@ -362,8 +362,7 @@ void load_bitmap_mirrored(string filename, int size, std::vector<sycl::float4>& 
   // std::cout << "[" << w << "x" << h << "] => [" << size << "x" << size << "]" << std::endl;
 }
 
-
-void save_bitmap(string filename, int size, const std::vector<sycl::float4>& output) {
+void save_bitmap(string filename, int size, sycl::float4* output) {
   // write the output picture
   // std::cout << "saving the output picture in " << filename << std::endl;
   Bitmap output_image;

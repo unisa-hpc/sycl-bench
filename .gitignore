@@ -1,6 +1,7 @@
 /build*
 *.csv
 img/
+installed/
 
 # Clangd
 .cache/

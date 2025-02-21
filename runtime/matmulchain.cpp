@@ -88,7 +88,7 @@ public:
 
   bool verify(VerificationSetting& ver) {
     // Triggers writeback
-    mat_res_buf.reset();
+    auto* mat_res = mat_res_buf.get_host_access().get_pointer();
     bool verification_passed = true;
 
     for(size_t i = 0; i < mat_size; ++i) {

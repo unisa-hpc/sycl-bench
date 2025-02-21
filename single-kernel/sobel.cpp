@@ -31,7 +31,7 @@ public:
   void setup() {
     size = args.problem_size; // input size defined by the user
     input.resize(size * size);
-    load_bitmap_mirrored("../../share/Brommy.bmp", size, input);
+    load_bitmap_mirrored("../share/Brommy.bmp", size, input);
     output.resize(size * size);
 
     input_buf.initialize(args.device_queue, input.data(), s::range<2>(size, size));
@@ -95,7 +95,7 @@ public:
 
   bool verify(VerificationSetting& ver) {
     // Triggers writeback
-    output_buf.reset();
+    auto output = output_buf.get_host_access().get_pointer();
     save_bitmap("sobel3.bmp", size, output);
 
     const float kernel[] = {1, 0, -1, 2, 0, -2, 1, 0, -1};

@@ -120,10 +120,10 @@ public:
 
 
   bool verify(VerificationSetting& ver) {
-    save_bitmap("median.bmp", size, output);
-
+    
     bool pass = true;
     auto output_acc = output_buf.get_host_access();
+    save_bitmap("median.bmp", size, output_acc.get_pointer());
 
     for(size_t i = ver.begin[0]; i < ver.begin[0] + ver.range[0]; i++) {
       int x = i % size;

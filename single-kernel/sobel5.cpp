@@ -96,7 +96,7 @@ public:
 
   bool verify(VerificationSetting& ver) {
     // Triggers writeback
-    output_buf.reset();
+    auto* output = output_buf.get_host_access().get_pointer();
     save_bitmap("sobel5.bmp", size, output);
 
     const float kernel[] = {1, 2, 0, -2, -1, 4, 8, 0, -8, -4, 6, 12, 0, -12, -6, 4, 8, 0, -8, -4, 1, 2, 0, -2, -1};

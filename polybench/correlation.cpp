@@ -201,7 +201,7 @@ public:
     std::vector<DATA_TYPE> symmat_cpu((size + 1) * (size + 1));
 
     // Trigger writeback
-    symmat_buffer.reset();
+    auto* symmat = symmat_buffer.get_host_access().get_pointer();
 
     init_arrays(data_cpu.data(), size);
     correlation(data_cpu.data(), mean_cpu.data(), stddev_cpu.data(), symmat_cpu.data(), size);

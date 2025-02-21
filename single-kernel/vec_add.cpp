@@ -56,7 +56,7 @@ public:
 
   bool verify(VerificationSetting& ver) {
     // Triggers writeback
-    output_buf.reset();
+    auto output = output_buf.get_host_access();
 
     bool pass = true;
     for(size_t i = ver.begin[0]; i < ver.begin[0] + ver.range[0]; i++) {
